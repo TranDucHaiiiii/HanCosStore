@@ -154,17 +154,16 @@
         
         <div class="col-lg-4">
             <div class="cart-summary">
-                <h5 class="fw-800 text-uppercase letter-spacing-1 mb-4 pb-3 border-bottom">Tóm tắt đơn hàng</h5>
+                <h5 class="fw-800 text-uppercase letter-spacing-1 mb-4 pb-3 border-bottom">TÓM TẮT ĐƠN HÀNG</h5>
                 <div class="summary-row">
                     <span class="text-muted">Tạm tính</span>
                     <span class="fw-600" id="cart-subtotal" th:text="${#numbers.formatDecimal(total, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
                 </div>
-               <div class="summary-row">
+                <div class="summary-row">
                     <span class="text-muted">Phí vận chuyển</span>
                     <span class="fw-600" id="shipping-value"
-                          th:if="${shippingFee == 0}" style="color: #198754;">Miễn phí</span>
-                    <span class="fw-600" id="shipping-value"
-                          th:if="${shippingFee != 0}" th:text="${#numbers.formatDecimal(shippingFee, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
+                          th:data-fee="${shippingFee}"
+                          th:text="${shippingFee == 0 ? 'Miễn phí' : #numbers.formatDecimal(shippingFee, 0, 'COMMA', 0, 'POINT') + '₫'}">0₫</span>
                 </div>
                 <div class="voucher-section mt-4 mb-4">
                     <label class="small fw-700 text-uppercase letter-spacing-1 mb-2 d-block">Mã giảm giá</label>
@@ -204,7 +203,8 @@
                 </div>
                 <div class="summary-row summary-total">
                     <span>Tổng cộng</span>
-                    <span id="cart-total" th:text="${#numbers.formatDecimal(totalAfterDiscount != null ? totalAfterDiscount : total, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
+                    <span id="cart-total"
+                          th:text="${#numbers.formatDecimal(totalAfterDiscount != null ? totalAfterDiscount : (total + shippingFee), 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
                 </div>
                 <a th:href="@{/order/checkout}" class="btn-checkout">TIẾN HÀNH THANH TOÁN</a>
                 <a th:href="@{/}" class="btn btn-outline-dark w-100 mt-3 py-3 rounded-0 fw-700 text-uppercase small letter-spacing-1">Tiếp tục mua sắm</a>

@@ -52,15 +52,10 @@
                     <input type="hidden" name="status" th:value="${currentStatus}">
                     <div class="col-md-8">
                         <div class="d-flex gap-2 flex-wrap justify-content-end">
-                            <a th:each="st : ${ {'ALL', 'CHO_XAC_NHAN', 'DA_XAC_NHAN', 'DANG_GIAO', 'HOAN_THANH', 'DA_HUY', 'TRA_HANG'} }"
-                                th:href="@{/admin/orders(status=${st}, keyword=${keyword})}" class="filter-btn"
-                                th:classappend="${currentStatus == st ? 'active' : ''}"
-                                th:text="${st == 'ALL' ? 'Tất cả (' + orderStatusCounts['ALL'] + ')' :
-                                    (st == 'CHO_XAC_NHAN' ? 'Chờ xác nhận (' + orderStatusCounts['CHO_XAC_NHAN'] + ')' :
-                                    (st == 'DA_XAC_NHAN' ? 'Đã xác nhận (' + orderStatusCounts['DA_XAC_NHAN'] + ')' :
-                                    (st == 'DANG_GIAO' ? 'Đang giao (' + orderStatusCounts['DANG_GIAO'] + ')' :
-                                    (st == 'HOAN_THANH' ? 'Hoàn thành (' + orderStatusCounts['HOAN_THANH'] + ')' :
-                                    (st == 'TRA_HANG' ? 'Trả hàng (' + orderStatusCounts['TRA_HANG'] + ')' : 'Đã hủy (' + orderStatusCounts['DA_HUY'] + ')')))))}">
+                            <a th:each="filter : ${statusFilters}"
+                                th:href="@{/admin/orders(status=${filter.key}, keyword=${keyword})}" class="filter-btn"
+                                th:classappend="${currentStatus == filter.key ? 'active' : ''}"
+                                th:text="${filter.label + ' (' + filter.count + ')'}">
                             </a>
                         </div>
                     </div>
@@ -102,18 +97,22 @@
                                     th:text="${#numbers.formatDecimal(order.tongTien, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫
                                 </td>
                                 <td>
-                                    <span class="badge-status" th:classappend="${order.trangThai == 'CHO_XAC_NHAN' or order.trangThai == 'PENDING' ? 'badge-pending' : 
-                       (order.trangThai == 'DA_XAC_NHAN' or order.trangThai == 'CONFIRMED' ? 'badge-confirmed' : 
-                       (order.trangThai == 'DANG_GIAO' or order.trangThai == 'SHIPPING' ? 'badge-shipping' : 
-                       (order.trangThai == 'HOAN_THANH' or order.trangThai == 'COMPLETED' or order.trangThai == 'DELIVERED' ? 'badge-delivered' : 
-                       (order.trangThai == 'TRA_HANG' or order.trangThai == 'RETURN_REQUESTED' or order.trangThai == 'RETURNED' ? 'badge-cancelled' : 
-                       (order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED' ? 'badge-cancelled' : 'badge-cancelled')))))}"
-                                        th:text="${order.trangThai == 'CHO_XAC_NHAN' or order.trangThai == 'PENDING' ? 'Chờ xác nhận' : 
-                       (order.trangThai == 'DA_XAC_NHAN' or order.trangThai == 'CONFIRMED' ? 'Đã xác nhận' : 
-                       (order.trangThai == 'DANG_GIAO' or order.trangThai == 'SHIPPING' ? 'Đang giao' : 
-                       (order.trangThai == 'HOAN_THANH' or order.trangThai == 'COMPLETED' or order.trangThai == 'DELIVERED' ? 'Hoàn thành' : 
-                       (order.trangThai == 'TRA_HANG' or order.trangThai == 'RETURN_REQUESTED' or order.trangThai == 'RETURNED' ? 'Trả hàng' : 
-                       (order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED' ? 'Đã hủy' : 'Đã hủy')))))}">
+                                    <span class="badge-status"
+                                        th:with="st=${order.trangThai}"
+                                        th:classappend="${st == 'CHO_XAC_NHAN' or st == 'PENDING' ? 'badge-pending' :
+                                            st == 'DA_XAC_NHAN' or st == 'CONFIRMED' ? 'badge-confirmed' :
+                                            st == 'DANG_GIAO' or st == 'SHIPPING' ? 'badge-shipping' :
+                                            st == 'LOI_VAN_CHUYEN' or st == 'LOST' ? 'badge-cancelled' :
+                                            st == 'HOAN_THANH' or st == 'COMPLETED' or st == 'DELIVERED' ? 'badge-delivered' :
+                                            st == 'TRA_HANG' or st == 'RETURN_REQUESTED' or st == 'RETURNED' ? 'badge-cancelled' :
+                                            st == 'DA_HUY' or st == 'CANCELLED' ? 'badge-cancelled' : 'badge-cancelled'}"
+                                        th:text="${st == 'CHO_XAC_NHAN' or st == 'PENDING' ? 'Chờ xác nhận' :
+                                            st == 'DA_XAC_NHAN' or st == 'CONFIRMED' ? 'Đã xác nhận' :
+                                            st == 'DANG_GIAO' or st == 'SHIPPING' ? 'Đang giao' :
+                                            st == 'LOI_VAN_CHUYEN' or st == 'LOST' ? 'Lỗi vận chuyển' :
+                                            st == 'HOAN_THANH' or st == 'COMPLETED' or st == 'DELIVERED' ? 'Hoàn thành' :
+                                            st == 'TRA_HANG' or st == 'RETURN_REQUESTED' or st == 'RETURNED' ? 'Trả hàng' :
+                                            st == 'DA_HUY' or st == 'CANCELLED' ? 'Đã hủy' : 'Đã hủy'}">
                                         TRANG_THAI
                                     </span>
                                 </td>

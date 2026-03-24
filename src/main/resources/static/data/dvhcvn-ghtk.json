@@ -1,0 +1,2786 @@
+﻿[
+    {
+        "province":  "Hà Nội",
+        "district":  "Ba Đình"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Hoàn Kiếm"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Tây Hồ"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Long Biên"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Cầu Giấy"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Đống Đa"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Hai Bà Trưng"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Hoàng Mai"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Thanh Xuân"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Sóc Sơn"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Đông Anh"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Gia Lâm"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Nam Từ Liêm"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Thanh Trì"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Bắc Từ Liêm"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Mê Linh"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Hà Đông"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Sơn Tây"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Ba Vì"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Phúc Thọ"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Đan Phượng"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Hoài Đức"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Quốc Oai"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Thạch Thất"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Chương Mỹ"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Thanh Oai"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Thường Tín"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Phú Xuyên"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Ứng Hòa"
+    },
+    {
+        "province":  "Hà Nội",
+        "district":  "Mỹ Đức"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Hà Giang"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Đồng Văn"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Mèo Vạc"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Yên Minh"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Quản Bạ"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Vị Xuyên"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Bắc Mê"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Hoàng Su Phì"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Xín Mần"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Bắc Quang"
+    },
+    {
+        "province":  "Hà Giang",
+        "district":  "Quang Bình"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Cao Bằng"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Bảo Lâm"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Bảo Lạc"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Hà Quảng"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Trùng Khánh"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Hạ Lang"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Quảng Hòa"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Hoà An"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Nguyên Bình"
+    },
+    {
+        "province":  "Cao Bằng",
+        "district":  "Thạch An"
+    },
+    {
+        "province":  "Bắc Kạn",
+        "district":  "Bắc Kạn"
+    },
+    {
+        "province":  "Bắc Kạn",
+        "district":  "Pác Nặm"
+    },
+    {
+        "province":  "Bắc Kạn",
+        "district":  "Ba Bể"
+    },
+    {
+        "province":  "Bắc Kạn",
+        "district":  "Ngân Sơn"
+    },
+    {
+        "province":  "Bắc Kạn",
+        "district":  "Bạch Thông"
+    },
+    {
+        "province":  "Bắc Kạn",
+        "district":  "Chợ Đồn"
+    },
+    {
+        "province":  "Bắc Kạn",
+        "district":  "Chợ Mới"
+    },
+    {
+        "province":  "Bắc Kạn",
+        "district":  "Na Rì"
+    },
+    {
+        "province":  "Tuyên Quang",
+        "district":  "Tuyên Quang"
+    },
+    {
+        "province":  "Tuyên Quang",
+        "district":  "Lâm Bình"
+    },
+    {
+        "province":  "Tuyên Quang",
+        "district":  "Na Hang"
+    },
+    {
+        "province":  "Tuyên Quang",
+        "district":  "Chiêm Hóa"
+    },
+    {
+        "province":  "Tuyên Quang",
+        "district":  "Hàm Yên"
+    },
+    {
+        "province":  "Tuyên Quang",
+        "district":  "Yên Sơn"
+    },
+    {
+        "province":  "Tuyên Quang",
+        "district":  "Sơn Dương"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Lào Cai"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Bát Xát"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Mường Khương"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Si Ma Cai"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Bắc Hà"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Bảo Thắng"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Bảo Yên"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Sa Pa"
+    },
+    {
+        "province":  "Lào Cai",
+        "district":  "Văn Bàn"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Điện Biên Phủ"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Mường Lay"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Mường Nhé"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Mường Chà"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Tủa Chùa"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Tuần Giáo"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Điện Biên"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Điện Biên Đông"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Mường Ảng"
+    },
+    {
+        "province":  "Điện Biên",
+        "district":  "Nậm Pồ"
+    },
+    {
+        "province":  "Lai Châu",
+        "district":  "Lai Châu"
+    },
+    {
+        "province":  "Lai Châu",
+        "district":  "Tam Đường"
+    },
+    {
+        "province":  "Lai Châu",
+        "district":  "Mường Tè"
+    },
+    {
+        "province":  "Lai Châu",
+        "district":  "Sìn Hồ"
+    },
+    {
+        "province":  "Lai Châu",
+        "district":  "Phong Thổ"
+    },
+    {
+        "province":  "Lai Châu",
+        "district":  "Than Uyên"
+    },
+    {
+        "province":  "Lai Châu",
+        "district":  "Tân Uyên"
+    },
+    {
+        "province":  "Lai Châu",
+        "district":  "Nậm Nhùn"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Sơn La"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Quỳnh Nhai"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Thuận Châu"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Mường La"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Bắc Yên"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Phù Yên"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Mộc Châu"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Yên Châu"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Mai Sơn"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Sông Mã"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Sốp Cộp"
+    },
+    {
+        "province":  "Sơn La",
+        "district":  "Vân Hồ"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Yên Bái"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Nghĩa Lộ"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Lục Yên"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Văn Yên"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Mù Căng Chải"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Trấn Yên"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Trạm Tấu"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Văn Chấn"
+    },
+    {
+        "province":  "Yên Bái",
+        "district":  "Yên Bình"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Hòa Bình"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Đà Bắc"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Lương Sơn"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Kim Bôi"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Cao Phong"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Tân Lạc"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Mai Châu"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Lạc Sơn"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Yên Thủy"
+    },
+    {
+        "province":  "Hoà Bình",
+        "district":  "Lạc Thủy"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Thái Nguyên"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Sông Công"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Định Hóa"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Phú Lương"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Đồng Hỷ"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Võ Nhai"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Đại Từ"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Phổ Yên"
+    },
+    {
+        "province":  "Thái Nguyên",
+        "district":  "Phú Bình"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Lạng Sơn"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Tràng Định"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Bình Gia"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Văn Lãng"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Cao Lộc"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Văn Quan"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Bắc Sơn"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Hữu Lũng"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Chi Lăng"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Lộc Bình"
+    },
+    {
+        "province":  "Lạng Sơn",
+        "district":  "Đình Lập"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Hạ Long"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Móng Cái"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Cẩm Phả"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Uông Bí"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Bình Liêu"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Tiên Yên"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Đầm Hà"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Hải Hà"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Ba Chẽ"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Vân Đồn"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Đông Triều"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Quảng Yên"
+    },
+    {
+        "province":  "Quảng Ninh",
+        "district":  "Cô Tô"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Bắc Giang"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Yên Thế"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Tân Yên"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Lạng Giang"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Lục Nam"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Lục Ngạn"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Sơn Động"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Việt Yên"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Hiệp Hòa"
+    },
+    {
+        "province":  "Bắc Giang",
+        "district":  "Chũ"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Việt Trì"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Phú Thọ"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Đoan Hùng"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Hạ Hoà"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Thanh Ba"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Phù Ninh"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Yên Lập"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Cẩm Khê"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Tam Nông"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Lâm Thao"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Thanh Sơn"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Thanh Thuỷ"
+    },
+    {
+        "province":  "Phú Thọ",
+        "district":  "Tân Sơn"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Vĩnh Yên"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Phúc Yên"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Lập Thạch"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Tam Dương"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Tam Đảo"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Bình Xuyên"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Yên Lạc"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Vĩnh Tường"
+    },
+    {
+        "province":  "Vĩnh Phúc",
+        "district":  "Sông Lô"
+    },
+    {
+        "province":  "Bắc Ninh",
+        "district":  "Bắc Ninh"
+    },
+    {
+        "province":  "Bắc Ninh",
+        "district":  "Yên Phong"
+    },
+    {
+        "province":  "Bắc Ninh",
+        "district":  "Quế Võ"
+    },
+    {
+        "province":  "Bắc Ninh",
+        "district":  "Tiên Du"
+    },
+    {
+        "province":  "Bắc Ninh",
+        "district":  "Từ Sơn"
+    },
+    {
+        "province":  "Bắc Ninh",
+        "district":  "Thuận Thành"
+    },
+    {
+        "province":  "Bắc Ninh",
+        "district":  "Gia Bình"
+    },
+    {
+        "province":  "Bắc Ninh",
+        "district":  "Lương Tài"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Hải Dương"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Chí Linh"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Nam Sách"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Kinh Môn"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Kim Thành"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Thanh Hà"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Cẩm Giàng"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Bình Giang"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Gia Lộc"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Tứ Kỳ"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Ninh Giang"
+    },
+    {
+        "province":  "Hải Dương",
+        "district":  "Thanh Miện"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Hồng Bàng"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Ngô Quyền"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Lê Chân"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Hải An"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Kiến An"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Đồ Sơn"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Dương Kinh"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Thuỷ Nguyên"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "An Dương"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "An Lão"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Kiến Thuỵ"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Tiên Lãng"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Vĩnh Bảo"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Cát Hải"
+    },
+    {
+        "province":  "Hải Phòng",
+        "district":  "Bạch Long Vĩ"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Hưng Yên"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Văn Lâm"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Văn Giang"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Yên Mỹ"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Mỹ Hào"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Ân Thi"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Khoái Châu"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Kim Động"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Tiên Lữ"
+    },
+    {
+        "province":  "Hưng Yên",
+        "district":  "Phù Cừ"
+    },
+    {
+        "province":  "Thái Bình",
+        "district":  "Thái Bình"
+    },
+    {
+        "province":  "Thái Bình",
+        "district":  "Quỳnh Phụ"
+    },
+    {
+        "province":  "Thái Bình",
+        "district":  "Hưng Hà"
+    },
+    {
+        "province":  "Thái Bình",
+        "district":  "Đông Hưng"
+    },
+    {
+        "province":  "Thái Bình",
+        "district":  "Thái Thụy"
+    },
+    {
+        "province":  "Thái Bình",
+        "district":  "Tiền Hải"
+    },
+    {
+        "province":  "Thái Bình",
+        "district":  "Kiến Xương"
+    },
+    {
+        "province":  "Thái Bình",
+        "district":  "Vũ Thư"
+    },
+    {
+        "province":  "Hà Nam",
+        "district":  "Phủ Lý"
+    },
+    {
+        "province":  "Hà Nam",
+        "district":  "Duy Tiên"
+    },
+    {
+        "province":  "Hà Nam",
+        "district":  "Kim Bảng"
+    },
+    {
+        "province":  "Hà Nam",
+        "district":  "Thanh Liêm"
+    },
+    {
+        "province":  "Hà Nam",
+        "district":  "Bình Lục"
+    },
+    {
+        "province":  "Hà Nam",
+        "district":  "Lý Nhân"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Nam Định"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Vụ Bản"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Ý Yên"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Nghĩa Hưng"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Nam Trực"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Trực Ninh"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Xuân Trường"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Giao Thủy"
+    },
+    {
+        "province":  "Nam Định",
+        "district":  "Hải Hậu"
+    },
+    {
+        "province":  "Ninh Bình",
+        "district":  "Tam Điệp"
+    },
+    {
+        "province":  "Ninh Bình",
+        "district":  "Nho Quan"
+    },
+    {
+        "province":  "Ninh Bình",
+        "district":  "Gia Viễn"
+    },
+    {
+        "province":  "Ninh Bình",
+        "district":  "Hoa Lư"
+    },
+    {
+        "province":  "Ninh Bình",
+        "district":  "Yên Khánh"
+    },
+    {
+        "province":  "Ninh Bình",
+        "district":  "Kim Sơn"
+    },
+    {
+        "province":  "Ninh Bình",
+        "district":  "Yên Mô"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Thanh Hóa"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Bỉm Sơn"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Sầm Sơn"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Mường Lát"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Quan Hóa"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Bá Thước"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Quan Sơn"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Lang Chánh"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Ngọc Lặc"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Cẩm Thủy"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Thạch Thành"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Hà Trung"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Vĩnh Lộc"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Yên Định"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Thọ Xuân"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Thường Xuân"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Triệu Sơn"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Thiệu Hóa"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Hoằng Hóa"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Hậu Lộc"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Nga Sơn"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Như Xuân"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Như Thanh"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Nông Cống"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Quảng Xương"
+    },
+    {
+        "province":  "Thanh Hóa",
+        "district":  "Nghi Sơn"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Vinh"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Thái Hoà"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Quế Phong"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Quỳ Châu"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Kỳ Sơn"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Tương Dương"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Nghĩa Đàn"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Quỳ Hợp"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Quỳnh Lưu"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Con Cuông"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Tân Kỳ"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Anh Sơn"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Diễn Châu"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Yên Thành"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Đô Lương"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Thanh Chương"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Nghi Lộc"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Nam Đàn"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Hưng Nguyên"
+    },
+    {
+        "province":  "Nghệ An",
+        "district":  "Hoàng Mai"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Hà Tĩnh"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Hồng Lĩnh"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Hương Sơn"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Đức Thọ"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Vũ Quang"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Nghi Xuân"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Can Lộc"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Hương Khê"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Thạch Hà"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Cẩm Xuyên"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Kỳ Anh"
+    },
+    {
+        "province":  "Hà Tĩnh",
+        "district":  "Kỳ Anh"
+    },
+    {
+        "province":  "Quảng Bình",
+        "district":  "Đồng Hới"
+    },
+    {
+        "province":  "Quảng Bình",
+        "district":  "Minh Hóa"
+    },
+    {
+        "province":  "Quảng Bình",
+        "district":  "Tuyên Hóa"
+    },
+    {
+        "province":  "Quảng Bình",
+        "district":  "Quảng Trạch"
+    },
+    {
+        "province":  "Quảng Bình",
+        "district":  "Bố Trạch"
+    },
+    {
+        "province":  "Quảng Bình",
+        "district":  "Quảng Ninh"
+    },
+    {
+        "province":  "Quảng Bình",
+        "district":  "Lệ Thủy"
+    },
+    {
+        "province":  "Quảng Bình",
+        "district":  "Ba Đồn"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Đông Hà"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Quảng Trị"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Vĩnh Linh"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Hướng Hóa"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Gio Linh"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Đa Krông"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Cam Lộ"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Triệu Phong"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Hải Lăng"
+    },
+    {
+        "province":  "Quảng Trị",
+        "district":  "Cồn Cỏ"
+    },
+    {
+        "province":  "Huế",
+        "district":  "Thuận Hóa"
+    },
+    {
+        "province":  "Huế",
+        "district":  "Phú Xuân"
+    },
+    {
+        "province":  "Huế",
+        "district":  "Phong Điền"
+    },
+    {
+        "province":  "Huế",
+        "district":  "Quảng Điền"
+    },
+    {
+        "province":  "Huế",
+        "district":  "Phú Vang"
+    },
+    {
+        "province":  "Huế",
+        "district":  "Hương Thủy"
+    },
+    {
+        "province":  "Huế",
+        "district":  "Hương Trà"
+    },
+    {
+        "province":  "Huế",
+        "district":  "A Lưới"
+    },
+    {
+        "province":  "Huế",
+        "district":  "Phú Lộc"
+    },
+    {
+        "province":  "Đà Nẵng",
+        "district":  "Liên Chiểu"
+    },
+    {
+        "province":  "Đà Nẵng",
+        "district":  "Thanh Khê"
+    },
+    {
+        "province":  "Đà Nẵng",
+        "district":  "Hải Châu"
+    },
+    {
+        "province":  "Đà Nẵng",
+        "district":  "Sơn Trà"
+    },
+    {
+        "province":  "Đà Nẵng",
+        "district":  "Ngũ Hành Sơn"
+    },
+    {
+        "province":  "Đà Nẵng",
+        "district":  "Cẩm Lệ"
+    },
+    {
+        "province":  "Đà Nẵng",
+        "district":  "Hòa Vang"
+    },
+    {
+        "province":  "Đà Nẵng",
+        "district":  "Hoàng Sa"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Tam Kỳ"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Hội An"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Tây Giang"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Đông Giang"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Đại Lộc"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Điện Bàn"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Duy Xuyên"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Quế Sơn"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Nam Giang"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Phước Sơn"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Hiệp Đức"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Thăng Bình"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Tiên Phước"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Bắc Trà My"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Nam Trà My"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Núi Thành"
+    },
+    {
+        "province":  "Quảng Nam",
+        "district":  "Phú Ninh"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Quảng Ngãi"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Bình Sơn"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Trà Bồng"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Sơn Tịnh"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Tư Nghĩa"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Sơn Hà"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Sơn Tây"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Minh Long"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Nghĩa Hành"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Mộ Đức"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Đức Phổ"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Ba Tơ"
+    },
+    {
+        "province":  "Quảng Ngãi",
+        "district":  "Lý Sơn"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Quy Nhơn"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "An Lão"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Hoài Nhơn"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Hoài Ân"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Phù Mỹ"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Vĩnh Thạnh"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Tây Sơn"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Phù Cát"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "An Nhơn"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Tuy Phước"
+    },
+    {
+        "province":  "Bình Định",
+        "district":  "Vân Canh"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Tuy Hoà"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Sông Cầu"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Đồng Xuân"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Tuy An"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Sơn Hòa"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Sông Hinh"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Tây Hoà"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Phú Hoà"
+    },
+    {
+        "province":  "Phú Yên",
+        "district":  "Đông Hòa"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Nha Trang"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Cam Ranh"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Cam Lâm"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Vạn Ninh"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Ninh Hòa"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Khánh Vĩnh"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Diên Khánh"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Khánh Sơn"
+    },
+    {
+        "province":  "Khánh Hòa",
+        "district":  "Trường Sa"
+    },
+    {
+        "province":  "Ninh Thuận",
+        "district":  "Phan Rang-Tháp Chàm"
+    },
+    {
+        "province":  "Ninh Thuận",
+        "district":  "Bác Ái"
+    },
+    {
+        "province":  "Ninh Thuận",
+        "district":  "Ninh Sơn"
+    },
+    {
+        "province":  "Ninh Thuận",
+        "district":  "Ninh Hải"
+    },
+    {
+        "province":  "Ninh Thuận",
+        "district":  "Ninh Phước"
+    },
+    {
+        "province":  "Ninh Thuận",
+        "district":  "Thuận Bắc"
+    },
+    {
+        "province":  "Ninh Thuận",
+        "district":  "Thuận Nam"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Phan Thiết"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "La Gi"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Tuy Phong"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Bắc Bình"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Hàm Thuận Bắc"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Hàm Thuận Nam"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Tánh Linh"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Đức Linh"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Hàm Tân"
+    },
+    {
+        "province":  "Bình Thuận",
+        "district":  "Phú Quí"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Kon Tum"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Đắk Glei"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Ngọc Hồi"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Đắk Tô"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Kon Plông"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Kon Rẫy"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Đắk Hà"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Sa Thầy"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Tu Mơ Rông"
+    },
+    {
+        "province":  "Kon Tum",
+        "district":  "Ia H\u0027 Drai"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Pleiku"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "An Khê"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Ayun Pa"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Kbang"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Đăk Đoa"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Chư Păh"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Ia Grai"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Mang Yang"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Kông Chro"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Đức Cơ"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Chư Prông"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Chư Sê"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Đăk Pơ"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Ia Pa"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Krông Pa"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Phú Thiện"
+    },
+    {
+        "province":  "Gia Lai",
+        "district":  "Chư Pưh"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Buôn Ma Thuột"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Buôn Hồ"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Ea H\u0027leo"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Ea Súp"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Buôn Đôn"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Cư M\u0027gar"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Krông Búk"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Krông Năng"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Ea Kar"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "M\u0027đrắk"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Krông Bông"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Krông Pắc"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Krông A Na"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Lắk"
+    },
+    {
+        "province":  "Đắk Lắk",
+        "district":  "Cư Kuin"
+    },
+    {
+        "province":  "Đắk Nông",
+        "district":  "Gia Nghĩa"
+    },
+    {
+        "province":  "Đắk Nông",
+        "district":  "Đăk Glong"
+    },
+    {
+        "province":  "Đắk Nông",
+        "district":  "Cư Jút"
+    },
+    {
+        "province":  "Đắk Nông",
+        "district":  "Đắk Mil"
+    },
+    {
+        "province":  "Đắk Nông",
+        "district":  "Krông Nô"
+    },
+    {
+        "province":  "Đắk Nông",
+        "district":  "Đắk Song"
+    },
+    {
+        "province":  "Đắk Nông",
+        "district":  "Đắk R\u0027lấp"
+    },
+    {
+        "province":  "Đắk Nông",
+        "district":  "Tuy Đức"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Đà Lạt"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Bảo Lộc"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Đam Rông"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Lạc Dương"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Lâm Hà"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Đơn Dương"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Đức Trọng"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Di Linh"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Bảo Lâm"
+    },
+    {
+        "province":  "Lâm Đồng",
+        "district":  "Đạ Huoai"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Phước Long"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Đồng Xoài"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Bình Long"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Bù Gia Mập"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Lộc Ninh"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Bù Đốp"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Hớn Quản"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Đồng Phú"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Bù Đăng"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Chơn Thành"
+    },
+    {
+        "province":  "Bình Phước",
+        "district":  "Phú Riềng"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Tây Ninh"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Tân Biên"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Tân Châu"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Dương Minh Châu"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Hòa Thành"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Gò Dầu"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Bến Cầu"
+    },
+    {
+        "province":  "Tây Ninh",
+        "district":  "Trảng Bàng"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Thủ Dầu Một"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Bàu Bàng"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Dầu Tiếng"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Bến Cát"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Phú Giáo"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Tân Uyên"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Dĩ An"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Thuận An"
+    },
+    {
+        "province":  "Bình Dương",
+        "district":  "Bắc Tân Uyên"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Biên Hòa"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Long Khánh"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Tân Phú"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Vĩnh Cửu"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Định Quán"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Trảng Bom"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Thống Nhất"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Cẩm Mỹ"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Long Thành"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Xuân Lộc"
+    },
+    {
+        "province":  "Đồng Nai",
+        "district":  "Nhơn Trạch"
+    },
+    {
+        "province":  "Bà Rịa - Vũng Tàu",
+        "district":  "Vũng Tàu"
+    },
+    {
+        "province":  "Bà Rịa - Vũng Tàu",
+        "district":  "Bà Rịa"
+    },
+    {
+        "province":  "Bà Rịa - Vũng Tàu",
+        "district":  "Châu Đức"
+    },
+    {
+        "province":  "Bà Rịa - Vũng Tàu",
+        "district":  "Xuyên Mộc"
+    },
+    {
+        "province":  "Bà Rịa - Vũng Tàu",
+        "district":  "Long Đất"
+    },
+    {
+        "province":  "Bà Rịa - Vũng Tàu",
+        "district":  "Phú Mỹ"
+    },
+    {
+        "province":  "Bà Rịa - Vũng Tàu",
+        "district":  "Côn Đảo"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "1"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "12"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Gò Vấp"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Bình Thạnh"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Tân Bình"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Tân Phú"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Phú Nhuận"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Thủ Đức"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "3"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "10"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "11"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "4"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "5"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "6"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "8"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Bình Tân"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "7"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Củ Chi"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Hóc Môn"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Bình Chánh"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Nhà Bè"
+    },
+    {
+        "province":  "Hồ Chí Minh",
+        "district":  "Cần Giờ"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Tân An"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Kiến Tường"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Tân Hưng"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Vĩnh Hưng"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Mộc Hóa"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Tân Thạnh"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Thạnh Hóa"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Đức Huệ"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Đức Hòa"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Bến Lức"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Thủ Thừa"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Tân Trụ"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Cần Đước"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Cần Giuộc"
+    },
+    {
+        "province":  "Long An",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Mỹ Tho"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Gò Công"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Cai Lậy"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Tân Phước"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Cái Bè"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Cai Lậy"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Chợ Gạo"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Gò Công Tây"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Gò Công Đông"
+    },
+    {
+        "province":  "Tiền Giang",
+        "district":  "Tân Phú Đông"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Bến Tre"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Chợ Lách"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Mỏ Cày Nam"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Giồng Trôm"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Bình Đại"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Ba Tri"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Thạnh Phú"
+    },
+    {
+        "province":  "Bến Tre",
+        "district":  "Mỏ Cày Bắc"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Trà Vinh"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Càng Long"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Cầu Kè"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Tiểu Cần"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Cầu Ngang"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Trà Cú"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Duyên Hải"
+    },
+    {
+        "province":  "Trà Vinh",
+        "district":  "Duyên Hải"
+    },
+    {
+        "province":  "Vĩnh Long",
+        "district":  "Vĩnh Long"
+    },
+    {
+        "province":  "Vĩnh Long",
+        "district":  "Long Hồ"
+    },
+    {
+        "province":  "Vĩnh Long",
+        "district":  "Mang Thít"
+    },
+    {
+        "province":  "Vĩnh Long",
+        "district":  "Vũng Liêm"
+    },
+    {
+        "province":  "Vĩnh Long",
+        "district":  "Tam Bình"
+    },
+    {
+        "province":  "Vĩnh Long",
+        "district":  "Bình Minh"
+    },
+    {
+        "province":  "Vĩnh Long",
+        "district":  "Trà Ôn"
+    },
+    {
+        "province":  "Vĩnh Long",
+        "district":  "Bình Tân"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Cao Lãnh"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Sa Đéc"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Hồng Ngự"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Tân Hồng"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Hồng Ngự"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Tam Nông"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Tháp Mười"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Cao Lãnh"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Thanh Bình"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Lấp Vò"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Lai Vung"
+    },
+    {
+        "province":  "Đồng Tháp",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Long Xuyên"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Châu Đốc"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "An Phú"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Tân Châu"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Phú Tân"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Châu Phú"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Tịnh Biên"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Tri Tôn"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Chợ Mới"
+    },
+    {
+        "province":  "An Giang",
+        "district":  "Thoại Sơn"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Rạch Giá"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Hà Tiên"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Kiên Lương"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Hòn Đất"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Tân Hiệp"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Giồng Riềng"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Gò Quao"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "An Biên"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "An Minh"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Vĩnh Thuận"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Phú Quốc"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Kiên Hải"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "U Minh Thượng"
+    },
+    {
+        "province":  "Kiên Giang",
+        "district":  "Giang Thành"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Ninh Kiều"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Ô Môn"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Bình Thuỷ"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Cái Răng"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Thốt Nốt"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Vĩnh Thạnh"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Cờ Đỏ"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Phong Điền"
+    },
+    {
+        "province":  "Cần Thơ",
+        "district":  "Thới Lai"
+    },
+    {
+        "province":  "Hậu Giang",
+        "district":  "Vị Thanh"
+    },
+    {
+        "province":  "Hậu Giang",
+        "district":  "Ngã Bảy"
+    },
+    {
+        "province":  "Hậu Giang",
+        "district":  "Châu Thành A"
+    },
+    {
+        "province":  "Hậu Giang",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "Hậu Giang",
+        "district":  "Phụng Hiệp"
+    },
+    {
+        "province":  "Hậu Giang",
+        "district":  "Vị Thuỷ"
+    },
+    {
+        "province":  "Hậu Giang",
+        "district":  "Long Mỹ"
+    },
+    {
+        "province":  "Hậu Giang",
+        "district":  "Long Mỹ"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Sóc Trăng"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Châu Thành"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Kế Sách"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Mỹ Tú"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Cù Lao Dung"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Long Phú"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Mỹ Xuyên"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Ngã Năm"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Thạnh Trị"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Vĩnh Châu"
+    },
+    {
+        "province":  "Sóc Trăng",
+        "district":  "Trần Đề"
+    },
+    {
+        "province":  "Bạc Liêu",
+        "district":  "Bạc Liêu"
+    },
+    {
+        "province":  "Bạc Liêu",
+        "district":  "Hồng Dân"
+    },
+    {
+        "province":  "Bạc Liêu",
+        "district":  "Phước Long"
+    },
+    {
+        "province":  "Bạc Liêu",
+        "district":  "Vĩnh Lợi"
+    },
+    {
+        "province":  "Bạc Liêu",
+        "district":  "Giá Rai"
+    },
+    {
+        "province":  "Bạc Liêu",
+        "district":  "Đông Hải"
+    },
+    {
+        "province":  "Bạc Liêu",
+        "district":  "Hoà Bình"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "Cà Mau"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "U Minh"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "Thới Bình"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "Trần Văn Thời"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "Cái Nước"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "Đầm Dơi"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "Năm Căn"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "Phú Tân"
+    },
+    {
+        "province":  "Cà Mau",
+        "district":  "Ngọc Hiển"
+    }
+]

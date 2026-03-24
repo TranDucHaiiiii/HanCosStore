@@ -163,6 +163,19 @@ public class CartService {
 
     // Tổng số lượng sản phẩm (theo từng đơn vị) đang có trong giỏ
     @Transactional(readOnly = true)
+    public int getTotalWeightGram(HttpSession session) {
+        GioHang gioHang = getOrCreateCart(session);
+        int total = gioHang.getChiTiets().stream()
+                .mapToInt(item -> {
+                    Integer gram = item.getBienTheSanPham().getKhoiLuongGram();
+                    int safeGram = (gram == null || gram <= 0) ? 100 : gram;
+                    return safeGram * item.getSoLuong();
+                })
+                .sum();
+        return total > 0 ? total : 100;
+    }
+
+    @Transactional(readOnly = true)
     public int getItemCount(HttpSession session) {
         GioHang gioHang = getOrCreateCart(session);
         return gioHang.getChiTiets().stream()

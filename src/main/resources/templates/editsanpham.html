@@ -20,7 +20,7 @@
 
 <div class="header">
     <div class="header-content">
-        <a th:href="@{/}" class="logo">HANCOS</a>
+        <a th:href="@{/static}" class="logo">HANCOS</a>
         <div class="nav-links">
             <a th:href="@{/san-pham}">Quay lại danh sách</a>
         </div>
@@ -311,8 +311,8 @@
             const kichCo = item.querySelector('select[data-field="kichCo"]');
             const maSKU = item.querySelector('input[data-field="maSKU"]');
             const soLuongTon = item.querySelector('input[data-field="soLuongTon"]');
+            const khoiLuong = item.querySelector('input[data-field="khoiLuongGram"]');
             const gia = item.querySelector('input[data-field="gia"]');
-            const giaGoc = item.querySelector('input[data-field="giaGoc"]');
             const trangThai = item.querySelector('input[data-field="trangThai"]');
 
             if (idInput) idInput.name = `bienThes[${i}].id`;
@@ -320,8 +320,8 @@
             if (kichCo) kichCo.name = `bienThes[${i}].kichCo`;
             if (maSKU) maSKU.name = `bienThes[${i}].maSKU`;
             if (soLuongTon) soLuongTon.name = `bienThes[${i}].soLuongTon`;
+            if (khoiLuong) khoiLuong.name = `bienThes[${i}].khoiLuongGram`;
             if (gia) gia.name = `bienThes[${i}].gia`;
-            if (giaGoc) giaGoc.name = `bienThes[${i}].giaGoc`;
             if (trangThai) trangThai.name = `bienThes[${i}].trangThai`;
         });
     }
@@ -433,15 +433,18 @@
 
         <div class="form-row">
           <div class="form-group">
+            <label>Khối Lượng (gram) <span class="required">*</span></label>
+                 <input type="number" data-field="khoiLuongGram" name="bienThes[${index}].khoiLuongGram" required min="1"
+                   value="${data && data.khoiLuongGram != null ? data.khoiLuongGram : 300}">
+          </div>
+
+          <div class="form-group">
             <label>Giá Bán <span class="required">*</span></label>
                  <input type="number" data-field="gia" name="bienThes[${index}].gia" required min="0"
                    value="${data ? (data.gia ?? 0) : 0}">
           </div>
 
           <div class="form-group">
-            <label>Giá Gốc</label>
-                 <input type="number" data-field="giaGoc" name="bienThes[${index}].giaGoc" min="0"
-                   value="${data && data.giaGoc != null ? data.giaGoc : ''}">
                  <input type="hidden" data-field="trangThai" name="bienThes[${index}].trangThai" value="ACTIVE">
           </div>
         </div>
@@ -773,6 +776,77 @@
         return keys;
     }
 
+    function validateBaseFields() {
+        const ten = (document.getElementById('ten')?.value || '').trim();
+        if (!ten) {
+            Swal.fire('Thiếu dữ liệu', 'Vui lòng nhập Tên sản phẩm.', 'warning');
+            return false;
+        }
+
+        const parentDanhMucId = document.getElementById('parentDanhMucId')?.value || '';
+        const childDanhMucId = document.getElementById('danhMucId')?.value || '';
+        if (!parentDanhMucId && !childDanhMucId) {
+            Swal.fire('Thiếu dữ liệu', 'Vui lòng chọn danh mục.', 'warning');
+            return false;
+        }
+
+        return true;
+    }
+
+    function validateVariants() {
+        const items = Array.from(document.querySelectorAll('#variantsList .variant-item'));
+        if (items.length === 0) {
+            Swal.fire('Thiếu biến thể', 'Vui lòng thêm ít nhất 1 biến thể.', 'warning');
+            return false;
+        }
+
+        const seen = new Set();
+        for (const item of items) {
+            const mau = (item.querySelector('select[data-field="mauSac"]')?.value || '').trim();
+            const size = (item.querySelector('select[data-field="kichCo"]')?.value || '').trim();
+            const sku = (item.querySelector('input[data-field="maSKU"]')?.value || '').trim();
+            const soLuongRaw = item.querySelector('input[data-field="soLuongTon"]')?.value;
+            const khoiLuongRaw = item.querySelector('input[data-field="khoiLuongGram"]')?.value;
+            const giaRaw = item.querySelector('input[data-field="gia"]')?.value;
+
+            if (!mau || !size) {
+                Swal.fire('Thiếu dữ liệu', 'Vui lòng chọn đầy đủ màu sắc và kích cỡ cho biến thể.', 'warning');
+                return false;
+            }
+            if (!sku) {
+                Swal.fire('Thiếu dữ liệu', 'Vui lòng đảm bảo mã SKU được tạo cho biến thể.', 'warning');
+                return false;
+            }
+
+            const soLuong = Number(soLuongRaw);
+            if (!Number.isFinite(soLuong) || soLuong < 0) {
+                Swal.fire('Dữ liệu không hợp lệ', 'Số lượng tồn phải là số >= 0.', 'warning');
+                return false;
+            }
+
+            const khoiLuong = Number(khoiLuongRaw);
+            if (!Number.isFinite(khoiLuong) || khoiLuong <= 0) {
+                Swal.fire('Dữ liệu không hợp lệ', 'Khối lượng phải là số > 0.', 'warning');
+                return false;
+            }
+
+            const gia = Number(giaRaw);
+            if (!Number.isFinite(gia) || gia < 0) {
+                Swal.fire('Dữ liệu không hợp lệ', 'Giá bán phải là số >= 0.', 'warning');
+                return false;
+            }
+
+            const key = `${mau}__${size}`.toLowerCase();
+            if (seen.has(key)) {
+                Swal.fire('Trùng biến thể', 'Không được trùng màu sắc + kích cỡ.', 'warning');
+                return false;
+            }
+            seen.add(key);
+        }
+
+        return true;
+    }
+
     function syncColors() {
         const variantColors = getVariantColors();
         if (variantColors.length === 0) {
@@ -802,6 +876,11 @@
     // ===== Submit =====
     document.getElementById('editForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        if (!validateBaseFields() || !validateVariants()) {
+            return;
+        }
+
         document.getElementById('loading').classList.add('show');
 
         if (pendingUploads.size > 0) {

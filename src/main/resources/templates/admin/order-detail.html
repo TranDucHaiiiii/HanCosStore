@@ -176,6 +176,9 @@
                                     <option value="DA_XAC_NHAN" th:selected="${order.trangThai == 'DA_XAC_NHAN' or order.trangThai == 'CONFIRMED'}">Đã xác nhận</option>
                                     <option value="DANG_GIAO" th:selected="${order.trangThai == 'DANG_GIAO' or order.trangThai == 'SHIPPING'}">Đang giao hàng</option>
                                     <option value="HOAN_THANH" th:selected="${order.trangThai == 'HOAN_THANH' or order.trangThai == 'COMPLETED' or order.trangThai == 'DELIVERED'}">Hoàn thành</option>
+                                    <option value="DA_HUY" th:selected="${order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED'}">Đã hủy</option>
+                                    <option value="TRA_HANG" th:selected="${order.trangThai == 'TRA_HANG' or order.trangThai == 'RETURN_REQUESTED' or order.trangThai == 'RETURNED'}">Trả hàng</option>
+                                    <option value="LOI_VAN_CHUYEN" th:selected="${order.trangThai == 'LOI_VAN_CHUYEN' or order.trangThai == 'LOST'}">Lỗi vận chuyển</option>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary w-100 mb-3">Cập nhật ngay</button>

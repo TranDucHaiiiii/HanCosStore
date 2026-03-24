@@ -6,6 +6,7 @@ import com.example.demodatn2.entity.TaiKhoan;
 import com.example.demodatn2.repository.DiaChiGiaoHangRepository;
 import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.service.DanhMucService;
+import com.example.demodatn2.util.AddressNormalizer;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -130,9 +131,9 @@ public class AccountController {
 
         addr.setHoTenNhan(hoTenNhan);
         addr.setSoDienThoaiNhan(soDienThoaiNhan);
-        addr.setTinhThanh(tinhThanh);
-        addr.setQuanHuyen(quanHuyen);
-        addr.setPhuongXa(phuongXa);
+        addr.setTinhThanh(AddressNormalizer.normalize(tinhThanh));
+        addr.setQuanHuyen(AddressNormalizer.normalize(quanHuyen));
+        addr.setPhuongXa(AddressNormalizer.normalize(phuongXa));
         addr.setDiaChiChiTiet(diaChiChiTiet);
         addr.setLaMacDinh(laMacDinh);
 

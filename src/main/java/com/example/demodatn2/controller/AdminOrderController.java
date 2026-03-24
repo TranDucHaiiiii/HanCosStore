@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin/orders")
@@ -24,8 +25,20 @@ public class AdminOrderController {
                              @RequestParam(required = false) String keyword, 
                              Model model) {
         List<DonHang> orders = orderService.searchOrders(keyword, status);
+        var counts = orderService.getOrderStatusCounts();
+        var statusFilters = List.of(
+                Map.of("key", "ALL", "label", "Tất cả", "count", counts.getOrDefault("ALL", 0L)),
+                Map.of("key", "CHO_XAC_NHAN", "label", "Chờ xác nhận", "count", counts.getOrDefault("CHO_XAC_NHAN", 0L)),
+                Map.of("key", "DA_XAC_NHAN", "label", "Đã xác nhận", "count", counts.getOrDefault("DA_XAC_NHAN", 0L)),
+                Map.of("key", "DANG_GIAO", "label", "Đang giao", "count", counts.getOrDefault("DANG_GIAO", 0L)),
+                Map.of("key", "LOI_VAN_CHUYEN", "label", "Lỗi vận chuyển", "count", counts.getOrDefault("LOI_VAN_CHUYEN", 0L)),
+                Map.of("key", "HOAN_THANH", "label", "Hoàn thành", "count", counts.getOrDefault("HOAN_THANH", 0L)),
+                Map.of("key", "TRA_HANG", "label", "Trả hàng", "count", counts.getOrDefault("TRA_HANG", 0L)),
+                Map.of("key", "DA_HUY", "label", "Đã hủy", "count", counts.getOrDefault("DA_HUY", 0L))
+        );
         model.addAttribute("orders", orders);
-        model.addAttribute("orderStatusCounts", orderService.getOrderStatusCounts());
+        model.addAttribute("orderStatusCounts", counts);
+        model.addAttribute("statusFilters", statusFilters);
         model.addAttribute("currentStatus", status != null ? status : "ALL");
         model.addAttribute("keyword", keyword);
         return "admin/orders";

@@ -165,15 +165,11 @@ function addVariant() {
                     <label>Giá Bán <span class="required">*</span></label>
                     <input type="number" name="bienThes[${index}].gia" required min="0" placeholder="850000">
                 </div>
-                <div class="form-group">
-                    <label>Giá Gốc</label>
-                    <input type="number" name="bienThes[${index}].giaGoc" min="0" placeholder="1200000">
-                </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Khối Lượng (gram)</label>
-                    <input type="number" name="bienThes[${index}].khoiLuongGram" min="0" placeholder="500">
+                    <label>Khối Lượng (gram) <span class="required">*</span></label>
+                    <input type="number" name="bienThes[${index}].khoiLuongGram" required min="1" value="300" placeholder="500">
                 </div>
             </div>
         </div>
@@ -293,7 +289,6 @@ function updateVariantNumbers() {
         const maSkuEl = variant.querySelector('input[name*=".maSKU"]');
         const soLuongTonEl = variant.querySelector('input[name*=".soLuongTon"]');
         const giaEl = variant.querySelector('input[name*=".gia"]');
-        const giaGocEl = variant.querySelector('input[name*=".giaGoc"]');
         const khoiLuongEl = variant.querySelector('input[name*=".khoiLuongGram"]');
 
         variant.querySelector('.item-number').innerHTML = `<i class="fas fa-tags"></i> Biến thể #${idx + 1}`;
@@ -311,9 +306,82 @@ function updateVariantNumbers() {
         if (maSkuEl) maSkuEl.name = `bienThes[${idx}].maSKU`;
         if (soLuongTonEl) soLuongTonEl.name = `bienThes[${idx}].soLuongTon`;
         if (giaEl) giaEl.name = `bienThes[${idx}].gia`;
-        if (giaGocEl) giaGocEl.name = `bienThes[${idx}].giaGoc`;
         if (khoiLuongEl) khoiLuongEl.name = `bienThes[${idx}].khoiLuongGram`;
     });
+}
+
+function validateBaseFields() {
+    const maSanPham = (document.getElementById('maSanPham')?.value || '').trim();
+    const ten = (document.getElementById('ten')?.value || '').trim();
+    const parentDanhMucId = document.getElementById('parentDanhMucId')?.value || '';
+    const childDanhMucId = document.getElementById('danhMucId')?.value || '';
+
+    if (!maSanPham) {
+        showAlert('error', 'Vui lòng nhập Mã sản phẩm.');
+        return false;
+    }
+    if (!ten) {
+        showAlert('error', 'Vui lòng nhập Tên sản phẩm.');
+        return false;
+    }
+    if (!parentDanhMucId && !childDanhMucId) {
+        showAlert('error', 'Vui lòng chọn danh mục.');
+        return false;
+    }
+    return true;
+}
+
+function validateVariants() {
+    const variants = Array.from(document.querySelectorAll('#variantsList .variant-item'));
+    if (variants.length === 0) {
+        showAlert('error', 'Vui lòng thêm ít nhất 1 biến thể!');
+        return false;
+    }
+
+    const seen = new Set();
+    for (const variant of variants) {
+        const mau = (variant.querySelector('select[name*=".mauSac"]')?.value || '').trim();
+        const size = (variant.querySelector('select[name*=".kichCo"]')?.value || '').trim();
+        const sku = (variant.querySelector('input[name*=".maSKU"]')?.value || '').trim();
+        const soLuongRaw = variant.querySelector('input[name*=".soLuongTon"]')?.value;
+        const giaRaw = variant.querySelector('input[name*=".gia"]')?.value;
+        const khoiLuongRaw = variant.querySelector('input[name*=".khoiLuongGram"]')?.value;
+
+        if (!mau || !size) {
+            showAlert('error', 'Vui lòng chọn đầy đủ màu sắc và kích cỡ cho biến thể.');
+            return false;
+        }
+        if (!sku) {
+            showAlert('error', 'Vui lòng đảm bảo mã SKU được tạo cho biến thể.');
+            return false;
+        }
+
+        const soLuong = Number(soLuongRaw);
+        if (!Number.isFinite(soLuong) || soLuong < 0) {
+            showAlert('error', 'Số lượng tồn phải là số >= 0.');
+            return false;
+        }
+
+        const gia = Number(giaRaw);
+        if (!Number.isFinite(gia) || gia < 0) {
+            showAlert('error', 'Giá bán phải là số >= 0.');
+            return false;
+        }
+
+        const khoiLuong = Number(khoiLuongRaw);
+        if (!Number.isFinite(khoiLuong) || khoiLuong <= 0) {
+            showAlert('error', 'Khối lượng phải là số > 0.');
+            return false;
+        }
+
+        const key = `${mau}__${size}`.toLowerCase();
+        if (seen.has(key)) {
+            showAlert('error', 'Không được trùng màu sắc + kích cỡ.');
+            return false;
+        }
+        seen.add(key);
+    }
+    return true;
 }
 
 function getNextImageIndex() {
@@ -602,9 +670,8 @@ document.getElementById('productForm').addEventListener('submit', (e) => {
     const variants = document.querySelectorAll('#variantsList .variant-item');
     const images = document.querySelectorAll('#imagesList .image-item');
 
-    if (variants.length === 0) {
+    if (!validateBaseFields() || !validateVariants()) {
         e.preventDefault();
-        showAlert('error', 'Vui lòng thêm ít nhất 1 biến thể!');
         return;
     }
 

@@ -212,6 +212,9 @@
                             <span class="fw-600"
                                 th:text="${#numbers.formatDecimal(total, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
                         </div>
+                        <input type="hidden" id="subtotalValue" th:value="${total}">
+                        <input type="hidden" id="discountValue" th:value="${discount != null ? discount : 0}">
+                        <input type="hidden" id="shippingValue" th:value="${shippingFee}">
                         <div class="d-flex justify-content-between mb-3 font-size-0-9" id="discountRow"
                             th:if="${discount != null and discount > 0}">
                             <span class="text-muted">Giảm giá</span>
@@ -220,14 +223,9 @@
                         </div>
                         <div class="d-flex justify-content-between mb-3 font-size-0-9">
                             <span class="text-muted">Phí vận chuyển</span>
-
-                            <span id="shippingDisplay" class="fw-600" th:if="${shippingFee == 0}"
-                                style="color:#198754;">
-                                Miễn phí
-                            </span>
-
-                            <span th:if="${shippingFee > 0}"
-                                th:text="${#numbers.formatDecimal(shippingFee,0,'COMMA',0,'POINT')} + '₫'">
+                            <span id="shippingDisplay" class="fw-600"
+                                th:text="${shippingFee == 0 ? 'Miễn phí' : #numbers.formatDecimal(shippingFee,0,'COMMA',0,'POINT') + '₫'}"
+                                th:style="${shippingFee == 0 ? 'color:#198754;' : ''}">
                             </span>
                         </div>
                         <div class="d-flex justify-content-between mt-4 pt-4 border-top">

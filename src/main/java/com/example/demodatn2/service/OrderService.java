@@ -71,6 +71,7 @@ public class OrderService {
         counts.put("CHO_XAC_NHAN", 0L);
         counts.put("DA_XAC_NHAN", 0L);
         counts.put("DANG_GIAO", 0L);
+        counts.put("LOI_VAN_CHUYEN", 0L);
         counts.put("HOAN_THANH", 0L);
         counts.put("DA_HUY", 0L);
         counts.put("TRA_HANG", 0L);
@@ -103,6 +104,7 @@ public class OrderService {
             case "PENDING" -> "CHO_XAC_NHAN";
             case "CONFIRMED" -> "DA_XAC_NHAN";
             case "SHIPPING" -> "DANG_GIAO";
+            case "LOST" -> "LOI_VAN_CHUYEN";
             case "DELIVERED", "COMPLETED" -> "HOAN_THANH";
             case "CANCELLED" -> "DA_HUY";
             case "RETURN_REQUESTED", "RETURNED" -> "TRA_HANG";
