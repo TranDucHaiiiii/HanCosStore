@@ -1,14 +1,21 @@
 package com.example.demodatn2.service;
 
 import com.example.demodatn2.dto.DoanhThuDTO;
+import com.example.demodatn2.dto.LowStockVariantAlertDTO;
+import com.example.demodatn2.dto.PotentialCustomerDTO;
+import com.example.demodatn2.dto.TopSellingProductDTO;
+import com.example.demodatn2.entity.BienTheSanPham;
 import com.example.demodatn2.entity.DonHang;
+import com.example.demodatn2.repository.BienTheSanPhamRepository;
 import com.example.demodatn2.repository.ChiTietDonHangRepository;
 import com.example.demodatn2.repository.DonHangRepository;
+import com.example.demodatn2.repository.HinhAnhSanPhamRepository;
 import com.example.demodatn2.repository.TaiKhoanRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,9 +34,17 @@ import java.util.Map;
 // Service thống kê doanh thu, số đơn và xuất báo cáo Excel theo khoảng thời gian.
 public class ThongKeService {
 
+    private static final int LOW_STOCK_THRESHOLD = 5;
+    private static final int LOW_STOCK_ALERT_LIMIT = 5;
+    private static final int TOP_PRODUCT_LIMIT = 5;
+    private static final int POTENTIAL_CUSTOMER_LIMIT = 5;
+    private static final int POTENTIAL_CUSTOMER_DAYS = 90;
+
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final TaiKhoanRepository taiKhoanRepository;
+    private final BienTheSanPhamRepository bienTheSanPhamRepository;
+    private final HinhAnhSanPhamRepository hinhAnhSanPhamRepository;
 
     public DoanhThuDTO getDoanhThuTongHop() {
         BigDecimal tongDoanhThu = donHangRepository.sumTongDoanhThu();
@@ -42,6 +57,69 @@ public class ThongKeService {
         BigDecimal doanhThuHomNay = donHangRepository.sumDoanhThuTuNgay(dauNgay);
         Long soDonHomNay = donHangRepository.countDonHangTuNgay(dauNgay);
 
+        Long soDonChuaXuLy = donHangRepository.countByTrangThaiIn(List.of("CHO_XAC_NHAN", "PENDING"));
+        Long soSanPhamSapHetHang = bienTheSanPhamRepository.countActiveLowStock(LOW_STOCK_THRESHOLD);
+        Long soDonBiHuyHomNay = donHangRepository.countByTrangThaiInAndNgayDatGreaterThanEqual(
+            List.of("DA_HUY", "CANCELLED"), dauNgay);
+        Long tongDonHomNay = donHangRepository.countByNgayDatGreaterThanEqual(dauNgay);
+        List<BienTheSanPham> lowStockVariants = bienTheSanPhamRepository.findLowStockActiveVariants(
+            LOW_STOCK_THRESHOLD,
+            PageRequest.of(0, LOW_STOCK_ALERT_LIMIT)
+        );
+        List<LowStockVariantAlertDTO> bienTheSapHetHang = lowStockVariants.stream()
+            .map(v -> LowStockVariantAlertDTO.builder()
+                .sanPhamId(v.getSanPham().getId())
+                .bienTheId(v.getId())
+                .tenSanPham(v.getSanPham().getTen())
+                .mauSac(v.getMauSac())
+                .kichCo(v.getKichCo())
+                .soLuongTon(v.getSoLuongTon())
+                .hinhAnh(hinhAnhSanPhamRepository
+                    .findFirstBySanPham_IdOrderByLaAnhChinhDescThuTuAscIdAsc(v.getSanPham().getId())
+                    .map(img -> img.getDuongDanAnh())
+                    .orElse("/images/no-image.png"))
+                .build())
+            .toList();
+        BigDecimal tyLeHuyHomNay = BigDecimal.ZERO;
+        if (tongDonHomNay != null && tongDonHomNay > 0) {
+            tyLeHuyHomNay = BigDecimal.valueOf(soDonBiHuyHomNay != null ? soDonBiHuyHomNay : 0L)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(tongDonHomNay), 1, java.math.RoundingMode.HALF_UP);
+        }
+
+        List<TopSellingProductDTO> topSanPhamBanChay = chiTietDonHangRepository
+            .findTopSellingProducts(PageRequest.of(0, TOP_PRODUCT_LIMIT))
+            .stream()
+            .map(row -> {
+                Integer sanPhamId = row[0] != null ? ((Number) row[0]).intValue() : null;
+                return TopSellingProductDTO.builder()
+                    .sanPhamId(sanPhamId)
+                    .tenSanPham(row[1] != null ? String.valueOf(row[1]) : "-")
+                    .tongSoLuongBan(row[2] != null ? ((Number) row[2]).longValue() : 0L)
+                    .tongDoanhThu(row[3] != null ? (BigDecimal) row[3] : BigDecimal.ZERO)
+                    .soDonHang(row[4] != null ? ((Number) row[4]).longValue() : 0L)
+                    .hinhAnh(resolveProductImage(sanPhamId))
+                    .build();
+            })
+            .toList();
+
+        Instant potentialFromDate = LocalDate.now()
+            .minusDays(POTENTIAL_CUSTOMER_DAYS)
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant();
+        List<PotentialCustomerDTO> khachHangTiemNang = donHangRepository
+            .findPotentialCustomers(potentialFromDate, PageRequest.of(0, POTENTIAL_CUSTOMER_LIMIT))
+            .stream()
+            .map(row -> PotentialCustomerDTO.builder()
+                .taiKhoanId(row[0] != null ? ((Number) row[0]).intValue() : null)
+                .hoTen(row[1] != null ? String.valueOf(row[1]) : "Khách hàng")
+                .soDienThoai(row[2] != null ? String.valueOf(row[2]) : "-")
+                .soDonThanhCong(row[3] != null ? ((Number) row[3]).longValue() : 0L)
+                .tongChiTieu(row[4] != null ? (BigDecimal) row[4] : BigDecimal.ZERO)
+                .lanMuaGanNhat(row[5] instanceof Instant ? (Instant) row[5] : null)
+                .build())
+            .toList();
+
         return DoanhThuDTO.builder()
                 .tongDoanhThu(tongDoanhThu != null ? tongDoanhThu : BigDecimal.ZERO)
                 .soDonHang(soDonHang != null ? soDonHang : 0L)
@@ -49,7 +127,25 @@ public class ThongKeService {
                 .doanhThuHomNay(doanhThuHomNay != null ? doanhThuHomNay : BigDecimal.ZERO)
                 .soDonHomNay(soDonHomNay != null ? soDonHomNay : 0L)
             .soKhachHang(soKhachHang != null ? soKhachHang : 0L)
+            .soDonChuaXuLy(soDonChuaXuLy != null ? soDonChuaXuLy : 0L)
+            .soSanPhamSapHetHang(soSanPhamSapHetHang != null ? soSanPhamSapHetHang : 0L)
+            .soDonBiHuyHomNay(soDonBiHuyHomNay != null ? soDonBiHuyHomNay : 0L)
+            .tyLeHuyHomNay(tyLeHuyHomNay)
+            .bienTheSapHetHang(bienTheSapHetHang)
+            .topSanPhamBanChay(topSanPhamBanChay)
+            .khachHangTiemNang(khachHangTiemNang)
                 .build();
+    }
+
+    private String resolveProductImage(Integer sanPhamId) {
+        if (sanPhamId == null) {
+            return "/images/no-image.png";
+        }
+
+        return hinhAnhSanPhamRepository
+            .findFirstBySanPham_IdOrderByLaAnhChinhDescThuTuAscIdAsc(sanPhamId)
+            .map(img -> img.getDuongDanAnh())
+            .orElse("/images/no-image.png");
     }
 
     public List<Map<String, Object>> getDoanhThuTheoNgay(Instant tuNgay, Instant denNgay) {

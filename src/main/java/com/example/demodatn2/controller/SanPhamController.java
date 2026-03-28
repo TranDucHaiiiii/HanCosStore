@@ -118,6 +118,7 @@ public class SanPhamController {
                            @RequestParam Integer bienTheId,
                            @RequestParam Integer soLuongThem,
                            @RequestParam(required = false) String ghiChu,
+                           @RequestParam(required = false) String redirectTo,
                            HttpSession session,
                            RedirectAttributes redirectAttributes) {
         try {
@@ -132,6 +133,9 @@ public class SanPhamController {
             redirectAttributes.addFlashAttribute("successMessage", "Them so luong thanh cong.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        if ("dashboard".equalsIgnoreCase(redirectTo)) {
+            return "redirect:/admin/dashboard";
         }
         return "redirect:/admin/san-pham/nhap-kho/" + id + "?bienTheId=" + bienTheId;
     }

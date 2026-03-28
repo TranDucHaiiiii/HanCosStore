@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -18,4 +19,11 @@ public class DoanhThuDTO {
     private BigDecimal doanhThuHomNay;
     private Long soDonHomNay;
     private Long soKhachHang;
+    private Long soDonChuaXuLy;
+    private Long soSanPhamSapHetHang;
+    private Long soDonBiHuyHomNay;
+    private BigDecimal tyLeHuyHomNay;
+    private List<LowStockVariantAlertDTO> bienTheSapHetHang;
+    private List<TopSellingProductDTO> topSanPhamBanChay;
+    private List<PotentialCustomerDTO> khachHangTiemNang;
 }

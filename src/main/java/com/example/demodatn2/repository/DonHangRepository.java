@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+
 public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     List<DonHang> findByTaiKhoanOrderByNgayDatDesc(TaiKhoan taiKhoan);
     boolean existsByTaiKhoan_Id(Integer taiKhoanId);
@@ -76,4 +78,24 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             "(d.ngayCapNhat IS NOT NULL AND d.ngayCapNhat <= :before) OR " +
             "(d.ngayCapNhat IS NULL AND d.ngayDat <= :before))")
     List<DonHang> findByTrangThaiAndLastUpdateBefore(@Param("status") String status, @Param("before") Instant before);
+
+        Long countByTrangThaiInAndNgayDatGreaterThanEqual(List<String> trangThais, Instant from);
+
+        Long countByNgayDatGreaterThanEqual(Instant from);
+
+    @org.springframework.data.jpa.repository.Query("""
+            select d.taiKhoan.id,
+                   coalesce(d.taiKhoan.hoTen, d.hoTenNhan),
+                   coalesce(d.taiKhoan.soDienThoai, d.soDienThoaiNhan),
+                   count(d.id),
+                   sum(d.tongTien),
+                   max(d.ngayDat)
+            from DonHang d
+            where d.taiKhoan is not null
+              and d.trangThai in ('HOAN_THANH', 'COMPLETED', 'DELIVERED')
+              and (:fromDate is null or d.ngayDat >= :fromDate)
+            group by d.taiKhoan.id, d.taiKhoan.hoTen, d.hoTenNhan, d.taiKhoan.soDienThoai, d.soDienThoaiNhan
+            order by sum(d.tongTien) desc, count(d.id) desc, max(d.ngayDat) desc
+            """)
+    List<Object[]> findPotentialCustomers(@Param("fromDate") Instant fromDate, Pageable pageable);
 }

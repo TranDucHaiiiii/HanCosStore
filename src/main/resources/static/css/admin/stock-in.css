@@ -263,6 +263,31 @@
             letter-spacing: 0.05em;
         }
 
+        .qty-chip-import {
+            background: #2f5d3f;
+        }
+
+        .qty-chip-export {
+            background: #8b3a2a;
+        }
+
+        .type-chip {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            letter-spacing: 0.08em;
+            color: var(--white);
+        }
+
+        .type-chip-import {
+            background: #365f47;
+        }
+
+        .type-chip-export {
+            background: #8b3a2a;
+        }
+
         .empty-row td {
             text-align: center;
             padding: 48px 20px;

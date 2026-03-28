@@ -78,26 +78,36 @@
 
     <div class="history-card">
         <div class="history-header">
-            <h2 class="history-title">Lich Su Nhap Kho</h2>
+            <h2 class="history-title">Lịch sử giao dịch tồn kho</h2>
             <span class="history-count">LOG</span>
         </div>
         <div class="table-responsive">
             <table class="history-table">
                 <thead>
                     <tr>
-                        <th>Thoi gian</th>
-                        <th>So luong nhap</th>
-                        <th>Admin thuc hien</th>
+                        <th>Thời gian</th>
+                        <th>Loại giao dịch</th>
+                        <th>Số lượng</th>
+                        <th>Người thực hiện</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr th:each="ls : ${lichSuNhapKho}">
                         <td th:text="${ls.ngayTao != null ? #temporals.format(ls.ngayTao, 'dd/MM/yyyy HH:mm:ss') : '-'}"></td>
-                        <td><span class="qty-chip" th:text="${ls.soLuongNhap}"></span></td>
+                        <td>
+                            <span class="type-chip"
+                                  th:classappend="${ls.loaiGiaoDich == 'NHAP'} ? ' type-chip-import' : ' type-chip-export'"
+                                  th:text="${ls.loaiGiaoDich == 'NHAP'} ? 'Nhập kho' : 'Xuất kho'">Nhập kho</span>
+                        </td>
+                        <td>
+                            <span class="qty-chip"
+                                  th:classappend="${ls.loaiGiaoDich == 'NHAP'} ? ' qty-chip-import' : ' qty-chip-export'"
+                                  th:text="${(ls.loaiGiaoDich == 'NHAP' ? '+' : '-') + ls.soLuongNhap}">+1</span>
+                        </td>
                         <td th:text="${ls.nguoiNhap}"></td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(lichSuNhapKho)}" class="empty-row">
-                        <td colspan="3">- Chua co lich su nhap kho -</td>
+                        <td colspan="4">- Chưa có lịch sử giao dịch tồn kho -</td>
                     </tr>
                 </tbody>
             </table>

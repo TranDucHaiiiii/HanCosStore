@@ -23,6 +23,9 @@
 </nav>
 
 <div class="container success-container">
+    <div th:if="${successMessage}" class="alert alert-success text-uppercase small fw-700 letter-spacing-1" role="alert" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger text-uppercase small fw-700 letter-spacing-1" role="alert" th:text="${errorMessage}"></div>
+
     <div class="success-icon">
         <i class="fas fa-check"></i>
     </div>

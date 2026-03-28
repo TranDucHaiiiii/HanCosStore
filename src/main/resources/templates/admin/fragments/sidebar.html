@@ -23,6 +23,12 @@
         </a>
 
         <a class="nav-link"
+           th:classappend="${active == 'inventory'} ? ' active'"
+           th:href="@{/admin/inventory}">
+            <i class="fas fa-warehouse"></i><span class="nav-link-label">Quản lí nhập kho</span>
+        </a>
+
+        <a class="nav-link"
            th:classappend="${active == 'pos'} ? ' active'"
            th:href="@{/admin/ban-hang-tai-quay}">
             <i class="fas fa-cash-register"></i><span class="nav-link-label">Bán hàng tại quầy</span>
@@ -50,6 +56,8 @@
         </a>
 
         <a class="nav-link"
+              data-orders-link="true"
+              th:attr="data-pending-url=@{/admin/orders/pending-count}"
            th:classappend="${active == 'orders'} ? ' active'"
            th:href="@{/admin/orders}">
             <i class="fas fa-shopping-cart"></i>
@@ -75,6 +83,55 @@
 
     </nav>
 </div>
+
+<script>
+    (() => {
+        const ordersLink = document.querySelector('.sidebar [data-orders-link="true"]');
+        if (!ordersLink) {
+            return;
+        }
+
+        const pendingUrl = ordersLink.getAttribute('data-pending-url');
+        if (!pendingUrl) {
+            return;
+        }
+
+        const renderBadge = (count) => {
+            let badge = ordersLink.querySelector('.sidebar-badge');
+            if (count > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'sidebar-badge';
+                    ordersLink.appendChild(badge);
+                }
+                badge.textContent = count > 99 ? '99+' : String(count);
+            } else if (badge) {
+                badge.remove();
+            }
+        };
+
+        const fetchPendingCount = async () => {
+            try {
+                const response = await fetch(pendingUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                if (!response.ok) {
+                    return;
+                }
+                const data = await response.json();
+                const count = Number(data?.count ?? 0);
+                renderBadge(Number.isFinite(count) ? count : 0);
+            } catch (_) {
+                // Ignore transient network errors for sidebar polling.
+            }
+        };
+
+        fetchPendingCount();
+        setInterval(fetchPendingCount, 30000);
+    })();
+</script>
 
 </body>
 </html>

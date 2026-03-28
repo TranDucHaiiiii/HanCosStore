@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -502,8 +503,22 @@ public class SanPhamService {
                                    Integer soLuongThem,
                                    Integer nguoiNhapId,
                                    String ghiChu) {
-        if (soLuongThem == null || soLuongThem <= 0) {
-            throw new RuntimeException("So luong them phai lon hon 0.");
+        adjustStockForVariant(sanPhamId, bienTheId, soLuongThem, "NHAP", nguoiNhapId, ghiChu);
+    }
+
+    @Transactional
+    public void adjustStockForVariant(Integer sanPhamId,
+                                      Integer bienTheId,
+                                      Integer soLuong,
+                                      String actionType,
+                                      Integer nguoiThucHienId,
+                                      String ghiChu) {
+        if (soLuong == null || soLuong <= 0) {
+            throw new RuntimeException("So luong phai lon hon 0.");
+        }
+
+        if (actionType == null || (!"NHAP".equals(actionType) && !"TRU_LOI_VAN_CHUYEN".equals(actionType) && !"XUAT".equals(actionType))) {
+            throw new RuntimeException("Loai giao dich khong hop le.");
         }
 
         BienTheSanPham bienThe = bienTheRepository.findById(bienTheId)
@@ -516,24 +531,97 @@ public class SanPhamService {
         }
 
         int current = bienThe.getSoLuongTon() != null ? bienThe.getSoLuongTon() : 0;
-        bienThe.setSoLuongTon(current + soLuongThem);
+        int newStock;
+
+        boolean isImport = "NHAP".equals(actionType);
+        if (isImport) {
+            newStock = current + soLuong;
+        } else {
+            if (current < soLuong) {
+                throw new RuntimeException("Ton kho khong du de tru. Hien tai chi con " + current + ".");
+            }
+            newStock = current - soLuong;
+            if (ghiChu == null || ghiChu.isBlank()) {
+                ghiChu = "Tru ton kho do loi van chuyen";
+            }
+        }
+
+        bienThe.setSoLuongTon(newStock);
         bienTheRepository.save(bienThe);
 
         GiaoDichTonKho giaoDich = new GiaoDichTonKho();
         giaoDich.setBienTheSanPham(bienThe);
-        giaoDich.setLoai("NHAP");
-        giaoDich.setSoLuong(soLuongThem);
+        giaoDich.setLoai(isImport ? "NHAP" : "XUAT");
+        giaoDich.setSoLuong(soLuong);
         giaoDich.setThamChieuLoai("TAI_KHOAN");
-        giaoDich.setThamChieuId(nguoiNhapId);
+        giaoDich.setThamChieuId(nguoiThucHienId);
         giaoDich.setGhiChu(ghiChu);
         giaoDich.setNgayTao(Instant.now());
         giaoDichTonKhoRepository.save(giaoDich);
     }
 
     @Transactional(readOnly = true)
+        public Page<InventoryVariantDTO> getInventoryVariants(String keyword, int page, int size) {
+        String normalizedKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        Pageable pageable = PageRequest.of(page, size, Sort.by("sanPham.ten").ascending().and(Sort.by("mauSac").ascending()).and(Sort.by("kichCo").ascending()));
+        Page<BienTheSanPham> variants = bienTheRepository.searchInventoryVariants(normalizedKeyword, pageable);
+        java.util.Map<Integer, String> imageCache = new java.util.HashMap<>();
+
+        return variants.map(v -> {
+                Integer productId = v.getSanPham().getId();
+                String image = imageCache.computeIfAbsent(productId,
+                    id -> hinhAnhSanPhamRepository.findFirstBySanPham_IdOrderByLaAnhChinhDescThuTuAscIdAsc(id)
+                        .map(HinhAnhSanPham::getDuongDanAnh)
+                        .orElse("/images/no-image.png"));
+
+                return InventoryVariantDTO.builder()
+                    .sanPhamId(productId)
+                    .bienTheId(v.getId())
+                    .tenSanPham(v.getSanPham().getTen())
+                    .maSKU(v.getMaSKU())
+                    .mauSac(v.getMauSac())
+                    .kichCo(v.getKichCo())
+                    .soLuongTon(v.getSoLuongTon() != null ? v.getSoLuongTon() : 0)
+                    .hinhAnh(image)
+                    .build();
+            });
+    }
+
+    @Transactional(readOnly = true)
+    public List<InventoryLogDTO> getRecentInventoryLogs() {
+        return giaoDichTonKhoRepository.findTop50ByOrderByNgayTaoDesc().stream()
+                .map(gd -> {
+                    BienTheSanPham bt = gd.getBienTheSanPham();
+                    String nguoiThucHien;
+                    if (gd.getThamChieuId() != null) {
+                        nguoiThucHien = taiKhoanRepository.findById(gd.getThamChieuId())
+                                .map(tk -> tk.getHoTen() != null && !tk.getHoTen().isBlank()
+                                        ? tk.getHoTen() + " (@" + tk.getTenDangNhap() + ")"
+                                        : tk.getTenDangNhap())
+                                .orElse("Unknown");
+                    } else {
+                        nguoiThucHien = "Unknown";
+                    }
+
+                    return InventoryLogDTO.builder()
+                            .tenSanPham(bt != null && bt.getSanPham() != null ? bt.getSanPham().getTen() : "-")
+                            .maSKU(bt != null ? bt.getMaSKU() : "-")
+                            .mauSac(bt != null ? bt.getMauSac() : "-")
+                            .kichCo(bt != null ? bt.getKichCo() : "-")
+                            .loai(gd.getLoai())
+                            .soLuong(gd.getSoLuong())
+                            .nguoiThucHien(nguoiThucHien)
+                            .ghiChu(gd.getGhiChu())
+                            .ngayTao(gd.getNgayTao())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<NhapKhoHistoryDTO> getNhapKhoHistoryByProduct(Integer sanPhamId) {
         return giaoDichTonKhoRepository
-                .findByBienTheSanPham_SanPham_IdAndLoaiOrderByNgayTaoDesc(sanPhamId, "NHAP")
+                .findByBienTheSanPham_SanPham_IdOrderByNgayTaoDesc(sanPhamId)
                 .stream()
                 .map(gd -> {
                     BienTheSanPham bt = gd.getBienTheSanPham();
@@ -555,6 +643,7 @@ public class SanPhamService {
                             .mauSac(bt != null ? bt.getMauSac() : null)
                             .kichCo(bt != null ? bt.getKichCo() : null)
                             .soLuongNhap(gd.getSoLuong())
+                            .loaiGiaoDich(gd.getLoai())
                             .nguoiNhap(nguoiNhap)
                             .ghiChu(gd.getGhiChu())
                             .ngayTao(gd.getNgayTao())
@@ -587,7 +676,7 @@ public class SanPhamService {
     @Transactional(readOnly = true)
     public List<NhapKhoHistoryDTO> getNhapKhoHistoryByVariant(Integer bienTheId) {
         return giaoDichTonKhoRepository
-                .findByBienTheSanPham_IdAndLoaiOrderByNgayTaoDesc(bienTheId, "NHAP")
+                .findByBienTheSanPham_IdOrderByNgayTaoDesc(bienTheId)
                 .stream()
                 .map(gd -> {
                     BienTheSanPham bt = gd.getBienTheSanPham();
@@ -609,6 +698,7 @@ public class SanPhamService {
                             .mauSac(bt != null ? bt.getMauSac() : null)
                             .kichCo(bt != null ? bt.getKichCo() : null)
                             .soLuongNhap(gd.getSoLuong())
+                            .loaiGiaoDich(gd.getLoai())
                             .nguoiNhap(nguoiNhap)
                             .ghiChu(gd.getGhiChu())
                             .ngayTao(gd.getNgayTao())

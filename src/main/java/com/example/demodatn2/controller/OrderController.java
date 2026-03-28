@@ -12,7 +12,9 @@ import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.service.CartService;
 import com.example.demodatn2.service.DanhMucService;
 import com.example.demodatn2.service.OrderService;
+import com.example.demodatn2.service.VnPayService;
 import com.example.demodatn2.service.VoucherService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -40,6 +42,7 @@ public class OrderController {
     private final TaiKhoanRepository taiKhoanRepository;
     private final VoucherService voucherService;
     private final DiaChiGiaoHangRepository diaChiGiaoHangRepository;
+    private final VnPayService vnPayService;
 
     @GetMapping("/checkout")
     public String checkout(HttpSession session, Model model) {
@@ -123,11 +126,16 @@ public class OrderController {
                              @RequestParam String diaChi,
                              @RequestParam(required = false) String ghiChu,
                              @RequestParam(defaultValue = "COD") String payment,
+                             HttpServletRequest request,
                              HttpSession session,
                              Model model) {
         try {
             DonHang donHang = orderService.createOrder(hoTen, soDienThoai, email, diaChi, ghiChu, payment, session);
             session.setAttribute("CART_COUNT", 0);
+            if ("VNPAY".equalsIgnoreCase(payment)) {
+                String paymentUrl = vnPayService.createPaymentUrl(donHang, request);
+                return "redirect:" + paymentUrl;
+            }
             return "redirect:/order/success?id=" + donHang.getId();
         } catch (Exception e) {
             model.addAttribute("errorMessage", e.getMessage());

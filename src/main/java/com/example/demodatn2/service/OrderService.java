@@ -31,6 +31,7 @@ public class OrderService {
     private final MaGiamGiaRepository maGiamGiaRepository;
     private final LichSuSuDungMaGiamGiaRepository lichSuSuDungMaGiamGiaRepository;
     private final YeuCauDoiTraRepository yeuCauDoiTraRepository;
+    private final GiaoDichTonKhoRepository giaoDichTonKhoRepository;
     @Getter
     private final VoucherService voucherService;
 
@@ -155,6 +156,10 @@ public class OrderService {
             restoreStock(donHang);
         }
 
+        if ("LOI_VAN_CHUYEN".equals(newStatus) && !"LOI_VAN_CHUYEN".equals(currentStatus)) {
+            logShippingErrorStockEvent(donHang);
+        }
+
         donHang.setTrangThai(newStatus);
         donHang.setNgayCapNhat(Instant.now());
         donHangRepository.save(donHang);
@@ -217,7 +222,58 @@ public class OrderService {
             if (bt != null) {
                 bt.setSoLuongTon(bt.getSoLuongTon() + item.getSoLuong());
                 bienTheSanPhamRepository.save(bt);
+                logStockTransaction(bt, "NHAP", item.getSoLuong(), donHang,
+                        "Hoan kho tu don " + donHang.getMaDonHang());
             }
+        }
+    }
+
+    private void logStockTransaction(BienTheSanPham bienThe,
+                                     String loai,
+                                     Integer soLuong,
+                                     DonHang donHang,
+                                     String ghiChu) {
+        if (bienThe == null || soLuong == null || soLuong <= 0) {
+            return;
+        }
+
+        GiaoDichTonKho giaoDich = new GiaoDichTonKho();
+        giaoDich.setBienTheSanPham(bienThe);
+        giaoDich.setLoai(loai);
+        giaoDich.setSoLuong(soLuong);
+        giaoDich.setThamChieuLoai("DON_HANG");
+        giaoDich.setThamChieuId(donHang != null ? donHang.getId() : null);
+        giaoDich.setGhiChu(ghiChu);
+        giaoDich.setNgayTao(Instant.now());
+        giaoDichTonKhoRepository.save(giaoDich);
+    }
+
+    private void logShippingErrorStockEvent(DonHang donHang) {
+        List<ChiTietDonHang> items = chiTietDonHangRepository.findByDonHang(donHang);
+        for (ChiTietDonHang item : items) {
+            BienTheSanPham bt = item.getBienTheSanPham();
+            if (bt == null) {
+                continue;
+            }
+
+            boolean existed = giaoDichTonKhoRepository
+                    .existsByBienTheSanPham_IdAndThamChieuLoaiAndThamChieuIdAndGhiChuContaining(
+                            bt.getId(),
+                            "DON_HANG",
+                            donHang.getId(),
+                            "LOI_VAN_CHUYEN"
+                    );
+            if (existed) {
+                continue;
+            }
+
+            logStockTransaction(
+                    bt,
+                    "XUAT",
+                    item.getSoLuong(),
+                    donHang,
+                    "LOI_VAN_CHUYEN - Don " + donHang.getMaDonHang() + " gap su co van chuyen"
+            );
         }
     }
 
@@ -266,7 +322,9 @@ public class OrderService {
         donHang.setPhuongThucThanhToan(paymentMethod);
         
         // Đơn online khởi tạo ở trạng thái chờ xác nhận.
-        if ("VIETQR".equals(paymentMethod)) {
+        if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
+            donHang.setTrangThai("PENDING_PAYMENT");
+        } else if ("VIETQR".equals(paymentMethod)) {
             donHang.setTrangThai("CHO_XAC_NHAN");
         } else {
             donHang.setTrangThai("CHO_XAC_NHAN");
@@ -336,6 +394,8 @@ public class OrderService {
             // Trừ tồn kho
             bt.setSoLuongTon(bt.getSoLuongTon() - item.getSoLuong());
             bienTheSanPhamRepository.save(bt);
+                logStockTransaction(bt, "XUAT", item.getSoLuong(), donHang,
+                    "Tru kho tu don " + donHang.getMaDonHang());
         }
         
         // Xóa giỏ hàng sau khi đặt thành công
@@ -442,6 +502,8 @@ public class OrderService {
 
             bt.setSoLuongTon(bt.getSoLuongTon() - item.getQty());
             bienTheSanPhamRepository.save(bt);
+                logStockTransaction(bt, "XUAT", item.getQty(), donHang,
+                    "Tru kho tu don POS " + donHang.getMaDonHang());
         }
 
         return donHang;

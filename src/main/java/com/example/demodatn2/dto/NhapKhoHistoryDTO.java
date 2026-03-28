@@ -14,6 +14,7 @@ public class NhapKhoHistoryDTO {
     private String mauSac;
     private String kichCo;
     private Integer soLuongNhap;
+    private String loaiGiaoDich;
     private String nguoiNhap;
     private String ghiChu;
     private Instant ngayTao;

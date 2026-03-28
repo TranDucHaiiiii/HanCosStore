@@ -1,6 +1,8 @@
 package com.example.demodatn2.controller;
 
 import com.example.demodatn2.dto.DanhMucDTO;
+import com.example.demodatn2.dto.InventoryLogDTO;
+import com.example.demodatn2.dto.InventoryVariantDTO;
 import com.example.demodatn2.dto.PosCartItemDTO;
 import com.example.demodatn2.dto.PosCartItemRequestDTO;
 import com.example.demodatn2.dto.PosOrderRequestDTO;
@@ -11,9 +13,11 @@ import com.example.demodatn2.entity.MaGiamGia;
 import com.example.demodatn2.service.*;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -38,6 +42,52 @@ public class AdminController {
     public String dashboard(Model model) {
         model.addAttribute("stats", thongKeService.getDoanhThuTongHop());
         return "admin/dashboard";
+    }
+
+    @GetMapping("/inventory")
+    public String inventoryPage(@RequestParam(required = false) String q,
+                                @RequestParam(defaultValue = "1") int page,
+                                @RequestParam(defaultValue = "12") int size,
+                                Model model) {
+        int safePage = Math.max(page, 1);
+        int safeSize = size <= 0 ? 12 : Math.min(size, 100);
+
+        Page<InventoryVariantDTO> variantPage = sanPhamService.getInventoryVariants(q, safePage - 1, safeSize);
+        List<InventoryLogDTO> logs = sanPhamService.getRecentInventoryLogs();
+
+        model.addAttribute("q", q);
+        model.addAttribute("inventoryVariants", variantPage.getContent());
+        model.addAttribute("currentPage", safePage);
+        model.addAttribute("totalPages", Math.max(variantPage.getTotalPages(), 1));
+        model.addAttribute("pageSize", safeSize);
+        model.addAttribute("totalElements", variantPage.getTotalElements());
+        model.addAttribute("inventoryLogs", logs);
+        return "admin/inventory";
+    }
+
+    @PostMapping("/inventory/adjust")
+    public String adjustInventory(@RequestParam Integer sanPhamId,
+                                  @RequestParam Integer bienTheId,
+                                  @RequestParam Integer soLuong,
+                                  @RequestParam String actionType,
+                                  @RequestParam(required = false) String ghiChu,
+                                  HttpSession session,
+                                  RedirectAttributes redirectAttributes) {
+        try {
+            TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+            sanPhamService.adjustStockForVariant(
+                    sanPhamId,
+                    bienTheId,
+                    soLuong,
+                    actionType,
+                    loginUser != null ? loginUser.getId() : null,
+                    ghiChu
+            );
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật tồn kho thành công.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/inventory";
     }
 
     @GetMapping("/pos")
@@ -98,6 +148,12 @@ public class AdminController {
     public Map<String, Object> clearPosCart(HttpSession session) {
         posCartService.clear(session);
         return Map.of("success", true, "cart", List.of());
+    }
+
+    @GetMapping("/orders/pending-count")
+    @ResponseBody
+    public Map<String, Long> getPendingOrderCount() {
+        return Map.of("count", orderService.getPendingConfirmationCount());
     }
 
     @GetMapping("/pos/api/products")

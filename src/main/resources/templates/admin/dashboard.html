@@ -11,6 +11,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
     <link rel="stylesheet" th:href="@{/css/admin/dashboard.css}">
 </head>
 <body>
@@ -31,9 +32,18 @@
         </div>
     </header>
 
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+        <span th:text="${successMessage}">Nhập kho thành công.</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <span th:text="${errorMessage}">Có lỗi xảy ra.</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <div class="row g-4">
         <!-- Stats -->
-        <div class="col-md-3" th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
+        <div class="col-md-6 col-xl-3" th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
             <div class="stat-card">
                 <div class="stat-icon bg-soft-primary">
                     <i class="fas fa-wallet"></i>
@@ -43,7 +53,17 @@
                 <p class="text-muted small mb-0"><i class="fas fa-check-circle me-1"></i> <span th:text="${stats.soDonHang}">0</span> đơn hoàn thành</p>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-6 col-xl-3" th:if="${session.ROLES == null or !#lists.contains(session.ROLES, 'ADMIN')}">
+            <div class="stat-card">
+                <div class="stat-icon bg-soft-primary">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <h6 class="text-muted small text-uppercase fw-700 letter-spacing-1 mb-2">Đơn hoàn thành</h6>
+                <h3 class="fw-800 mb-1" th:text="${stats.soDonHang}">0</h3>
+                <p class="text-muted small mb-0"><i class="fas fa-check-circle me-1"></i> Tổng đơn xử lý thành công</p>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
             <div class="stat-card">
                 <div class="stat-icon bg-soft-success">
                     <i class="fas fa-chart-bar"></i>
@@ -53,7 +73,7 @@
                 <p class="text-muted small mb-0"><i class="fas fa-shopping-basket me-1"></i> <span th:text="${stats.soDonHomNay}">0</span> đơn mới</p>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-6 col-xl-3">
             <div class="stat-card">
                 <div class="stat-icon bg-soft-info">
                     <i class="fas fa-box"></i>
@@ -63,7 +83,7 @@
                 <p class="text-muted small mb-0"><i class="fas fa-truck me-1"></i> Đơn đã hoàn thành</p>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-6 col-xl-3">
             <div class="stat-card">
                 <div class="stat-icon bg-soft-warning">
                     <i class="fas fa-user-friends"></i>
@@ -71,6 +91,201 @@
                 <h6 class="text-muted small text-uppercase fw-700 letter-spacing-1 mb-2">Khách hàng</h6>
                 <h3 class="fw-800 mb-1" th:text="${stats.soKhachHang}">0</h3>
                 <p class="text-muted small mb-0"><i class="fas fa-users me-1"></i> Tổng khách hàng</p>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="col-12">
+            <div class="alerts-card">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <h5 class="fw-800 text-uppercase letter-spacing-1 mb-0">Thông báo / cảnh báo</h5>
+                    <small class="text-muted">Theo dõi vận hành trong ngày</small>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="alert-item" th:classappend="${stats.soDonChuaXuLy > 10} ? 'is-warning' : ''">
+                            <div class="alert-icon text-primary"><i class="fas fa-hourglass-half"></i></div>
+                            <div>
+                                <p class="alert-title mb-1">Đơn hàng chưa xử lý</p>
+                                <h6 class="alert-value mb-1"><span th:text="${stats.soDonChuaXuLy}">0</span> đơn</h6>
+                                <small class="text-muted">Trạng thái chờ xác nhận</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert-item" th:classappend="${stats.soSanPhamSapHetHang > 0} ? 'is-warning' : ''">
+                            <div class="alert-icon text-warning"><i class="fas fa-boxes-stacked"></i></div>
+                            <div>
+                                <p class="alert-title mb-1">Sản phẩm sắp hết hàng</p>
+                                <h6 class="alert-value mb-1"><span th:text="${stats.soSanPhamSapHetHang}">0</span> biến thể</h6>
+                                <small class="text-muted">Tồn kho từ 1 đến 5 sản phẩm</small>
+                                <div class="low-stock-compact mt-2" th:if="${stats.bienTheSapHetHang != null and !#lists.isEmpty(stats.bienTheSapHetHang)}">
+                                    <div th:each="bt,iter : ${stats.bienTheSapHetHang}" th:if="${iter.index < 2}" class="low-stock-row">
+                                        <img class="low-stock-thumb"
+                                             th:src="${#strings.isEmpty(bt.hinhAnh) ? '/images/no-image.png' : bt.hinhAnh}"
+                                             alt="Ảnh sản phẩm">
+                                        <div class="low-stock-info">
+                                            <p class="low-stock-name mb-0" th:text="${bt.tenSanPham}">Sản phẩm</p>
+                                            <small class="text-muted" th:text="${bt.mauSac + ' / ' + bt.kichCo}">Đỏ / L</small>
+                                        </div>
+                                        <span class="low-stock-qty" th:text="${'Còn ' + bt.soLuongTon}">Còn 1</span>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-dark low-stock-action"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#quickStockInModal"
+                                                th:attr="data-product-id=${bt.sanPhamId},data-variant-id=${bt.bienTheId},data-name=${bt.tenSanPham},data-color=${bt.mauSac},data-size=${bt.kichCo},data-qty=${bt.soLuongTon},data-img=${bt.hinhAnh}">
+                                            Nhập kho
+                                        </button>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2"
+                                            data-bs-toggle="modal" data-bs-target="#lowStockModal"
+                                            th:if="${stats.soSanPhamSapHetHang > 2}">
+                                        Xem thêm
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert-item" th:classappend="${stats.tyLeHuyHomNay >= 20} ? 'is-danger' : ''">
+                            <div class="alert-icon text-danger"><i class="fas fa-triangle-exclamation"></i></div>
+                            <div>
+                                <p class="alert-title mb-1">Đơn bị huỷ nhiều</p>
+                                <h6 class="alert-value mb-1">
+                                    <span th:text="${stats.soDonBiHuyHomNay}">0</span> đơn
+                                    <span class="text-muted">(</span>
+                                    <span th:text="${#numbers.formatDecimal(stats.tyLeHuyHomNay, 1, 'COMMA', 1, 'POINT')} + '%'">0.0%</span>
+                                    <span class="text-muted">)</span>
+                                </h6>
+                                <small class="text-muted">Cảnh báo khi tỷ lệ huỷ từ 20% trở lên</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="lowStockModal" tabindex="-1" aria-labelledby="lowStockModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-800" id="lowStockModalLabel">Biến thể sắp hết hàng</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="low-stock-modal-list" th:if="${stats.bienTheSapHetHang != null and !#lists.isEmpty(stats.bienTheSapHetHang)}">
+                            <div class="low-stock-modal-row" th:each="bt : ${stats.bienTheSapHetHang}">
+                                <img class="low-stock-modal-thumb"
+                                     th:src="${#strings.isEmpty(bt.hinhAnh) ? '/images/no-image.png' : bt.hinhAnh}"
+                                     alt="Ảnh sản phẩm">
+                                <div class="low-stock-modal-info">
+                                    <h6 class="mb-1" th:text="${bt.tenSanPham}">Sản phẩm</h6>
+                                    <small class="text-muted" th:text="${bt.mauSac + ' / ' + bt.kichCo}">Đỏ / L</small>
+                                </div>
+                                <span class="badge text-bg-warning" th:text="${'Còn ' + bt.soLuongTon}">Còn 1</span>
+                                <button type="button"
+                                        class="btn btn-sm btn-dark"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#quickStockInModal"
+                                        data-bs-dismiss="modal"
+                                        th:attr="data-product-id=${bt.sanPhamId},data-variant-id=${bt.bienTheId},data-name=${bt.tenSanPham},data-color=${bt.mauSac},data-size=${bt.kichCo},data-qty=${bt.soLuongTon},data-img=${bt.hinhAnh}">
+                                    Nhập kho
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-0" th:if="${stats.bienTheSapHetHang == null or #lists.isEmpty(stats.bienTheSapHetHang)}">Không có biến thể nào sắp hết hàng.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="quickStockInModal" tabindex="-1" aria-labelledby="quickStockInModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="quickStockInForm" method="post" th:attr="data-action-pattern=@{/admin/san-pham/{id}/them-so-luong(id=0)}">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-800" id="quickStockInModalLabel">Nhập kho nhanh</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="stock-preview mb-3">
+                                <img id="quickStockImage" src="/images/no-image.png" alt="Ảnh sản phẩm">
+                                <div>
+                                    <p class="stock-preview-name mb-1" id="quickStockName">Sản phẩm</p>
+                                    <small class="text-muted" id="quickStockMeta">Màu / Size</small>
+                                    <div class="mt-1"><span class="badge text-bg-warning" id="quickStockQty">Còn 0</span></div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="bienTheId" id="quickStockVariantId">
+                            <input type="hidden" name="redirectTo" value="dashboard">
+                            <div class="mb-3">
+                                <label class="form-label">Số lượng nhập thêm</label>
+                                <input type="number" class="form-control" name="soLuongThem" min="1" step="1" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Ghi chú</label>
+                                <input type="text" class="form-control" name="ghiChu" maxlength="300" placeholder="Ví dụ: bổ sung hàng đợt 1">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-dark">Cập nhật tồn kho</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mt-2">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="insight-card">
+                        <div class="insight-header">
+                            <h5 class="mb-0"><i class="fas fa-fire-flame-curved me-2 text-danger"></i>Top sản phẩm bán chạy</h5>
+                            <small class="text-muted">Top 5 theo số lượng đã bán</small>
+                        </div>
+                        <div class="insight-list" th:if="${stats.topSanPhamBanChay != null and !#lists.isEmpty(stats.topSanPhamBanChay)}">
+                            <div class="insight-row" th:each="sp, st : ${stats.topSanPhamBanChay}">
+                                <div class="rank-chip" th:text="${'#' + (st.index + 1)}">#1</div>
+                                <img class="insight-thumb"
+                                     th:src="${#strings.isEmpty(sp.hinhAnh) ? '/images/no-image.png' : sp.hinhAnh}"
+                                     alt="Ảnh sản phẩm">
+                                <div class="insight-main">
+                                    <p class="insight-name mb-0" th:text="${sp.tenSanPham}">Sản phẩm</p>
+                                    <small class="text-muted" th:text="${sp.soDonHang + ' đơn hàng'}">0 đơn hàng</small>
+                                </div>
+                                <div class="insight-metric text-end">
+                                    <div class="fw-700" th:text="${sp.tongSoLuongBan + ' sp'}">0 sp</div>
+                                    <small class="text-muted" th:text="${#numbers.formatDecimal(sp.tongDoanhThu, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</small>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-0" th:if="${stats.topSanPhamBanChay == null or #lists.isEmpty(stats.topSanPhamBanChay)}">Chưa có dữ liệu bán hàng thành công.</p>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="insight-card">
+                        <div class="insight-header">
+                            <h5 class="mb-0"><i class="fas fa-user-star me-2 text-primary"></i>Khách hàng tiềm năng</h5>
+                            <small class="text-muted">Top 5 trong 90 ngày gần nhất</small>
+                        </div>
+                        <div class="insight-list" th:if="${stats.khachHangTiemNang != null and !#lists.isEmpty(stats.khachHangTiemNang)}">
+                            <div class="insight-row" th:each="kh, st : ${stats.khachHangTiemNang}">
+                                <div class="rank-chip rank-customer" th:text="${'#' + (st.index + 1)}">#1</div>
+                                <div class="customer-avatar" th:text="${#strings.substring((#strings.isEmpty(kh.hoTen) ? 'K' : kh.hoTen),0,1)}">K</div>
+                                <div class="insight-main">
+                                    <p class="insight-name mb-0" th:text="${kh.hoTen}">Khách hàng</p>
+                                    <small class="text-muted" th:text="${#strings.isEmpty(kh.soDienThoai) ? '-' : kh.soDienThoai}">-</small>
+                                </div>
+                                <div class="insight-metric text-end">
+                                    <div class="fw-700" th:text="${kh.soDonThanhCong + ' đơn'}">0 đơn</div>
+                                    <small class="text-muted" th:text="${#numbers.formatDecimal(kh.tongChiTieu, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</small>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-0" th:if="${stats.khachHangTiemNang == null or #lists.isEmpty(stats.khachHangTiemNang)}">Chưa có dữ liệu khách hàng tiềm năng.</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -82,6 +297,12 @@
                     <a th:href="@{/san-pham}" class="quick-action-card">
                         <i class="fas fa-box-open"></i>
                         <h5>Sản phẩm</h5>
+                    </a>
+                </div>
+                <div class="col-md-2">
+                    <a th:href="@{/admin/inventory}" class="quick-action-card">
+                        <i class="fas fa-warehouse"></i>
+                        <h5>Nhập kho</h5>
                     </a>
                 </div>
                 <div class="col-md-2">
@@ -126,5 +347,44 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    (() => {
+        const modal = document.getElementById('quickStockInModal');
+        const form = document.getElementById('quickStockInForm');
+        if (!modal || !form) {
+            return;
+        }
+
+        const variantInput = document.getElementById('quickStockVariantId');
+        const image = document.getElementById('quickStockImage');
+        const name = document.getElementById('quickStockName');
+        const meta = document.getElementById('quickStockMeta');
+        const qty = document.getElementById('quickStockQty');
+
+        modal.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            if (!button) {
+                return;
+            }
+
+            const productId = button.getAttribute('data-product-id');
+            const variantId = button.getAttribute('data-variant-id');
+            const productName = button.getAttribute('data-name') || 'Sản phẩm';
+            const color = button.getAttribute('data-color') || '-';
+            const size = button.getAttribute('data-size') || '-';
+            const stockQty = button.getAttribute('data-qty') || '0';
+            const imageUrl = button.getAttribute('data-img') || '/images/no-image.png';
+
+            const actionPattern = form.getAttribute('data-action-pattern') || '';
+            form.setAttribute('action', actionPattern.replace('/0/them-so-luong', '/' + productId + '/them-so-luong'));
+            variantInput.value = variantId;
+
+            image.src = imageUrl;
+            name.textContent = productName;
+            meta.textContent = color + ' / ' + size;
+            qty.textContent = 'Còn ' + stockQty;
+        });
+    })();
+</script>
 </body>
 </html>
