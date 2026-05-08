@@ -2,6 +2,7 @@ package com.example.demodatn2.service;
 
 import com.example.demodatn2.dto.BienTheRequestDTO;
 import com.example.demodatn2.dto.BienTheResponseDTO;
+import com.example.demodatn2.dto.GenerateQuickVariantsRequest;
 import com.example.demodatn2.dto.HinhAnhMauSacDTO;
 import com.example.demodatn2.dto.HinhAnhSanPhamDTO;
 import com.example.demodatn2.dto.InventoryLogDTO;
@@ -34,10 +35,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,6 +61,11 @@ public class SanPhamService {
     @Transactional
     public SanPhamResponseDTO createSanPham(SanPhamRequestDTO requestDTO) {
         log.info("Creating new product: {}", requestDTO.getTen());
+
+        // Auto-generate product code if not provided
+        if (requestDTO.getMaSanPham() == null || requestDTO.getMaSanPham().trim().isEmpty()) {
+            requestDTO.setMaSanPham(generateProductCode());
+        }
 
         validateSanPhamRequest(requestDTO);
 
@@ -101,6 +110,24 @@ public class SanPhamService {
 
         sanPham = sanPhamRepository.save(sanPham);
         return convertToResponseDTO(sanPham);
+    }
+
+    /**
+     * Auto-generate unique product code with format SP-<timestamp>
+     */
+    private String generateProductCode() {
+        String baseCode = "SP-" + System.currentTimeMillis();
+        String code = baseCode;
+        int counter = 0;
+        
+        // Ensure uniqueness
+        while (sanPhamRepository.findByMaSanPham(code).isPresent()) {
+            counter++;
+            code = baseCode + "-" + counter;
+        }
+        
+        log.info("Generated product code: {}", code);
+        return code;
     }
 
     private void validateSanPhamRequest(SanPhamRequestDTO requestDTO) {
@@ -712,6 +739,94 @@ public class SanPhamService {
         image.setThuTu(nextOrder);
         image.setNgayTao(Instant.now());
         hinhAnhSanPhamRepository.save(image);
+    }
+
+    /**
+     * Generate list of BienTheRequestDTO from colors, sizes, and default values
+     * Used by API to create multiple variants quickly
+     */
+    public List<BienTheRequestDTO> generateQuickVariants(GenerateQuickVariantsRequest request) {
+        if (request.getColors() == null || request.getColors().isEmpty()) {
+            throw new RuntimeException("Vui lòng chọn ít nhất 1 màu sắc");
+        }
+        if (request.getSizes() == null || request.getSizes().isEmpty()) {
+            throw new RuntimeException("Vui lòng chọn ít nhất 1 kích cỡ");
+        }
+
+        List<BienTheRequestDTO> variants = new ArrayList<>();
+        Set<String> skuSet = new HashSet<>();
+        String maSP = request.getMaSanPham() != null ? request.getMaSanPham().trim() : "";
+
+        BigDecimal price = request.getPrice() != null ? BigDecimal.valueOf(request.getPrice()) : BigDecimal.ZERO;
+        Integer stock = request.getStock() != null ? request.getStock() : 0;
+        Integer weight = request.getWeight() != null && request.getWeight() > 0 ? request.getWeight() : 300;
+
+        for (String color : request.getColors()) {
+            for (String size : request.getSizes()) {
+                BienTheRequestDTO variant = new BienTheRequestDTO();
+                
+                // Generate SKU
+                String sku;
+                if (!maSP.isEmpty()) {
+                    sku = String.format("%s_%s_%s",
+                            toSkuToken(maSP),
+                            toSkuToken(color),
+                            toSkuToken(size));
+                } else {
+                    sku = String.format("%s_%s",
+                            toSkuToken(color),
+                            toSkuToken(size));
+                }
+
+                // Check uniqueness
+                if (skuSet.contains(sku)) {
+                    continue;
+                }
+                skuSet.add(sku);
+
+                variant.setMaSKU(sku);
+                variant.setMauSac(color);
+                variant.setKichCo(size);
+                variant.setGia(price);
+                variant.setSoLuongTon(stock);
+                variant.setKhoiLuongGram(weight);
+
+                variants.add(variant);
+            }
+        }
+
+        if (variants.isEmpty()) {
+            throw new RuntimeException("Không thể sinh biến thể với các tham số được cung cấp");
+        }
+
+        log.info("Generated {} variants", variants.size());
+        return variants;
+    }
+
+    /**
+     * Convert string to SKU token (remove Vietnamese tones, uppercase, replace spaces with underscore)
+     */
+    private String toSkuToken(String s) {
+        if (s == null || s.isEmpty()) return "";
+        return removeVietnameseTones(s)
+                .trim()
+                .toUpperCase()
+                .replaceAll("\\s+", "_");
+    }
+
+    /**
+     * Remove Vietnamese tone marks
+     */
+    private String removeVietnameseTones(String str) {
+        if (str == null || str.isEmpty()) return "";
+        str = str.replaceAll("[àáạảãâầấậẩẫăằắặẳẵÀÁẠẢÃÂẦẤẬẨẪĂĂĐẰĐẮẬẲẵ]", "a");
+        str = str.replaceAll("[èéẹẻẽêềếệểễÈÉẸẺẼÊỀẾỆỂỄ]", "e");
+        str = str.replaceAll("[ìíịỉĩÌÍỊỈĨ]", "i");
+        str = str.replaceAll("[òóọỏõôồốộổỗơờớợởỡÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]", "o");
+        str = str.replaceAll("[ùúụủũưừứựửữÙÚỤỦŨƯỪỨỰỬỮ]", "u");
+        str = str.replaceAll("[ỳýỵỷỹỲÝỴỶỸ]", "y");
+        str = str.replaceAll("[đĐ]", "d");
+        return str;
     }
 
     private boolean isAllowedProduct(SanPham sanPham) {

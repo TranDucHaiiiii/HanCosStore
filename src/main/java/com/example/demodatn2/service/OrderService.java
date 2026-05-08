@@ -223,13 +223,29 @@ public class OrderService {
         }
         // Admin được hủy mọi trạng thái chưa kết thúc (đã check ở trên).
 
+        if ("DA_XAC_NHAN".equals(currentStatus) && isBankTransferPayment(donHang.getPhuongThucThanhToan())) {
+            throw new RuntimeException("Đơn hàng thanh toán qua chuyển khoản sẽ không được hủy và không hỗ trợ hoàn tiền  sau khi xác nhận.");
+        }
+
         donHang.setTrangThai("DA_HUY");
         donHang.setLyDoHuy(reason);
         donHang.setNgayCapNhat(Instant.now());
         
         restoreStock(donHang);
-
         donHangRepository.save(donHang);
+    }
+
+    private boolean isBankTransferPayment(String paymentMethod) {
+        if (paymentMethod == null) {
+            return false;
+        }
+
+        String normalized = paymentMethod.trim().toUpperCase();
+        return normalized.contains("TRANSFER")
+                || normalized.contains("CHUYEN_KHOAN")
+                || normalized.contains("CHUYENKHOAN")
+                || normalized.contains("CHUYEN KHOAN")
+                || normalized.contains("SEPAY");
     }
 
     @Transactional
