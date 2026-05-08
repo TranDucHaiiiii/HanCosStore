@@ -31,11 +31,11 @@ function updateQuantity(itemId, qty) {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                document.getElementById('cart-subtotal').innerText = new Intl.NumberFormat('vi-VN').format(data.total) + 'â‚«';
+                document.getElementById('cart-subtotal').innerText = new Intl.NumberFormat('vi-VN').format(data.total) + '₫';
 
                 if (data.discount > 0) {
                     document.getElementById('discount-row').style.display = 'flex';
-                    document.getElementById('discount-value').innerText = '-' + new Intl.NumberFormat('vi-VN').format(data.discount) + 'â‚«';
+                    document.getElementById('discount-value').innerText = '-' + new Intl.NumberFormat('vi-VN').format(data.discount) + '₫';
                 } else {
                     document.getElementById('discount-row').style.display = 'none';
                 }
@@ -44,25 +44,25 @@ function updateQuantity(itemId, qty) {
 
                 location.reload();
             } else {
-                Swal.fire('Lá»—i', data.message, 'error').then(() => location.reload());
+                Swal.fire('Lỗi', data.message, 'error').then(() => location.reload());
             }
         })
         .catch(err => {
             console.error(err);
-            Swal.fire('Lá»—i', 'KhÃ´ng thá»ƒ káº¿t ná»‘i vá»›i mÃ¡y chá»§', 'error');
+            Swal.fire('Lỗi', 'Không thể kết nối với máy chủ', 'error');
         });
 }
 
 function removeItem(itemId) {
     Swal.fire({
-        title: 'XÃ¡c nháº­n xÃ³a?',
-        text: "Báº¡n muá»‘n xÃ³a sáº£n pháº©m nÃ y khá»i giá» hÃ ng?",
+        title: 'Xác nhận xóa?',
+        text: "Bạn muốn xóa sản phẩm này khỏi giỏ hàng?",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#1a1a1a',
         cancelButtonColor: '#d33',
-        confirmButtonText: 'Äá»“ng Ã½',
-        cancelButtonText: 'Há»§y'
+        confirmButtonText: 'Đồng ý',
+        cancelButtonText: 'Hủy'
     }).then((result) => {
         if (result.isConfirmed) {
             fetch(`/cart/remove?itemId=${itemId}`, {
@@ -72,10 +72,10 @@ function removeItem(itemId) {
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        document.getElementById('cart-subtotal').innerText = new Intl.NumberFormat('vi-VN').format(data.total) + 'â‚«';
+                        document.getElementById('cart-subtotal').innerText = new Intl.NumberFormat('vi-VN').format(data.total) + '₫';
                         if (data.discount > 0) {
                             document.getElementById('discount-row').style.display = 'flex';
-                            document.getElementById('discount-value').innerText = '-' + new Intl.NumberFormat('vi-VN').format(data.discount) + 'â‚«';
+                            document.getElementById('discount-value').innerText = '-' + new Intl.NumberFormat('vi-VN').format(data.discount) + '₫';
                         } else {
                             document.getElementById('discount-row').style.display = 'none';
                         }
@@ -84,10 +84,10 @@ function removeItem(itemId) {
                         location.reload();
                     }
                 })
-                .catch(err => {
-                    console.error(err);
-                    Swal.fire('Lá»—i', 'KhÃ´ng thá»ƒ káº¿t ná»‘i vá»›i mÃ¡y chá»§', 'error');
-                });
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Lỗi', 'Không thể kết nối với máy chủ', 'error');
+            });
         }
     });
 }
@@ -123,7 +123,7 @@ function applyVoucher() {
         })
         .catch(err => {
             console.error(err);
-            Swal.fire('Lá»—i', 'KhÃ´ng thá»ƒ káº¿t ná»‘i vá»›i mÃ¡y chá»§', 'error');
+            Swal.fire('Lỗi', 'Không thể kết nối với máy chủ', 'error');
         });
 }
 

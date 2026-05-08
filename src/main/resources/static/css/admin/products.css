@@ -85,6 +85,9 @@
             box-shadow: none;
         }
 
+        .btn-outline-dark { white-space: nowrap; min-width: 40px; }
+        .btn-outline-dark i { font-size: 1rem; }
+
         @media (max-width: 992px) {
             .main-content { margin-left: 64px; }
         }

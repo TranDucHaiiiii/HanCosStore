@@ -43,3 +43,4 @@
         .voucher-desc { font-size: 0.75rem; color: #888; margin-top: 2px; }
         .voucher-applied-badge { display: inline-block; background: #8b4d4d; color: white; font-size: 0.7rem; padding: 2px 8px; font-weight: 700; letter-spacing: 0.5px; }
         .voucher-remove { font-size: 0.75rem; color: #d33; cursor: pointer; text-decoration: underline; }
+        #selectedVoucherCode { background: #f0f0f0; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.5px; margin-top: 0.5rem; }

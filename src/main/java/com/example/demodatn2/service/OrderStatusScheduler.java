@@ -15,4 +15,9 @@ public class OrderStatusScheduler {
     public void autoCompleteDeliveredOrders() {
         orderService.autoCompleteDeliveredOrders(7);
     }
+
+    @Scheduled(cron = "0 */30 * * * *")
+    public void cleanupExpiredPendingPosOrders() {
+        orderService.cleanupExpiredPendingPosOrders(30);
+    }
 }

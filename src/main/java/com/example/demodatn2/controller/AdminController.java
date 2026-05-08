@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -191,6 +192,57 @@ public class AdminController {
         return Map.of("success", false, "message", "Mã giảm giá không hợp lệ hoặc không đủ điều kiện");
     }
 
+    @GetMapping("/pos/api/vouchers/eligible")
+    @ResponseBody
+    public Map<String, Object> getEligiblePosVouchers(@RequestParam(name = "amount", required = false) BigDecimal amount) {
+        BigDecimal safeAmount = amount != null ? amount : BigDecimal.ZERO;
+        List<Map<String, Object>> vouchers = voucherService.getEligibleVouchers(safeAmount).stream()
+                .map(v -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("code", v.getMa());
+                    item.put("label", v.getLoai() + " - " + v.getGiaTri());
+                    item.put("type", v.getLoai());
+                    item.put("value", v.getGiaTri());
+                    item.put("minAmount", v.getDonToiThieu());
+                    item.put("discount", voucherService.calculateDiscount(v, safeAmount));
+                    item.put("usageLeft", v.getSoLuongToiDa() == null ? null : Math.max(0, v.getSoLuongToiDa() - (v.getSoLuongDaDung() == null ? 0 : v.getSoLuongDaDung())));
+                    return item;
+                })
+                .toList();
+
+        return Map.of("success", true, "vouchers", vouchers);
+    }
+
+    @PostMapping("/pos/api/order-code")
+    @ResponseBody
+    public Map<String, Object> generatePosOrderCode(@RequestBody PosOrderRequestDTO req, HttpSession session) {
+        try {
+            List<PosCartItemDTO> cart = posCartService.getCart(session);
+            if (cart.isEmpty()) {
+                return Map.of("success", false, "message", "Gio hang POS trong");
+            }
+
+            List<PosOrderRequestDTO.PosItemDTO> items = new ArrayList<>();
+            for (PosCartItemDTO cartItem : cart) {
+                PosOrderRequestDTO.PosItemDTO item = new PosOrderRequestDTO.PosItemDTO();
+                item.setVariantId(cartItem.getVariantId());
+                item.setQty(cartItem.getQty());
+                item.setPrice(cartItem.getPrice());
+                items.add(item);
+            }
+            req.setItems(items);
+            if (req.getOrderCode() == null || req.getOrderCode().trim().isEmpty()) {
+                req.setOrderCode(posCartService.ensureTransferReference(session));
+            }
+            req.setPaymentMethod("transfer");
+            TaiKhoanDTO staff = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+            DonHang donHang = orderService.createPendingPosTransferOrder(req, staff);
+            return Map.of("success", true, "orderCode", donHang.getMaDonHang(), "total", donHang.getTongTien());
+        } catch (Exception e) {
+            return Map.of("success", false, "message", e.getMessage());
+        }
+    }
+
     @GetMapping("/pos/api/invoices")
     @ResponseBody
     public Map<String, Object> getInvoices(HttpSession session) {
@@ -202,12 +254,16 @@ public class AdminController {
     @PostMapping("/pos/api/invoices")
     @ResponseBody
     public Map<String, Object> createInvoice(HttpSession session) {
-        String newId = posCartService.createInvoice(session);
-        return Map.of("success", true,
-                "invoiceId", newId,
-                "invoices", posCartService.listInvoices(session),
-                "activeInvoiceId", newId,
-                "cart", posCartService.getCart(session));
+        try {
+            String newId = posCartService.createInvoice(session);
+            return Map.of("success", true,
+                    "invoiceId", newId,
+                    "invoices", posCartService.listInvoices(session),
+                    "activeInvoiceId", newId,
+                    "cart", posCartService.getCart(session));
+        } catch (Exception e) {
+            return Map.of("success", false, "message", e.getMessage());
+        }
     }
 
     @PutMapping("/pos/api/invoices/{invoiceId}/activate")

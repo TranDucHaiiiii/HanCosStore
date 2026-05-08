@@ -20,7 +20,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
             .addPathPatterns("/**")
-            .excludePathPatterns("/css/**", "/js/**", "/images/**", "/api/danh-muc/**", "/api/chatbot", "/login", "/register", "/logout", "/", "/index", "/403", "/products/**", "/cart/**", "/order/checkout", "/order/success", "/payment/**", "/chinh-sach-doi-tra");
+            .excludePathPatterns("/css/**", "/js/**", "/images/**", "/api/danh-muc/**", "/api/chatbot", "/login", "/register", "/logout", "/", "/index", "/403", "/products/**", "/cart/**", "/order/checkout", "/order/success", "/payment/**", "/chinh-sach-doi-tra", "/api/sepay/webhook", "/api/order/status/**");
     }
 
     @Override
@@ -36,5 +36,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/images/products/**")
                 .addResourceLocations("file:///" + productPath);
     }
+
+
     
 }

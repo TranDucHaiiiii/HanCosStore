@@ -2,7 +2,6 @@ const API_URL = '/api';
 
 const SIZE_LETTERS = ["XS", "S", "M", "L", "XL", "XXL"];
 const SIZE_PANTS = ["28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38"];
-const SIZE_SHOES = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45"];
 const PARENT_DANH_MUC_TREE = window.PARENT_DANH_MUC_TREE || [];
 
 function normalizeCategoryName(name) {
@@ -41,10 +40,6 @@ function updateSelectedDanhMucId() {
 
 function getSizeOptions() {
     const name = normalizeCategoryName(getSelectedCategoryName());
-
-    if (name.includes('giay') || name.includes('dep')) {
-        return SIZE_SHOES;
-    }
 
     if (name.includes('quan')) {
         return SIZE_PANTS;
@@ -112,14 +107,44 @@ async function loadChildren() {
     updateSelectedDanhMucId();
 }
 
-function addVariant() {
+function getLastVariantData() {
+    const lastItem = document.querySelector('#variantsList .variant-item:last-child');
+    if (!lastItem) return null;
+
+    return {
+        mauSac: lastItem.querySelector('select[name*=".mauSac"]')?.value || '',
+        kichCo: lastItem.querySelector('select[name*=".kichCo"]')?.value || '',
+        soLuongTon: lastItem.querySelector('input[name*=".soLuongTon"]')?.value || 0,
+        gia: lastItem.querySelector('input[name*=".gia"]')?.value || 0,
+        khoiLuongGram: lastItem.querySelector('input[name*=".khoiLuongGram"]')?.value || 300,
+    };
+}
+
+function cloneVariant(btn) {
+    const item = btn.closest('.variant-item');
+    if (!item) return;
+
+    addVariant({
+        mauSac: item.querySelector('select[name*=".mauSac"]')?.value || '',
+        kichCo: item.querySelector('select[name*=".kichCo"]')?.value || '',
+        soLuongTon: item.querySelector('input[name*=".soLuongTon"]')?.value || 0,
+        gia: item.querySelector('input[name*=".gia"]')?.value || 0,
+        khoiLuongGram: item.querySelector('input[name*=".khoiLuongGram"]')?.value || 300,
+    });
+}
+
+function addVariant(data = null) {
     const variantsList = document.getElementById('variantsList');
     const index = variantsList.children.length;
+    const seed = data || getLastVariantData();
 
     const html = `
         <div class="variant-item" data-index="${index}">
             <div class="item-header">
                 <span class="item-number"><i class="fas fa-tags"></i> Biến thể #${index + 1}</span>
+                <button type="button" class="btn btn-secondary" onclick="cloneVariant(this)">
+                    <i class="fas fa-copy"></i> Nhân bản
+                </button>
                 <button type="button" class="btn btn-danger" onclick="removeVariant(${index})">
                     <i class="fas fa-trash"></i> Xóa
                 </button>
@@ -129,53 +154,56 @@ function addVariant() {
                     <label>Màu Sắc <span class="required">*</span></label>
                     <select name="bienThes[${index}].mauSac" required onchange="updateSKU(this.closest('.variant-item').dataset.index)" class="form-control">
                         <option value="">-- Chọn màu --</option>
-                        <option value="Đen">Đen</option>
-                        <option value="Trắng">Trắng</option>
-                        <option value="Đỏ">Đỏ</option>
-                        <option value="Xanh dương">Xanh dương</option>
-                        <option value="Xanh lá">Xanh lá</option>
-                        <option value="Vàng">Vàng</option>
-                        <option value="Cam">Cam</option>
-                        <option value="Tím">Tím</option>
-                        <option value="Hồng">Hồng</option>
-                        <option value="Nâu">Nâu</option>
-                        <option value="Xám">Xám</option>
-                        <option value="Be">Be</option>
+                        <option value="Đen" ${seed && seed.mauSac === 'Đen' ? 'selected' : ''}>Đen</option>
+                        <option value="Trắng" ${seed && seed.mauSac === 'Trắng' ? 'selected' : ''}>Trắng</option>
+                        <option value="Đỏ" ${seed && seed.mauSac === 'Đỏ' ? 'selected' : ''}>Đỏ</option>
+                        <option value="Xanh dương" ${seed && seed.mauSac === 'Xanh dương' ? 'selected' : ''}>Xanh dương</option>
+                        <option value="Xanh lá" ${seed && seed.mauSac === 'Xanh lá' ? 'selected' : ''}>Xanh lá</option>
+                        <option value="Vàng" ${seed && seed.mauSac === 'Vàng' ? 'selected' : ''}>Vàng</option>
+                        <option value="Cam" ${seed && seed.mauSac === 'Cam' ? 'selected' : ''}>Cam</option>
+                        <option value="Tím" ${seed && seed.mauSac === 'Tím' ? 'selected' : ''}>Tím</option>
+                        <option value="Hồng" ${seed && seed.mauSac === 'Hồng' ? 'selected' : ''}>Hồng</option>
+                        <option value="Nâu" ${seed && seed.mauSac === 'Nâu' ? 'selected' : ''}>Nâu</option>
+                        <option value="Xám" ${seed && seed.mauSac === 'Xám' ? 'selected' : ''}>Xám</option>
+                        <option value="Be" ${seed && seed.mauSac === 'Be' ? 'selected' : ''}>Be</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Kích Cỡ <span class="required">*</span></label>
                     <select name="bienThes[${index}].kichCo" required onchange="updateSKU(${index})">
-                        ${buildSizeOptionsHtml('')}
+                        ${buildSizeOptionsHtml(seed ? seed.kichCo : '')}
                     </select>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Mã SKU <span class="required">*</span></label>
-                    <input type="text" name="bienThes[${index}].maSKU" required placeholder="AO_PHAO_AKP_DEN_S">
+                    <input type="text" name="bienThes[${index}].maSKU" required readonly value="" placeholder="AO_PHAO_AKP_DEN_S">
                 </div>
                 <div class="form-group">
                     <label>Số Lượng Tồn <span class="required">*</span></label>
-                    <input type="number" name="bienThes[${index}].soLuongTon" required min="0" placeholder="100">
+                    <input type="number" name="bienThes[${index}].soLuongTon" required min="0" value="${seed ? seed.soLuongTon : ''}" placeholder="100">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Giá Bán <span class="required">*</span></label>
-                    <input type="number" name="bienThes[${index}].gia" required min="0" placeholder="850000">
+                    <input type="number" name="bienThes[${index}].gia" required min="0" value="${seed ? seed.gia : ''}" placeholder="850000">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Khối Lượng (gram) <span class="required">*</span></label>
-                    <input type="number" name="bienThes[${index}].khoiLuongGram" required min="1" value="300" placeholder="500">
+                    <input type="number" name="bienThes[${index}].khoiLuongGram" required min="1" value="${seed ? seed.khoiLuongGram : 300}" placeholder="500">
                 </div>
             </div>
         </div>
     `;
 
     variantsList.insertAdjacentHTML('beforeend', html);
+
+    const item = variantsList.lastElementChild;
+    if (item) updateSKU(index);
 }
 
 function updateSKU(index) {

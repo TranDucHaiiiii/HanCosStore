@@ -46,8 +46,10 @@ public class AdminOrderController {
 
     @GetMapping("/{id}")
     public String orderDetail(@PathVariable Integer id, Model model) {
-        model.addAttribute("order", orderService.getOrderById(id));
+        DonHang order = orderService.getOrderById(id);
+        model.addAttribute("order", order);
         model.addAttribute("items", orderService.getOrderItems(id));
+        model.addAttribute("nextValidStatuses", orderService.getNextValidStatuses(order.getTrangThai()));
         orderService.getReturnRequest(id).ifPresent(r -> model.addAttribute("returnRequest", r));
         return "admin/order-detail";
     }

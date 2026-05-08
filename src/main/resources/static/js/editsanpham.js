@@ -7,7 +7,6 @@ let activeColorImageIndex = null;
 const COLORS = ["Đen","Trắng","Đỏ","Xanh dương","Xanh lá","Vàng","Cam","Tím","Hồng","Nâu","Xám","Be"];
 const SIZE_LETTERS = ["XS","S","M","L","XL","XXL"];
 const SIZE_PANTS = ["28","29","30","31","32","33","34","35","36","37","38"];
-const SIZE_SHOES = ["35","36","37","38","39","40","41","42","43","44","45"];
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Load danh mục con
@@ -146,10 +145,6 @@ function getSelectedCategoryName() {
 
 function getSizeOptions() {
     const name = normalizeCategoryName(getSelectedCategoryName());
-
-    if (name.includes('giay') || name.includes('dep')) {
-        return SIZE_SHOES;
-    }
 
     if (name.includes('quan')) {
         return SIZE_PANTS;

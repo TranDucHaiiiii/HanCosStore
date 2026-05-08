@@ -34,7 +34,7 @@ import java.util.Map;
 // Service thống kê doanh thu, số đơn và xuất báo cáo Excel theo khoảng thời gian.
 public class ThongKeService {
 
-    private static final int LOW_STOCK_THRESHOLD = 5;
+    private static final int LOW_STOCK_THRESHOLD = 10;
     private static final int LOW_STOCK_ALERT_LIMIT = 5;
     private static final int TOP_PRODUCT_LIMIT = 5;
     private static final int POTENTIAL_CUSTOMER_LIMIT = 5;
@@ -47,21 +47,22 @@ public class ThongKeService {
     private final HinhAnhSanPhamRepository hinhAnhSanPhamRepository;
 
     public DoanhThuDTO getDoanhThuTongHop() {
-        BigDecimal tongDoanhThu = donHangRepository.sumTongDoanhThu();
-        Long soDonHang = donHangRepository.countDonHangThanhCong();
+        BigDecimal tongDoanhThu = donHangRepository.tinhTongDoanhThu();
+        Long soDonHang = donHangRepository.demDonHangThanhCong();
         Long soSPDaBan = chiTietDonHangRepository.sumSoLuongDaBan();
         Long soKhachHang = taiKhoanRepository.countCustomers();
 
         // Lấy doanh thu hôm nay
         Instant dauNgay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-        BigDecimal doanhThuHomNay = donHangRepository.sumDoanhThuTuNgay(dauNgay);
-        Long soDonHomNay = donHangRepository.countDonHangTuNgay(dauNgay);
+        BigDecimal doanhThuHomNay = donHangRepository.tinhDoanhThuTuNgay(dauNgay);
+        Long soDonHomNay = donHangRepository.demDonHangTuNgay(dauNgay);
 
         Long soDonChuaXuLy = donHangRepository.countByTrangThaiIn(List.of("CHO_XAC_NHAN", "PENDING"));
         Long soSanPhamSapHetHang = bienTheSanPhamRepository.countActiveLowStock(LOW_STOCK_THRESHOLD);
-        Long soDonBiHuyHomNay = donHangRepository.countByTrangThaiInAndNgayDatGreaterThanEqual(
+        Long soDonBiHuyHomNay = donHangRepository.demTheoTrangThaiVaNgayDatTu(
             List.of("DA_HUY", "CANCELLED"), dauNgay);
-        Long tongDonHomNay = donHangRepository.countByNgayDatGreaterThanEqual(dauNgay);
+        Long tongDonHomNay = donHangRepository.demTheoTrangThaiVaNgayDatTu(
+            List.of("HOAN_THANH", "COMPLETED", "DELIVERED"), dauNgay);
         List<BienTheSanPham> lowStockVariants = bienTheSanPhamRepository.findLowStockActiveVariants(
             LOW_STOCK_THRESHOLD,
             PageRequest.of(0, LOW_STOCK_ALERT_LIMIT)
@@ -108,7 +109,7 @@ public class ThongKeService {
             .atStartOfDay(ZoneId.systemDefault())
             .toInstant();
         List<PotentialCustomerDTO> khachHangTiemNang = donHangRepository
-            .findPotentialCustomers(potentialFromDate, PageRequest.of(0, POTENTIAL_CUSTOMER_LIMIT))
+            .timKhachHangTiemNang(potentialFromDate, PageRequest.of(0, POTENTIAL_CUSTOMER_LIMIT))
             .stream()
             .map(row -> PotentialCustomerDTO.builder()
                 .taiKhoanId(row[0] != null ? ((Number) row[0]).intValue() : null)
@@ -149,7 +150,7 @@ public class ThongKeService {
     }
 
     public List<Map<String, Object>> getDoanhThuTheoNgay(Instant tuNgay, Instant denNgay) {
-        List<Object[]> results = donHangRepository.getDoanhThuTheoNgay(tuNgay, denNgay);
+        List<Object[]> results = donHangRepository.layDoanhThuTheoNgay(tuNgay, denNgay);
         List<Map<String, Object>> data = new ArrayList<>();
         for (Object[] row : results) {
             Map<String, Object> map = new HashMap<>();
@@ -161,13 +162,13 @@ public class ThongKeService {
     }
 
     public Map<String, Object> getDoanhThuTrongKhoang(Instant tuNgay, Instant denNgay) {
-        BigDecimal doanhThuThucTe = donHangRepository.sumTongTienByTrangThaiInRange(
+        BigDecimal doanhThuThucTe = donHangRepository.tinhTongTienTheoTrangThaiTrongKhoang(
             List.of("HOAN_THANH", "COMPLETED", "DELIVERED"), tuNgay, denNgay);
-        BigDecimal doanhThuTamTinh = donHangRepository.sumTongTienByTrangThaiInRange(
+        BigDecimal doanhThuTamTinh = donHangRepository.tinhTongTienTheoTrangThaiTrongKhoang(
             List.of("CHO_XAC_NHAN", "DA_XAC_NHAN", "DANG_GIAO", "PENDING", "CONFIRMED", "SHIPPING", "PROCESSING", "SHIPPED"), tuNgay, denNgay);
-        BigDecimal doanhThuThatThoat = donHangRepository.sumTongTienByTrangThaiInRange(
+        BigDecimal doanhThuThatThoat = donHangRepository.tinhTongTienTheoTrangThaiTrongKhoang(
             List.of("DA_HUY", "CANCELLED"), tuNgay, denNgay);
-        Long soDon = donHangRepository.countDonHangTrongKhoang(tuNgay, denNgay);
+        Long soDon = donHangRepository.demDonHangTrongKhoang(tuNgay, denNgay);
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("doanhThuThucTe", doanhThuThucTe != null ? doanhThuThucTe : BigDecimal.ZERO);
@@ -178,7 +179,7 @@ public class ThongKeService {
     }
 
     public byte[] exportDoanhThuToExcel(Instant tu, Instant den) throws IOException {
-        List<DonHang> orders = donHangRepository.findAllDeliveredInRange(tu, den);
+        List<DonHang> orders = donHangRepository.timDonHoanThanhTrongKhoang(tu, den);
         
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Báo cáo doanh thu");

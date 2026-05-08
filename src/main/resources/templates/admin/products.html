@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,170 +8,193 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
     <link rel="stylesheet" th:href="@{/css/admin/products.css}">
 </head>
+
 <body>
 
-<div th:replace="~{admin/fragments/sidebar :: sidebar('products')}"></div>
+    <div th:replace="~{admin/fragments/sidebar :: sidebar('products')}"></div>
 
-<div class="main-content">
-    <header class="top-header">
-        <h4 class="fw-800 mb-0 text-uppercase letter-spacing-1">Quản lý sản phẩm</h4>
-        <div class="d-flex align-items-center gap-3">
-            <div th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
-                <a th:href="@{/them-san-pham}" class="btn btn-dark rounded-0 fw-700 text-uppercase small letter-spacing-1 px-4 py-2">
-                    <i class="fas fa-plus me-2"></i> Thêm sản phẩm
-                </a>
+    <div class="main-content">
+        <header class="top-header">
+            <h4 class="fw-800 mb-0 text-uppercase letter-spacing-1">Quản lý sản phẩm</h4>
+            <div class="d-flex align-items-center gap-3">
+                <div th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
+                    <a th:href="@{/them-san-pham}"
+                        class="btn btn-dark rounded-0 fw-700 text-uppercase small letter-spacing-1 px-4 py-2">
+                        <i class="fas fa-plus me-2"></i> Thêm sản phẩm
+                    </a>
+                </div>
+                <div class="rounded-circle bg-soft-primary d-flex align-items-center justify-content-center"
+                    style="width: 45px; height: 45px;">
+                    <i class="fas fa-user-shield"></i>
+                </div>
             </div>
-            <div class="rounded-circle bg-soft-primary d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                <i class="fas fa-user-shield"></i>
-            </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- Search & Filter -->
-    <div class="card mb-4">
-        <div class="card-body p-4">
-            <form th:action="@{/san-pham}" method="get" class="row g-3" id="filterForm">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
-                        <input type="text" name="keyword" class="form-control border-start-0 ps-0" th:value="${keyword}" placeholder="Tìm theo tên hoặc mã SP...">
+        <!-- Search & Filter -->
+        <div class="card mb-4">
+            <div class="card-body p-4">
+                <form th:action="@{/san-pham}" method="get" class="row g-3" id="filterForm">
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                    class="fas fa-search"></i></span>
+                            <input type="text" name="keyword" class="form-control border-start-0 ps-0"
+                                th:value="${keyword}" placeholder="Tìm theo tên hoặc mã SP...">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <select name="danhMucId" class="form-select" onchange="this.form.submit()">
-                        <option value="">Tất cả danh mục</option>
-                        <option th:each="c : ${categories}" 
-                                th:value="${c.id}" 
-                                th:text="${c.ten}"
+                    <div class="col-md-2">
+                        <select name="danhMucId" class="form-select" onchange="this.form.submit()">
+                            <option value="">Tất cả danh mục</option>
+                            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.ten}"
                                 th:selected="${selectedDanhMucId == c.id}"></option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select name="trangThai" class="form-select" onchange="this.form.submit()">
-                        <option value="">Tất cả trạng thái</option>
-                        <option value="ACTIVE" th:selected="${selectedTrangThai == 'ACTIVE'}">ACTIVE</option>
-                        <option value="INACTIVE" th:selected="${selectedTrangThai == 'INACTIVE'}">INACTIVE</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-outline-dark w-100 fw-700 rounded-0 text-uppercase small letter-spacing-1">Lọc</button>
-                </div>
-            </form>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="trangThai" class="form-select" onchange="this.form.submit()">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="ACTIVE" th:selected="${selectedTrangThai == 'ACTIVE'}">ACTIVE</option>
+                            <option value="INACTIVE" th:selected="${selectedTrangThai == 'INACTIVE'}">INACTIVE</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted text-uppercase fw-700 mb-2"
+                            style="letter-spacing: 1px;">Sắp xếp</label>
+                        <button type="submit" name="sortBy"
+                            th:value="${selectedSortBy == 'oldest' ? 'newest' : 'oldest'}"
+                            class="btn btn-outline-dark fw-700 rounded-0 text-uppercase small letter-spacing-1 px-3"
+                            th:title="${selectedSortBy == 'oldest' ? 'Sắp xếp mới nhất' : 'Sắp xếp cũ nhất'}">
+                            <i th:class="${selectedSortBy == 'oldest' ? 'fas fa-arrow-down' : 'fas fa-arrow-up'}"></i>
+                        </button>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit"
+                            class="btn btn-outline-dark w-100 fw-700 rounded-0 text-uppercase small letter-spacing-1">Lọc</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <!-- Table -->
-    <div class="card">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th class="ps-4">Sản phẩm</th>
-                            <th>Mã SP</th>
-                            <th>Danh mục</th>
-                            <th>Phân loại</th>
-                            <th>Tồn kho</th>
-                            <th>Trạng thái</th>
-                            <th class="text-end pe-4">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="p : ${products}">
-                            <td class="ps-4">
-                                <div class="d-flex align-items-center gap-3">
-                                    <img th:src="${not #lists.isEmpty(p.hinhAnhSanPhams) ? p.hinhAnhSanPhams[0].duongDanAnh : '/images/no-image.png'}" 
-                                         class="product-img" alt="Product">
-                                    <div>
-                                        <div th:text="${p.ten}" class="fw-700 text-dark">Áo sơ mi</div>
-                                        <small class="text-muted text-uppercase" style="font-size: 10px;" th:text="${p.chatLieu}">Cotton</small>
+        <!-- Table -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Sản phẩm</th>
+                                <th>Mã SP</th>
+                                <th>Danh mục</th>
+                                <th>Phân loại</th>
+                                <th>Tồn kho</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-4">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="p : ${products}">
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img th:src="${not #lists.isEmpty(p.hinhAnhSanPhams) ? p.hinhAnhSanPhams[0].duongDanAnh : '/images/no-image.png'}"
+                                            class="product-img" alt="Product">
+                                        <div>
+                                            <div th:text="${p.ten}" class="fw-700 text-dark">Áo sơ mi</div>
+                                            <small class="text-muted text-uppercase" style="font-size: 10px;"
+                                                th:text="${p.chatLieu}">Cotton</small>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td><code class="fw-700 text-dark" th:text="${p.maSanPham}">AO001</code></td>
-                            <td>
-                                <div th:if="${p.tenParentDanhMuc != null}" class="small text-muted text-uppercase fw-600" style="font-size: 10px;" th:text="${p.tenParentDanhMuc}">Cha</div>
-                                <div th:text="${p.tenDanhMuc != null ? p.tenDanhMuc : '-'}">Con</div>
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark border fw-600" th:text="${#lists.size(p.bienThes)} + ' mẫu'">0</span>
-                            </td>
-                            <td>
-                                <span class="fw-800" th:text="${p.tongSoLuongTon != null ? p.tongSoLuongTon : 0}">0</span>
-                            </td>
-                            <td>
-                                <span class="badge rounded-pill px-3 py-2" 
-                                      th:classappend="${p.trangThai == 'ACTIVE' ? 'badge-active' : 'badge-inactive'}"
-                                      th:text="${p.trangThai}">ACTIVE</span>
-                            </td>
-                            <td class="text-end pe-4">
-                                <div class="d-flex justify-content-end gap-2">
-                                    <a th:href="@{/admin/san-pham/view/{id}(id=${p.id})}" class="btn-action" title="Xem chi tiết">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}" 
-                                       th:href="@{/admin/san-pham/edit/{id}(id=${p.id})}" class="btn-action" title="Chỉnh sửa">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}" 
-                                            class="btn-action btn-delete" title="Xóa" th:onclick="'deleteProduct(' + ${p.id} + ')'">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr th:if="${#lists.isEmpty(products)}">
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <i class="fas fa-box-open fa-3x mb-3 d-block opacity-20"></i>
-                                Không tìm thấy sản phẩm nào.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 border-top">
-                <div class="small text-muted">
-                    Trang <span th:text="${currentPage}">1</span> / <span th:text="${totalPages}">1</span>
+                                </td>
+                                <td><code class="fw-700 text-dark" th:text="${p.maSanPham}">AO001</code></td>
+                                <td>
+                                    <div th:if="${p.tenParentDanhMuc != null}"
+                                        class="small text-muted text-uppercase fw-600" style="font-size: 10px;"
+                                        th:text="${p.tenParentDanhMuc}">Cha</div>
+                                    <div th:text="${p.tenDanhMuc != null ? p.tenDanhMuc : '-'}">Con</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border fw-600"
+                                        th:text="${#lists.size(p.bienThes)} + ' mẫu'">0</span>
+                                </td>
+                                <td>
+                                    <span class="fw-800"
+                                        th:text="${p.tongSoLuongTon != null ? p.tongSoLuongTon : 0}">0</span>
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill px-3 py-2"
+                                        th:classappend="${p.trangThai == 'ACTIVE' ? 'badge-active' : 'badge-inactive'}"
+                                        th:text="${p.trangThai}">ACTIVE</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a th:href="@{/admin/san-pham/view/{id}(id=${p.id})}" class="btn-action"
+                                            title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}"
+                                            th:href="@{/admin/san-pham/edit/{id}(id=${p.id})}" class="btn-action"
+                                            title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button
+                                            th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}"
+                                            class="btn-action btn-delete" title="Xóa"
+                                            th:onclick="'deleteProduct(' + ${p.id} + ')'">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(products)}">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="fas fa-box-open fa-3x mb-3 d-block opacity-20"></i>
+                                    Không tìm thấy sản phẩm nào.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <nav th:if="${totalPages > 1}" aria-label="Product pagination">
-                    <ul class="pagination mb-0">
-                        <li class="page-item" th:classappend="${currentPage == 1} ? ' disabled'">
-                            <a class="page-link"
-                               th:href="@{/san-pham(page=${currentPage - 1}, size=${pageSize}, keyword=${keyword}, danhMucId=${selectedDanhMucId}, trangThai=${selectedTrangThai})}">
-                                Trước
-                            </a>
-                        </li>
-                        <li class="page-item" th:each="i : ${#numbers.sequence(1, totalPages)}"
-                            th:classappend="${i == currentPage} ? ' active'">
-                            <a class="page-link"
-                               th:href="@{/san-pham(page=${i}, size=${pageSize}, keyword=${keyword}, danhMucId=${selectedDanhMucId}, trangThai=${selectedTrangThai})}"
-                               th:text="${i}">1</a>
-                        </li>
-                        <li class="page-item" th:classappend="${currentPage == totalPages} ? ' disabled'">
-                            <a class="page-link"
-                               th:href="@{/san-pham(page=${currentPage + 1}, size=${pageSize}, keyword=${keyword}, danhMucId=${selectedDanhMucId}, trangThai=${selectedTrangThai})}">
-                                Sau
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 border-top">
+                    <div class="small text-muted">
+                        Trang <span th:text="${currentPage}">1</span> / <span th:text="${totalPages}">1</span>
+                    </div>
+                    <nav th:if="${totalPages > 1}" aria-label="Product pagination">
+                        <ul class="pagination mb-0">
+                            <li class="page-item" th:classappend="${currentPage == 1} ? ' disabled'">
+                                <a class="page-link"
+                                    th:href="@{/san-pham(page=${currentPage - 1}, size=${pageSize}, keyword=${keyword}, danhMucId=${selectedDanhMucId}, trangThai=${selectedTrangThai})}">
+                                    Trước
+                                </a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(1, totalPages)}"
+                                th:classappend="${i == currentPage} ? ' active'">
+                                <a class="page-link"
+                                    th:href="@{/san-pham(page=${i}, size=${pageSize}, keyword=${keyword}, danhMucId=${selectedDanhMucId}, trangThai=${selectedTrangThai})}"
+                                    th:text="${i}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${currentPage == totalPages} ? ' disabled'">
+                                <a class="page-link"
+                                    th:href="@{/san-pham(page=${currentPage + 1}, size=${pageSize}, keyword=${keyword}, danhMucId=${selectedDanhMucId}, trangThai=${selectedTrangThai})}">
+                                    Sau
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script th:src="@{/js/admin/products.js}"></script>
+    <script th:src="@{/js/admin/products.js}"></script>
 </body>
+
 </html>
-
-

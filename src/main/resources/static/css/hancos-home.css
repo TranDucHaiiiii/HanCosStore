@@ -452,7 +452,7 @@ body {
     width: 100%;
     height: 100%;
     background: var(--product-card-bg);
-    object-fit: contain;
+    object-fit: cover;
     object-position: center;
     transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1);
 }
@@ -855,8 +855,8 @@ footer a:hover {
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .product-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 2rem 1rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5rem 1rem;
     }
 
     .product-actions {
@@ -900,27 +900,27 @@ footer a:hover {
 
 @media (max-width: 1200px) {
     .product-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: 992px) {
+    .product-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 2rem 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
     .product-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .product-img-container {
-        height: 390px;
+        gap: 1.5rem 1rem;
     }
 }
 
-@media (max-width: 575.98px) {
+@media (max-width: 480px) {
     .product-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .product-img-container {
-        height: 340px;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
     }
 }
 
@@ -968,4 +968,44 @@ footer a:hover {
     .preview-grid {
         grid-template-columns: repeat(2, minmax(140px, 1fr));
     }
+}
+
+/* ===== SWEETALERT2 CUSTOM ===== */
+.swal2-popup {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.swal2-title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text-main);
+}
+
+.swal2-html-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.swal2-confirm, .swal2-cancel {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 0 !important;
+    padding: 0.75rem 1.5rem !important;
+}
+
+.swal2-confirm {
+    background-color: var(--text-main) !important;
+    color: #fff !important;
+}
+
+.swal2-cancel {
+    background-color: #fff !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--text-main) !important;
 }

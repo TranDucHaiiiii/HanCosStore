@@ -9,7 +9,6 @@ import com.example.demodatn2.repository.DiaChiGiaoHangRepository;
 import com.example.demodatn2.service.CartService;
 import com.example.demodatn2.service.DvhcvnLocationService;
 import com.example.demodatn2.service.GhtkService;
-import com.example.demodatn2.util.AddressNormalizer;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -97,6 +96,12 @@ public class GhtkRestController {
         request.setTransport(transport);
 
         GhtkFeeResponse response = ghtkService.calculateFeeWithDefaultPick(request);
+        if (response != null && response.getFee() != null) {
+            Integer fee = response.getFee().getFee();
+            if (fee != null) {
+                session.setAttribute("CURRENT_SHIPPING_FEE", BigDecimal.valueOf(fee.longValue()));
+            }
+        }
         return ResponseEntity.ok(response);
     }
 
@@ -111,7 +116,7 @@ public class GhtkRestController {
         }
         List<DiaChiGiaoHang> addresses =
                 diaChiGiaoHangRepository.findByTaiKhoanIdOrderByLaMacDinhDescNgayTaoDesc(accountId);
-        return addresses.isEmpty() ? null : addresses.get(0);
+        return addresses.isEmpty() ? null : addresses.getFirst();
     }
 
     private Integer toIntegerValue(BigDecimal totalAmount) {

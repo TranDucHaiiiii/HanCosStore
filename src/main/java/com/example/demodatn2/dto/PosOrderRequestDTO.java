@@ -11,6 +11,7 @@ public class PosOrderRequestDTO {
     private String customerName;       // Bắt buộc
     private String customerPhone;      // Bắt buộc
     private String paymentMethod;      // cash, card, qr, transfer
+    private String orderCode;          // Mã đơn hàng đã reserve trước (optional)
     private String voucherCode;        // Mã voucher (optional)
     private String note;               // Ghi chú (optional)
     private List<PosItemDTO> items;    // Danh sách sản phẩm

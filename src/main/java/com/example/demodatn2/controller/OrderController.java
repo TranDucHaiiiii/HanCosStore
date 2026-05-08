@@ -12,9 +12,7 @@ import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.service.CartService;
 import com.example.demodatn2.service.DanhMucService;
 import com.example.demodatn2.service.OrderService;
-import com.example.demodatn2.service.VnPayService;
 import com.example.demodatn2.service.VoucherService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -42,16 +40,20 @@ public class OrderController {
     private final TaiKhoanRepository taiKhoanRepository;
     private final VoucherService voucherService;
     private final DiaChiGiaoHangRepository diaChiGiaoHangRepository;
-    private final VnPayService vnPayService;
 
     @GetMapping("/checkout")
-    public String checkout(HttpSession session, Model model) {
+    public String checkout(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
         List<CartItemDTO> items = cartService.getCartItems(session);
         if (items.isEmpty()) {
             return "redirect:/cart";
         }
         
         TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        if (loginUser == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để tiếp tục mua hàng.");
+            return "redirect:/login?next=/order/checkout";
+        }
+
         BigDecimal total = cartService.getTotalAmount(items);
         
         // Luôn tính toán lại voucher khi vào trang thanh toán để đảm bảo chính xác nhất
@@ -126,22 +128,42 @@ public class OrderController {
                              @RequestParam String diaChi,
                              @RequestParam(required = false) String ghiChu,
                              @RequestParam(defaultValue = "COD") String payment,
-                             HttpServletRequest request,
+                             @RequestParam(required = false, defaultValue = "0") BigDecimal shippingFee,
                              HttpSession session,
-                             Model model) {
+                             Model model,
+                             RedirectAttributes redirectAttributes) {
+        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        if (loginUser == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để tiếp tục mua hàng.");
+            return "redirect:/login?next=/order/checkout";
+        }
+
         try {
-            DonHang donHang = orderService.createOrder(hoTen, soDienThoai, email, diaChi, ghiChu, payment, session);
+            BigDecimal resolvedShippingFee = resolveShippingFee(session, shippingFee);
+            session.setAttribute("CURRENT_SHIPPING_FEE", resolvedShippingFee);
+
+            DonHang donHang = orderService.createOrder(hoTen, soDienThoai, email, diaChi, ghiChu, payment, resolvedShippingFee, session);
             session.setAttribute("CART_COUNT", 0);
-            if ("VNPAY".equalsIgnoreCase(payment)) {
-                String paymentUrl = vnPayService.createPaymentUrl(donHang, request);
-                return "redirect:" + paymentUrl;
-            }
             return "redirect:/order/success?id=" + donHang.getId();
         } catch (Exception e) {
+            e.printStackTrace();
             model.addAttribute("errorMessage", e.getMessage());
-            return checkout(session, model);
+            return checkout(session, model, redirectAttributes);
         }
     }
+
+
+
+
+//        try {
+//            DonHang donHang = orderService.createOrder(hoTen, soDienThoai, email, diaChi, ghiChu, payment, session);
+//            session.setAttribute("CART_COUNT", 0);
+//            return "redirect:/order/success?id=" + donHang.getId();
+//        } catch (Exception e) {
+//            model.addAttribute("errorMessage", e.getMessage());
+//            return checkout(session, model, redirectAttributes);
+//        }
+
 
     @GetMapping("/success")
     public String success(@RequestParam Integer id, Model model) {
@@ -233,6 +255,7 @@ public class OrderController {
         return "my-order-detail";
     }
 
+
     private boolean canRequestReturn(DonHang order, Instant now) {
         if (order == null || order.getTrangThai() == null || order.getNgayDat() == null) {
             return false;
@@ -253,6 +276,7 @@ public class OrderController {
         String normalized = status.trim().toUpperCase();
         return switch (normalized) {
             case "PENDING" -> "CHO_XAC_NHAN";
+            case "PAID" -> "DA_XAC_NHAN";
             case "CONFIRMED" -> "DA_XAC_NHAN";
             case "SHIPPING" -> "DANG_GIAO";
             case "DELIVERED", "COMPLETED" -> "HOAN_THANH";
@@ -260,6 +284,23 @@ public class OrderController {
             case "RETURN_REQUESTED", "RETURNED" -> "TRA_HANG";
             default -> normalized;
         };
+    }
+
+    private BigDecimal resolveShippingFee(HttpSession session, BigDecimal shippingFeeFromForm) {
+        Object sessionShippingFee = session.getAttribute("CURRENT_SHIPPING_FEE");
+        if (sessionShippingFee instanceof BigDecimal fee && fee.compareTo(BigDecimal.ZERO) > 0) {
+            return fee;
+        }
+        if (sessionShippingFee instanceof Number number) {
+            BigDecimal fee = BigDecimal.valueOf(number.doubleValue());
+            if (fee.compareTo(BigDecimal.ZERO) > 0) {
+                return fee;
+            }
+        }
+
+        return shippingFeeFromForm != null && shippingFeeFromForm.compareTo(BigDecimal.ZERO) > 0
+                ? shippingFeeFromForm
+                : BigDecimal.ZERO;
     }
 
     @PostMapping("/return/{id}")
@@ -393,6 +434,32 @@ public class OrderController {
 
             orderService.updateOrderAddress(id, hoTen, soDienThoai, diaChi);
             redirectAttributes.addFlashAttribute("actionSuccess", "Địa chỉ giao hàng đã được cập nhật.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("actionError", e.getMessage());
+        }
+
+        return "redirect:/order/my-orders/" + id;
+    }
+
+    @PostMapping("/my-orders/{id}/update-payment-method")
+    public String updatePaymentMethodFromDetail(@PathVariable Integer id,
+                                                @RequestParam String paymentMethod,
+                                                HttpSession session,
+                                                RedirectAttributes redirectAttributes) {
+        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        if (loginUser == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            DonHang order = orderService.getOrderById(id);
+            if (order.getTaiKhoan() == null || !order.getTaiKhoan().getId().equals(loginUser.getId())) {
+                redirectAttributes.addFlashAttribute("actionError", "Bạn không có quyền chỉnh sửa đơn hàng này.");
+                return "redirect:/order/my-orders";
+            }
+
+            orderService.updateOrderPaymentMethod(id, paymentMethod);
+            redirectAttributes.addFlashAttribute("actionSuccess", "Phương thức thanh toán đã được cập nhật.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("actionError", e.getMessage());
         }

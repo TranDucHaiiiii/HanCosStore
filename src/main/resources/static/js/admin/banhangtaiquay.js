@@ -9,6 +9,7 @@ let currentCategory = 'all';
 let customerMode = 'guest';
 let invoices = Array.isArray(window.POS_INVOICES) ? window.POS_INVOICES : [];
 let activeInvoiceId = window.POS_ACTIVE_INVOICE || '';
+let tempOrderCode = null; // Mã đơn hàng tạm cho transfer QR
 const invoiceMetas = {};
 
 /* ══════════════════════════════════════════
@@ -627,8 +628,8 @@ function recalc() {
    PAYMENT
    ══════════════════════════════════════════ */
 /* ── Cấu hình ngân hàng ── */
-const BANK_CODE  = 'MB';
-const BANK_ACC   = '0766128057';
+const BANK_CODE  = '970426'; // BIN MSB
+const BANK_ACC   = '96886693011616';
 const BANK_OWNER = 'TRAN DUC HAI';
 
 let bankInfo = null;
@@ -766,9 +767,48 @@ async function checkout() {
         if (data.success) {
             cart = [];
             if (Array.isArray(data.invoices)) { invoices = data.invoices; renderInvoiceTabs(); }
-            document.getElementById('successOrderCode').textContent = data.orderCode;
-            document.getElementById('successTotal').textContent = fmt(data.total);
-            document.getElementById('successOverlay').classList.add('show');
+
+            // Setup success overlay
+            const successOverlay = document.getElementById('successOverlay');
+            const successLoading = document.getElementById('successLoading');
+            const successContent = document.getElementById('successContent');
+            const successOrderCode = document.getElementById('successOrderCode');
+            const successTotal = document.getElementById('successTotal');
+
+            // Debug log
+            console.log('Checkout success. OrderCode:', data.orderCode, 'Total:', data.total, 'PaymentMethod:', paymentMethod);
+
+            // Set data FIRST (before showing)
+            if (successOrderCode) { successOrderCode.textContent = data.orderCode || ''; }
+            if (successTotal) { successTotal.textContent = fmt(data.total) || '0₫'; }
+
+            // If transfer payment, show QR code with order code
+            if (paymentMethod === 'transfer') {
+                const qrSection = document.getElementById('successQRSection');
+                const qrImg = document.getElementById('successQR');
+                if (qrSection && qrImg && data.orderCode) {
+                    // Generate QR with order code
+                    const orderCode = data.orderCode;
+                    const total = data.total || 0;
+                    const bankBin = bankInfo ? bankInfo.bin : '970426';
+                    const qrUrl = 'https://img.vietqr.io/image/' + bankBin + '-' + BANK_ACC + '-compact2.png?amount=' + total + '&addInfo=' + encodeURIComponent(orderCode) + '&accountName=' + encodeURIComponent(BANK_OWNER);
+                    qrImg.src = qrUrl;
+                    qrSection.style.display = '';
+                }
+            } else {
+                document.getElementById('successQRSection').style.display = 'none';
+            }
+
+            // Show loading state and overlay
+            successLoading.style.display = 'flex';
+            successContent.style.display = 'none';
+            successOverlay.classList.add('show');
+
+            // After 1.5 seconds, show success message
+            setTimeout(() => {
+                successLoading.style.display = 'none';
+                successContent.style.display = 'block';
+            }, 1500);
         } else {
             showToast(data.message || 'Thanh toán thất bại', 'error');
             document.getElementById('btnCheckout').disabled = false;

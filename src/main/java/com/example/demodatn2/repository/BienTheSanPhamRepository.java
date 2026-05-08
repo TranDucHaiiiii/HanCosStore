@@ -4,7 +4,9 @@ import com.example.demodatn2.entity.BienTheSanPham;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -53,7 +55,7 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
         select count(v)
         from BienTheSanPham v
         where (v.trangThai is null or lower(v.trangThai) = 'active')
-          and v.soLuongTon > 0
+          and v.soLuongTon >= 0
           and v.soLuongTon <= ?1
     """)
     Long countActiveLowStock(Integer threshold);
@@ -63,7 +65,7 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
                 from BienTheSanPham v
                 join fetch v.sanPham sp
                 where (v.trangThai is null or lower(v.trangThai) = 'active')
-                    and v.soLuongTon > 0
+                    and v.soLuongTon >= 0
                     and v.soLuongTon <= ?1
                 order by v.soLuongTon asc, v.id asc
         """)
@@ -98,5 +100,22 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
                     )
                 """)
         Page<BienTheSanPham> searchInventoryVariants(String keyword, Pageable pageable);
+
+    @Modifying
+    @Query("""
+        update BienTheSanPham v
+        set v.soLuongTon = v.soLuongTon - :qty
+        where v.id = :variantId
+          and v.soLuongTon >= :qty
+    """)
+    int decrementStockIfEnough(@Param("variantId") Integer variantId, @Param("qty") Integer qty);
+
+    @Modifying
+    @Query("""
+        update BienTheSanPham v
+        set v.soLuongTon = v.soLuongTon + :qty
+        where v.id = :variantId
+    """)
+    int incrementStock(@Param("variantId") Integer variantId, @Param("qty") Integer qty);
 
 }

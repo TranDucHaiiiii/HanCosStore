@@ -51,5 +51,16 @@ public class GiaoDichThanhToan {
     @Column(name = "NgayTao", nullable = false)
     private Instant ngayTao;
 
+    @PrePersist
+    protected void onCreate() {
+        if (ngayTao == null) {
+            ngayTao = Instant.now();
+        }
+    }
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PhuongThucThanhToanId", nullable = false)
+    private PhuongThucThanhToan phuongThucThanhToan;
+
 
 }

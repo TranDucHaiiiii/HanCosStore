@@ -27,15 +27,21 @@ public class HomeController {
     private final HomeService homeService;
     private final DanhMucService danhMucService;
     private final CartService cartService;
-
+    /**
+     * Xử lý hiển thị trang chủ (index.html).
+     * @param danhMucId ID của danh mục lọc sản phẩm (nếu có).
+     * @param q Từ khóa tìm kiếm (nếu có).
+     * @param page Số thứ tự trang hiện tại (mặc định là 0).
+     */
     @GetMapping({"/", "/index"})
     public String home(Model model, 
                        @RequestParam(required = false) Integer danhMucId, 
                        @RequestParam(required = false) String q,
                        @RequestParam(defaultValue = "0") int page,
                        HttpSession session) {
+        // Đảm bảo Session được tạo để lưu trữ ID giỏ hàng/thông tin người dùng
         session.getId(); // Force session creation
-        // Cập nhật số lượng giỏ hàng
+        // Cập nhật số lượng sản phẩm trong giỏ hàng hiển thị ở Badge trên Header
         if (session.getAttribute("CART_COUNT") == null) {
             session.setAttribute("CART_COUNT", cartService.getItemCount(session));
         }

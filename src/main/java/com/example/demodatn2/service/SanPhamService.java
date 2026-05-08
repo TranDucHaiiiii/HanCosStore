@@ -1,22 +1,42 @@
 package com.example.demodatn2.service;
 
-
-
-import com.example.demodatn2.dto.*;
-import com.example.demodatn2.entity.*;
-import com.example.demodatn2.repository.*;
+import com.example.demodatn2.dto.BienTheRequestDTO;
+import com.example.demodatn2.dto.BienTheResponseDTO;
+import com.example.demodatn2.dto.HinhAnhMauSacDTO;
+import com.example.demodatn2.dto.HinhAnhSanPhamDTO;
+import com.example.demodatn2.dto.InventoryLogDTO;
+import com.example.demodatn2.dto.InventoryVariantDTO;
+import com.example.demodatn2.dto.NhapKhoHistoryDTO;
+import com.example.demodatn2.dto.SanPhamRequestDTO;
+import com.example.demodatn2.dto.SanPhamResponseDTO;
+import com.example.demodatn2.entity.BienTheSanPham;
+import com.example.demodatn2.entity.DanhMuc;
+import com.example.demodatn2.entity.GiaoDichTonKho;
+import com.example.demodatn2.entity.HinhAnhMauSac;
+import com.example.demodatn2.entity.HinhAnhSanPham;
+import com.example.demodatn2.entity.SanPham;
+import com.example.demodatn2.repository.BienTheSanPhamRepository;
+import com.example.demodatn2.repository.DanhMucRepository;
+import com.example.demodatn2.repository.GiaoDichTonKhoRepository;
+import com.example.demodatn2.repository.HinhAnhMauSacRepository;
+import com.example.demodatn2.repository.HinhAnhSanPhamRepository;
+import com.example.demodatn2.repository.SanPhamRepository;
+import com.example.demodatn2.repository.TaiKhoanRepository;
+import com.example.demodatn2.util.ProductScopeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,7 +44,6 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-// Service nghiệp vụ sản phẩm: tạo/sửa/xóa mềm, quản lý biến thể, ảnh và nhập kho.
 public class SanPhamService {
 
     private final SanPhamRepository sanPhamRepository;
@@ -35,17 +54,12 @@ public class SanPhamService {
     private final DanhMucRepository danhMucRepository;
     private final TaiKhoanRepository taiKhoanRepository;
 
-    /**
-     * Tạo sản phẩm mới kèm biến thể và hình ảnh
-     */
     @Transactional
     public SanPhamResponseDTO createSanPham(SanPhamRequestDTO requestDTO) {
         log.info("Creating new product: {}", requestDTO.getTen());
 
-        // 1. Validate
         validateSanPhamRequest(requestDTO);
 
-        // 2. Tạo SanPham entity
         SanPham sanPham = new SanPham();
         sanPham.setMaSanPham(requestDTO.getMaSanPham());
         sanPham.setTen(requestDTO.getTen());
@@ -57,32 +71,28 @@ public class SanPhamService {
         sanPham.setDaXoa(false);
         sanPham.setNgayTao(Instant.now());
 
-        // Set danh mục nếu có
         if (requestDTO.getDanhMucId() != null) {
             DanhMuc danhMuc = danhMucRepository.findById(requestDTO.getDanhMucId())
-                    .orElseThrow(() -> new RuntimeException("Danh mục không tồn tại: " + requestDTO.getDanhMucId()));
+                    .orElseThrow(() -> new RuntimeException("Danh muc khong ton tai: " + requestDTO.getDanhMucId()));
+            validateCategoryScope(danhMuc);
             sanPham.setDanhMuc(danhMuc);
         }
 
-        // 3. Lưu sản phẩm trước
         sanPham = sanPhamRepository.save(sanPham);
         log.info("Product saved with ID: {}", sanPham.getId());
 
-        // 4. Tạo biến thể
         if (requestDTO.getBienThes() != null && !requestDTO.getBienThes().isEmpty()) {
             List<BienTheSanPham> bienThes = createBienThes(sanPham, requestDTO.getBienThes());
             sanPham.getBienThes().addAll(bienThes);
             log.info("Created {} variants", bienThes.size());
         }
 
-        // 5. Tạo hình ảnh sản phẩm (gallery)
         if (requestDTO.getHinhAnhSanPhams() != null && !requestDTO.getHinhAnhSanPhams().isEmpty()) {
             List<HinhAnhSanPham> hinhAnhs = createHinhAnhSanPhams(sanPham, requestDTO.getHinhAnhSanPhams());
             sanPham.getHinhAnhSanPhams().addAll(hinhAnhs);
             log.info("Created {} product images", hinhAnhs.size());
         }
 
-        // 6. Tạo hình ảnh theo màu sắc
         if (requestDTO.getHinhAnhMauSacs() != null && !requestDTO.getHinhAnhMauSacs().isEmpty()) {
             List<HinhAnhMauSac> hinhAnhMauSacs = createHinhAnhMauSacs(sanPham, requestDTO.getHinhAnhMauSacs());
             sanPham.getHinhAnhMauSacs().addAll(hinhAnhMauSacs);
@@ -90,51 +100,38 @@ public class SanPhamService {
         }
 
         sanPham = sanPhamRepository.save(sanPham);
-
-        // 7. Convert to response DTO
         return convertToResponseDTO(sanPham);
     }
 
-    /**
-     * Validate request
-     */
     private void validateSanPhamRequest(SanPhamRequestDTO requestDTO) {
-        // Check mã sản phẩm đã tồn tại
         if (sanPhamRepository.findByMaSanPham(requestDTO.getMaSanPham()).isPresent()) {
-            throw new RuntimeException("Mã sản phẩm đã tồn tại: " + requestDTO.getMaSanPham());
+            throw new RuntimeException("Ma san pham da ton tai: " + requestDTO.getMaSanPham());
         }
 
-        // Check tên sản phẩm
         if (requestDTO.getTen() == null || requestDTO.getTen().trim().isEmpty()) {
-            throw new RuntimeException("Tên sản phẩm không được để trống");
+            throw new RuntimeException("Ten san pham khong duoc de trong");
         }
 
-        // Check biến thể
         if (requestDTO.getBienThes() == null || requestDTO.getBienThes().isEmpty()) {
-            throw new RuntimeException("Sản phẩm phải có ít nhất 1 biến thể");
+            throw new RuntimeException("San pham phai co it nhat 1 bien the");
         }
 
-        // Check mã SKU trùng
         List<String> maSKUs = requestDTO.getBienThes().stream()
                 .map(BienTheRequestDTO::getMaSKU)
                 .collect(Collectors.toList());
 
         long distinctCount = maSKUs.stream().distinct().count();
         if (distinctCount != maSKUs.size()) {
-            throw new RuntimeException("Có mã SKU bị trùng lặp trong danh sách biến thể");
+            throw new RuntimeException("Co ma SKU bi trung lap trong danh sach bien the");
         }
 
-        // Check SKU đã tồn tại trong DB
         for (String maSKU : maSKUs) {
             if (bienTheRepository.findByMaSKU(maSKU).isPresent()) {
-                throw new RuntimeException("Mã SKU đã tồn tại: " + maSKU);
+                throw new RuntimeException("Ma SKU da ton tai: " + maSKU);
             }
         }
     }
 
-    /**
-     * Tạo danh sách biến thể
-     */
     private List<BienTheSanPham> createBienThes(SanPham sanPham, List<BienTheRequestDTO> bienTheDTOs) {
         List<BienTheSanPham> bienThes = new ArrayList<>();
 
@@ -158,9 +155,6 @@ public class SanPhamService {
         return bienThes;
     }
 
-    /**
-     * Tạo danh sách hình ảnh sản phẩm
-     */
     private List<HinhAnhSanPham> createHinhAnhSanPhams(SanPham sanPham, List<HinhAnhSanPhamDTO> hinhAnhDTOs) {
         if (hinhAnhDTOs == null || hinhAnhDTOs.isEmpty()) {
             return Collections.emptyList();
@@ -174,20 +168,17 @@ public class SanPhamService {
             return Collections.emptyList();
         }
 
-        List<HinhAnhSanPham> hinhAnhs = new ArrayList<>();
-
-        // Đảm bảo chỉ có 1 ảnh chính
         long countAnhChinh = validDTOs.stream()
                 .filter(dto -> dto.getLaAnhChinh() != null && dto.getLaAnhChinh())
                 .count();
 
         if (countAnhChinh == 0) {
-            // Nếu không có ảnh chính, set ảnh đầu tiên làm ảnh chính
             validDTOs.get(0).setLaAnhChinh(true);
         } else if (countAnhChinh > 1) {
-            throw new RuntimeException("Chỉ được có 1 ảnh chính");
+            throw new RuntimeException("Chi duoc co 1 anh chinh");
         }
 
+        List<HinhAnhSanPham> hinhAnhs = new ArrayList<>();
         for (HinhAnhSanPhamDTO dto : validDTOs) {
             HinhAnhSanPham hinhAnh = new HinhAnhSanPham();
             hinhAnh.setSanPham(sanPham);
@@ -195,24 +186,18 @@ public class SanPhamService {
             hinhAnh.setLaAnhChinh(dto.getLaAnhChinh() != null ? dto.getLaAnhChinh() : false);
             hinhAnh.setThuTu(dto.getThuTu() != null ? dto.getThuTu() : 0);
             hinhAnh.setNgayTao(Instant.now());
-
-            // hinhAnh = hinhAnhSanPhamRepository.save(hinhAnh);
             hinhAnhs.add(hinhAnh);
         }
 
         return hinhAnhs;
     }
 
-    /**
-     * Tạo danh sách hình ảnh theo màu sắc
-     */
     private List<HinhAnhMauSac> createHinhAnhMauSacs(SanPham sanPham, List<HinhAnhMauSacDTO> hinhAnhMauSacDTOs) {
         if (hinhAnhMauSacDTOs == null || hinhAnhMauSacDTOs.isEmpty()) {
             return Collections.emptyList();
         }
 
         List<HinhAnhMauSac> hinhAnhMauSacs = new ArrayList<>();
-
         for (HinhAnhMauSacDTO dto : hinhAnhMauSacDTOs) {
             if (dto == null
                     || dto.getMauSac() == null || dto.getMauSac().trim().isEmpty()
@@ -225,17 +210,12 @@ public class SanPhamService {
             hinhAnhMauSac.setMauSac(dto.getMauSac().trim());
             hinhAnhMauSac.setDuongDanAnh(dto.getDuongDanAnh().trim());
             hinhAnhMauSac.setNgayTao(Instant.now());
-
-            // hinhAnhMauSac = hinhAnhMauSacRepository.save(hinhAnhMauSac);
             hinhAnhMauSacs.add(hinhAnhMauSac);
         }
 
         return hinhAnhMauSacs;
     }
 
-    /**
-     * Convert entity sang response DTO
-     */
     private SanPhamResponseDTO convertToResponseDTO(SanPham sanPham) {
         SanPhamResponseDTO responseDTO = new SanPhamResponseDTO();
         responseDTO.setId(sanPham.getId());
@@ -249,7 +229,6 @@ public class SanPhamService {
         responseDTO.setNgayTao(sanPham.getNgayTao());
         responseDTO.setNgayCapNhat(sanPham.getNgayCapNhat());
 
-        // Danh mục
         if (sanPham.getDanhMuc() != null) {
             responseDTO.setDanhMucId(sanPham.getDanhMuc().getId());
             responseDTO.setTenDanhMuc(sanPham.getDanhMuc().getTen());
@@ -259,25 +238,21 @@ public class SanPhamService {
             }
         }
 
-        // Biến thể
         List<BienTheResponseDTO> bienTheDTOs = sanPham.getBienThes().stream()
                 .map(this::convertBienTheToDTO)
                 .collect(Collectors.toList());
         responseDTO.setBienThes(bienTheDTOs);
 
-        // Tính tổng số lượng tồn
         int tongTon = bienTheDTOs.stream()
                 .mapToInt(bt -> bt.getSoLuongTon() != null ? bt.getSoLuongTon() : 0)
                 .sum();
         responseDTO.setTongSoLuongTon(tongTon);
 
-        // Hình ảnh sản phẩm
         List<HinhAnhSanPhamDTO> hinhAnhDTOs = sanPham.getHinhAnhSanPhams().stream()
                 .map(this::convertHinhAnhSanPhamToDTO)
                 .collect(Collectors.toList());
         responseDTO.setHinhAnhSanPhams(hinhAnhDTOs);
 
-        // Hình ảnh màu sắc
         List<HinhAnhMauSacDTO> hinhAnhMauSacDTOs = sanPham.getHinhAnhMauSacs().stream()
                 .map(this::convertHinhAnhMauSacToDTO)
                 .collect(Collectors.toList());
@@ -315,15 +290,15 @@ public class SanPhamService {
         return dto;
     }
 
-    /**
-     * Lấy chi tiết sản phẩm theo ID
-     */
     @Transactional(readOnly = true)
     public SanPhamResponseDTO getSanPhamById(Integer id) {
         SanPham sanPham = sanPhamRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm với ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay san pham voi ID: " + id));
 
-        // Load lazy collections
+        if (!isAllowedProduct(sanPham)) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "San pham khong ton tai");
+        }
+
         sanPham.getBienThes().size();
         sanPham.getHinhAnhSanPhams().size();
         sanPham.getHinhAnhMauSacs().size();
@@ -331,17 +306,11 @@ public class SanPhamService {
         return convertToResponseDTO(sanPham);
     }
 
-    /**
-     * Lấy danh sách tất cả sản phẩm
-     */
     @Transactional(readOnly = true)
     public List<SanPhamResponseDTO> getAllSanPham() {
         return searchSanPham(null, null, null);
     }
 
-    /**
-     * Tìm kiếm và lọc sản phẩm (Admin)
-     */
     @Transactional(readOnly = true)
     public List<SanPhamResponseDTO> searchSanPham(String keyword, Integer danhMucId, String trangThai) {
         List<SanPham> sanPhams = sanPhamRepository.searchAdmin(
@@ -352,8 +321,8 @@ public class SanPhamService {
 
         return sanPhams.stream()
                 .filter(sp -> sp.getDaXoa() == null || !sp.getDaXoa())
+                .filter(this::isAllowedProduct)
                 .map(sp -> {
-                    // Load lazy collections
                     sp.getBienThes().size();
                     sp.getHinhAnhSanPhams().size();
                     sp.getHinhAnhMauSacs().size();
@@ -362,38 +331,36 @@ public class SanPhamService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Tìm kiếm và lọc sản phẩm có phân trang (Admin)
-     */
     @Transactional(readOnly = true)
-    public Page<SanPhamResponseDTO> searchSanPhamPaged(String keyword, Integer danhMucId, String trangThai, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<SanPham> sanPhamPage = sanPhamRepository.searchAdminPage(
-                (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null,
-                danhMucId,
-                (trangThai != null && !trangThai.trim().isEmpty()) ? trangThai.trim() : null,
-                pageable
-        );
-
-        return sanPhamPage.map(sp -> {
-            sp.getBienThes().size();
-            sp.getHinhAnhSanPhams().size();
-            sp.getHinhAnhMauSacs().size();
-            return convertToResponseDTO(sp);
-        });
+    public Page<SanPhamResponseDTO> searchSanPhamPaged(String keyword, Integer danhMucId, String trangThai, String sortBy, int page, int size) {
+        List<SanPhamResponseDTO> allResults = searchSanPham(keyword, danhMucId, trangThai);
+        
+        // Sort theo ngày tạo
+        if ("oldest".equalsIgnoreCase(sortBy)) {
+            allResults.sort((a, b) -> {
+                Instant timeA = a.getNgayTao() != null ? a.getNgayTao() : Instant.EPOCH;
+                Instant timeB = b.getNgayTao() != null ? b.getNgayTao() : Instant.EPOCH;
+                return timeA.compareTo(timeB);
+            });
+        } else {
+            // Default: newest first
+            allResults.sort((a, b) -> {
+                Instant timeA = a.getNgayTao() != null ? a.getNgayTao() : Instant.EPOCH;
+                Instant timeB = b.getNgayTao() != null ? b.getNgayTao() : Instant.EPOCH;
+                return timeB.compareTo(timeA);
+            });
+        }
+        
+        return paginate(allResults, page, size);
     }
 
-    /**
-     * Cập nhật sản phẩm
-     */
     @Transactional
     public SanPhamResponseDTO updateSanPham(SanPhamRequestDTO requestDTO) {
         log.info("Updating product ID: {}", requestDTO.getId());
-        
-        SanPham sanPham = sanPhamRepository.findById(requestDTO.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm với ID: " + requestDTO.getId()));
 
-        // 1. Cập nhật thông tin cơ bản
+        SanPham sanPham = sanPhamRepository.findById(requestDTO.getId())
+                .orElseThrow(() -> new RuntimeException("Khong tim thay san pham voi ID: " + requestDTO.getId()));
+
         sanPham.setTen(requestDTO.getTen());
         sanPham.setMoTaNgan(requestDTO.getMoTaNgan());
         sanPham.setMoTa(requestDTO.getMoTa());
@@ -402,20 +369,10 @@ public class SanPhamService {
 
         if (requestDTO.getDanhMucId() != null) {
             DanhMuc danhMuc = danhMucRepository.findById(requestDTO.getDanhMucId())
-                    .orElseThrow(() -> new RuntimeException("Danh mục không tồn tại: " + requestDTO.getDanhMucId()));
+                    .orElseThrow(() -> new RuntimeException("Danh muc khong ton tai: " + requestDTO.getDanhMucId()));
+            validateCategoryScope(danhMuc);
             sanPham.setDanhMuc(danhMuc);
         }
-
-        // 2. Cập nhật biến thể
-        // Đối với sự đơn giản, tôi sẽ xóa các biến thể cũ không có trong request và cập nhật/thêm mới
-        // Tuy nhiên, để tránh làm hỏng dữ liệu đơn hàng cũ, tốt hơn là chỉ INACTIVE biến thể cũ hoặc update
-        
-        // Ở đây tôi sẽ dùng cách đơn giản: Xóa hết và thêm lại (chỉ khi chưa có đơn hàng liên quan)
-        // Nhưng vì bài toán yêu cầu chỉnh sửa, tôi sẽ làm cách an toàn hơn: 
-        // - Duyệt qua list bienThes trong request:
-        //   - Nếu có ID -> update
-        //   - Nếu không có ID -> thêm mới
-        // - Những biến thể nào có trong DB mà không có trong request -> Xóa (hoặc set daXoa)
 
         List<BienTheSanPham> currentBienThes = sanPham.getBienThes();
         List<Integer> requestIds = requestDTO.getBienThes().stream()
@@ -423,16 +380,14 @@ public class SanPhamService {
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toList());
 
-        // Xóa những biến thể không còn trong request
         currentBienThes.removeIf(bt -> !requestIds.contains(bt.getId()));
 
         for (BienTheRequestDTO btDto : requestDTO.getBienThes()) {
             if (btDto.getId() != null) {
-                // Update
                 BienTheSanPham bt = currentBienThes.stream()
                         .filter(b -> b.getId().equals(btDto.getId()))
                         .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Biến thể không tồn tại: " + btDto.getId()));
+                        .orElseThrow(() -> new RuntimeException("Bien the khong ton tai: " + btDto.getId()));
                 bt.setMaSKU(btDto.getMaSKU());
                 bt.setMauSac(btDto.getMauSac());
                 bt.setKichCo(btDto.getKichCo());
@@ -441,7 +396,6 @@ public class SanPhamService {
                 bt.setSoLuongTon(btDto.getSoLuongTon());
                 bt.setKhoiLuongGram(btDto.getKhoiLuongGram());
             } else {
-                // Add new
                 BienTheSanPham newBt = new BienTheSanPham();
                 newBt.setSanPham(sanPham);
                 newBt.setMaSKU(btDto.getMaSKU());
@@ -456,19 +410,16 @@ public class SanPhamService {
             }
         }
 
-        // 3. Cập nhật hình ảnh (gallery)
-        // Xóa cũ thêm mới cho nhanh (vì là danh sách ảnh)
         hinhAnhSanPhamRepository.deleteBySanPham(sanPham);
-        hinhAnhSanPhamRepository.flush(); // Đảm bảo xóa xong trước khi thêm mới
+        hinhAnhSanPhamRepository.flush();
         sanPham.getHinhAnhSanPhams().clear();
         if (requestDTO.getHinhAnhSanPhams() != null) {
             List<HinhAnhSanPham> newHinhAnhs = createHinhAnhSanPhams(sanPham, requestDTO.getHinhAnhSanPhams());
             sanPham.getHinhAnhSanPhams().addAll(newHinhAnhs);
         }
 
-        // 4. Cập nhật hình ảnh theo màu
         hinhAnhMauSacRepository.deleteBySanPham(sanPham);
-        hinhAnhMauSacRepository.flush(); // Đảm bảo xóa xong trước khi thêm mới
+        hinhAnhMauSacRepository.flush();
         sanPham.getHinhAnhMauSacs().clear();
         if (requestDTO.getHinhAnhMauSacs() != null) {
             List<HinhAnhMauSac> newHinhAnhMauSacs = createHinhAnhMauSacs(sanPham, requestDTO.getHinhAnhMauSacs());
@@ -477,21 +428,18 @@ public class SanPhamService {
 
         sanPham.setNgayCapNhat(Instant.now());
         sanPham = sanPhamRepository.save(sanPham);
-        
         return convertToResponseDTO(sanPham);
     }
 
-    /**
-     * Xóa mềm sản phẩm
-     */
     @Transactional
     public void deleteSanPham(Integer id) {
         SanPham sanPham = sanPhamRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm với ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay san pham voi ID: " + id));
         sanPham.setDaXoa(true);
         sanPham.setTrangThai("INACTIVE");
         sanPhamRepository.save(sanPham);
     }
+
     @Transactional
     public void addStockForVariant(Integer sanPhamId, Integer bienTheId, Integer soLuongThem) {
         addStockForVariant(sanPhamId, bienTheId, soLuongThem, null, null);
@@ -561,20 +509,27 @@ public class SanPhamService {
     }
 
     @Transactional(readOnly = true)
-        public Page<InventoryVariantDTO> getInventoryVariants(String keyword, int page, int size) {
+    public Page<InventoryVariantDTO> getInventoryVariants(String keyword, int page, int size) {
         String normalizedKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
-        Pageable pageable = PageRequest.of(page, size, Sort.by("sanPham.ten").ascending().and(Sort.by("mauSac").ascending()).and(Sort.by("kichCo").ascending()));
-        Page<BienTheSanPham> variants = bienTheRepository.searchInventoryVariants(normalizedKeyword, pageable);
+        List<BienTheSanPham> variants = bienTheRepository.searchInventoryVariants(normalizedKeyword, Pageable.unpaged())
+                .getContent()
+                .stream()
+                .filter(v -> isAllowedProduct(v.getSanPham()))
+                .sorted(Comparator
+                        .comparing((BienTheSanPham v) -> v.getSanPham().getTen(), String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(v -> v.getMauSac() != null ? v.getMauSac() : "", String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(v -> v.getKichCo() != null ? v.getKichCo() : "", String.CASE_INSENSITIVE_ORDER))
+                .collect(Collectors.toList());
+
         java.util.Map<Integer, String> imageCache = new java.util.HashMap<>();
-
-        return variants.map(v -> {
-                Integer productId = v.getSanPham().getId();
-                String image = imageCache.computeIfAbsent(productId,
+        List<InventoryVariantDTO> mapped = variants.stream().map(v -> {
+            Integer productId = v.getSanPham().getId();
+            String image = imageCache.computeIfAbsent(productId,
                     id -> hinhAnhSanPhamRepository.findFirstBySanPham_IdOrderByLaAnhChinhDescThuTuAscIdAsc(id)
-                        .map(HinhAnhSanPham::getDuongDanAnh)
-                        .orElse("/images/no-image.png"));
+                            .map(HinhAnhSanPham::getDuongDanAnh)
+                            .orElse("/images/no-image.png"));
 
-                return InventoryVariantDTO.builder()
+            return InventoryVariantDTO.builder()
                     .sanPhamId(productId)
                     .bienTheId(v.getId())
                     .tenSanPham(v.getSanPham().getTen())
@@ -584,12 +539,15 @@ public class SanPhamService {
                     .soLuongTon(v.getSoLuongTon() != null ? v.getSoLuongTon() : 0)
                     .hinhAnh(image)
                     .build();
-            });
+        }).collect(Collectors.toList());
+
+        return paginate(mapped, page, size);
     }
 
     @Transactional(readOnly = true)
     public List<InventoryLogDTO> getRecentInventoryLogs() {
         return giaoDichTonKhoRepository.findTop50ByOrderByNgayTaoDesc().stream()
+                .filter(gd -> gd.getBienTheSanPham() != null && isAllowedProduct(gd.getBienTheSanPham().getSanPham()))
                 .map(gd -> {
                     BienTheSanPham bt = gd.getBienTheSanPham();
                     String nguoiThucHien;
@@ -604,10 +562,10 @@ public class SanPhamService {
                     }
 
                     return InventoryLogDTO.builder()
-                            .tenSanPham(bt != null && bt.getSanPham() != null ? bt.getSanPham().getTen() : "-")
-                            .maSKU(bt != null ? bt.getMaSKU() : "-")
-                            .mauSac(bt != null ? bt.getMauSac() : "-")
-                            .kichCo(bt != null ? bt.getKichCo() : "-")
+                            .tenSanPham(bt.getSanPham() != null ? bt.getSanPham().getTen() : "-")
+                            .maSKU(bt.getMaSKU() != null ? bt.getMaSKU() : "-")
+                            .mauSac(bt.getMauSac() != null ? bt.getMauSac() : "-")
+                            .kichCo(bt.getKichCo() != null ? bt.getKichCo() : "-")
                             .loai(gd.getLoai())
                             .soLuong(gd.getSoLuong())
                             .nguoiThucHien(nguoiThucHien)
@@ -623,6 +581,7 @@ public class SanPhamService {
         return giaoDichTonKhoRepository
                 .findByBienTheSanPham_SanPham_IdOrderByNgayTaoDesc(sanPhamId)
                 .stream()
+                .filter(gd -> gd.getBienTheSanPham() != null && isAllowedProduct(gd.getBienTheSanPham().getSanPham()))
                 .map(gd -> {
                     BienTheSanPham bt = gd.getBienTheSanPham();
                     String nguoiNhap;
@@ -662,11 +621,22 @@ public class SanPhamService {
                 || !bienThe.getSanPham().getId().equals(sanPhamId)) {
             throw new RuntimeException("Bien the khong thuoc san pham nay.");
         }
+
+        if (!isAllowedProduct(bienThe.getSanPham())) {
+            throw new RuntimeException("San pham ngoai pham vi website.");
+        }
+
         return bienThe;
     }
 
     @Transactional(readOnly = true)
     public Integer getFirstBienTheIdBySanPham(Integer sanPhamId) {
+        SanPham sanPham = sanPhamRepository.findById(sanPhamId)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay san pham."));
+        if (!isAllowedProduct(sanPham)) {
+            throw new RuntimeException("San pham ngoai pham vi website.");
+        }
+
         return bienTheRepository.findBySanPham_Id(sanPhamId).stream()
                 .findFirst()
                 .map(BienTheSanPham::getId)
@@ -678,6 +648,7 @@ public class SanPhamService {
         return giaoDichTonKhoRepository
                 .findByBienTheSanPham_IdOrderByNgayTaoDesc(bienTheId)
                 .stream()
+                .filter(gd -> gd.getBienTheSanPham() != null && isAllowedProduct(gd.getBienTheSanPham().getSanPham()))
                 .map(gd -> {
                     BienTheSanPham bt = gd.getBienTheSanPham();
                     String nguoiNhap;
@@ -716,6 +687,10 @@ public class SanPhamService {
         SanPham sanPham = sanPhamRepository.findById(sanPhamId)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay san pham voi ID: " + sanPhamId));
 
+        if (!isAllowedProduct(sanPham)) {
+            throw new RuntimeException("San pham ngoai pham vi website.");
+        }
+
         List<HinhAnhSanPham> currentImages = hinhAnhSanPhamRepository.findBySanPham_IdOrderByLaAnhChinhDescThuTuAscIdAsc(sanPhamId);
 
         boolean duplicated = currentImages.stream()
@@ -737,5 +712,23 @@ public class SanPhamService {
         image.setThuTu(nextOrder);
         image.setNgayTao(Instant.now());
         hinhAnhSanPhamRepository.save(image);
+    }
+
+    private boolean isAllowedProduct(SanPham sanPham) {
+        return ProductScopeUtil.isAllowedProduct(sanPham);
+    }
+
+    private void validateCategoryScope(DanhMuc danhMuc) {
+        if (ProductScopeUtil.isExcludedCategory(danhMuc)) {
+            throw new RuntimeException("Website hien chi ho tro ban quan ao, khong ho tro danh muc giay/dep.");
+        }
+    }
+
+    private <T> Page<T> paginate(List<T> items, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : size;
+        int start = Math.min(safePage * safeSize, items.size());
+        int end = Math.min(start + safeSize, items.size());
+        return new PageImpl<>(items.subList(start, end), PageRequest.of(safePage, safeSize), items.size());
     }
 }

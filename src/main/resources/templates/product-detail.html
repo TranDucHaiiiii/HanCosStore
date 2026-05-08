@@ -452,6 +452,19 @@
                             }
                         });
                     } else {
+                        if (data.requireLogin) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Bạn chưa đăng nhập',
+                                text: data.message || 'Vui lòng đăng nhập để tiếp tục mua hàng',
+                                confirmButtonText: 'Đăng nhập ngay',
+                                confirmButtonColor: '#1a1a1a'
+                            }).then(() => {
+                                window.location.href = data.loginUrl || '/login';
+                            });
+                            return;
+                        }
+
                         Swal.fire('Lỗi', data.message, 'error');
                     }
                 });

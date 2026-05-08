@@ -11,6 +11,7 @@ function toggleVoucherList() {
     }
 
     let currentShippingFee = null;
+    let isShippingFeeLoading = false;
     let subtotalValue = 0;
     let discountValue = 0;
 
@@ -61,6 +62,13 @@ function toggleVoucherList() {
         updateFinalTotal();
     }
 
+    function syncSelectedVoucherCode(code) {
+        const voucherInput = document.getElementById('selectedVoucherCode');
+        if (voucherInput) {
+            voucherInput.value = code || '';
+        }
+    }
+
     function buildFeeParams() {
         const savedSelect = document.getElementById('savedAddressSelect');
         if (savedSelect && savedSelect.value) {
@@ -91,7 +99,9 @@ function toggleVoucherList() {
 
     function refreshGhtkFee() {
         const params = buildFeeParams();
+        isShippingFeeLoading = true;
         if (!params) {
+            isShippingFeeLoading = false;
             setShippingText('Chọn địa chỉ để tính phí', '');
             return;
         }
@@ -118,6 +128,9 @@ function toggleVoucherList() {
         })
         .catch(() => {
             setShippingText('Không thể tính phí', '#dc3545');
+        })
+        .finally(() => {
+            isShippingFeeLoading = false;
         });
     }
 
@@ -141,6 +154,7 @@ function toggleVoucherList() {
                 el.classList.add('active');
                 document.getElementById('appliedBadge').textContent = data.code;
                 document.getElementById('appliedBadge').style.display = 'inline-block';
+                syncSelectedVoucherCode(data.code);
 
                 // Show discount row
                 let discountRow = document.getElementById('discountRow');
@@ -180,6 +194,7 @@ function toggleVoucherList() {
             if (data.success) {
                 document.querySelectorAll('.voucher-item').forEach(i => i.classList.remove('active'));
                 document.getElementById('appliedBadge').style.display = 'none';
+                syncSelectedVoucherCode('');
                 const discountRow = document.getElementById('discountRow');
                 if (discountRow) discountRow.style.display = 'none';
                 setDiscountValue(0);
@@ -224,6 +239,7 @@ let locationData = [];
         subtotalValue = parseIntSafe(subtotalInput ? subtotalInput.value : 0, 0);
         discountValue = parseIntSafe(discountInput ? discountInput.value : 0, 0);
         currentShippingFee = parseIntSafe(shippingInput ? shippingInput.value : 0, 0);
+        syncSelectedVoucherCode((document.getElementById('appliedBadge')?.textContent || '').trim());
         updateFinalTotal();
 
         // Khi chọn Tỉnh
@@ -236,7 +252,25 @@ let locationData = [];
             if (provinceId) {
                 const province = locationData.find(p => p.level1_id === provinceId);
                 if (province && province.level2s) {
-                    province.level2s.forEach(d => {
+                    province.level2s.forEach(d => {document.addEventListener('DOMContentLoaded', function() {
+    const bankCode = 'MB';
+    fetch('https://api.vietqr.io/v2/banks')
+        .then(res => res.json())
+        .then(data => {
+            if (data.code === '00') {
+                const bank = data.data.find(b => b.code === bankCode);
+                if (bank) {
+                    const bankNameEl = document.getElementById('shop-bank-name');
+                    const bankLogoEl = document.getElementById('shop-bank-logo');
+
+                    bankNameEl.innerText = bank.name + ' (' + bank.shortName + ')';
+                    bankLogoEl.src = bank.logo;
+                    bankLogoEl.style.display = 'inline-block';
+                }
+            }
+        })
+        .catch(err => console.error('Error fetching banks:', err));
+});
                         const option = new Option(d.name, d.level2_id);
                         districtSelect.add(option);
                     });
@@ -305,6 +339,13 @@ let locationData = [];
             if (!fullAddressInput.value || provinceSelect.value === '' || districtSelect.value === '' || wardSelect.value === '') {
                 e.preventDefault();
                 alert('Vui lòng chọn đầy đủ thông tin địa chỉ!');
+            }
+        });
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (isShippingFeeLoading) {
+                e.preventDefault();
+                alert('Phi van chuyen dang duoc tinh, vui long thu lai sau vai giay.');
             }
         });
     });

@@ -7,7 +7,7 @@
             aspect-ratio: 3/4; 
             border: 1px solid #eee;
         }
-        .main-img-container img { width: 100%; height: 100%; object-fit: contain; object-position: center; transition: transform 0.5s ease; }
+        .main-img-container img { width: 100%; height: 100%; object-fit: cover; object-position: center; transition: transform 0.5s ease; }
         .thumb-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .thumb-item { aspect-ratio: 1; overflow: hidden; cursor: pointer; border: 1px solid #eee; transition: all 0.2s; }
         .thumb-item.active { border-color: #8b4d4d; border-width: 2px; }

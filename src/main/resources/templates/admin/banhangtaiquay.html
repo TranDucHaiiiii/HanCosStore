@@ -386,12 +386,12 @@
                 </div>
                 <div class="transfer-bank mb-2 justify-content-center">
                     <img id="transferBankLogo" src="" alt="" class="transfer-bank-logo">
-                    <span id="transferBankName">MB Bank</span>
+                    <span id="transferBankName">MSB</span>
                 </div>
                 <div class="transfer-modal-details">
                     <div class="transfer-detail justify-content-center">
                         <span class="transfer-label">STK:</span>
-                        <span class="transfer-value" id="transferSTK">0766128057</span>
+                        <span class="transfer-value" id="transferSTK">96886693011616</span>
                         <i class="fas fa-copy transfer-copy" onclick="copySTK()" title="Sao chép"></i>
                     </div>
                     <div class="transfer-detail justify-content-center">
@@ -414,13 +414,33 @@
 <!-- ═══ Success Overlay ═══ -->
 <div class="success-overlay" id="successOverlay">
     <div class="success-box">
-        <i class="fas fa-check-circle"></i>
-        <h4>Thanh toán thành công!</h4>
-        <p>Mã hóa đơn: <strong id="successOrderCode"></strong></p>
-        <p>Tổng tiền: <strong id="successTotal" class="text-danger"></strong></p>
-        <button class="btn text-white mt-3" style="background:var(--primary-color);border-radius:10px;font-weight:700;padding:0.6rem 2rem;" onclick="newOrder()">
-            <i class="fas fa-plus me-1"></i>Tạo đơn mới
-        </button>
+        <!-- Loading spinner -->
+        <div id="successLoading" class="text-center mb-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang xử lý...</span>
+            </div>
+            <p class="mt-2 text-muted small">Đang xác nhận thanh toán...</p>
+        </div>
+
+        <!-- Success content (hidden initially) -->
+        <div id="successContent" style="display:none;">
+            <i class="fas fa-check-circle"></i>
+            <h4>✓ Đã thanh toán thành công!</h4>
+            <p>Mã hóa đơn: <strong id="successOrderCode"></strong></p>
+            <p>Tổng tiền: <strong id="successTotal" class="text-danger"></strong></p>
+            
+            <!-- QR code for transfer payment method -->
+            <div id="successQRSection" style="display:none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;"><strong>Mã QR thanh toán:</strong></p>
+                <div style="width: 180px; height: 180px; margin: 0 auto; border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                    <img id="successQR" src="" alt="QR Thanh toán" style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+            </div>
+            
+            <button class="btn text-white mt-3" style="background:var(--primary-color);border-radius:10px;font-weight:700;padding:0.6rem 2rem;" onclick="newOrder()">
+                <i class="fas fa-plus me-1"></i>Tạo đơn mới
+            </button>
+        </div>
     </div>
 </div>
 

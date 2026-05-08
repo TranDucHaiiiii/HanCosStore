@@ -118,7 +118,7 @@
                             <div>
                                 <p class="alert-title mb-1">Sản phẩm sắp hết hàng</p>
                                 <h6 class="alert-value mb-1"><span th:text="${stats.soSanPhamSapHetHang}">0</span> biến thể</h6>
-                                <small class="text-muted">Tồn kho từ 1 đến 5 sản phẩm</small>
+                                <small class="text-muted">Tồn kho từ 0 đến 10 sản phẩm</small>
                                 <div class="low-stock-compact mt-2" th:if="${stats.bienTheSapHetHang != null and !#lists.isEmpty(stats.bienTheSapHetHang)}">
                                     <div th:each="bt,iter : ${stats.bienTheSapHetHang}" th:if="${iter.index < 2}" class="low-stock-row">
                                         <img class="low-stock-thumb"

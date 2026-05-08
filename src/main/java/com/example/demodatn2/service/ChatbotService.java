@@ -154,7 +154,7 @@ public class ChatbotService {
         }
         String normalized = status.trim().toUpperCase();
         return switch (normalized) {
-            case "CHO_XAC_NHAN", "PENDING", "PENDING_PAYMENT" -> "Chờ xác nhận";
+            case "CHO_XAC_NHAN", "PENDING" -> "Chờ xác nhận";
             case "DA_XAC_NHAN", "CONFIRMED", "PROCESSING" -> "Đã xác nhận";
             case "DANG_GIAO", "SHIPPING", "SHIPPED" -> "Đang giao";
             case "HOAN_THANH", "DELIVERED", "COMPLETED" -> "Hoàn thành";

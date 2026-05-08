@@ -138,11 +138,11 @@
                                 </label>
                             </div>
                             <div class="form-check p-3 payment-option rounded-0 d-flex align-items-center">
-                                <input class="form-check-input ms-0 me-3" type="radio" name="payment" id="vietqr"
-                                    value="VIETQR">
+                                <input class="form-check-input ms-0 me-3" type="radio" name="payment" id="sepay"
+                                    value="SEPAY">
                                 <label class="form-check-label fw-600 text-uppercase small letter-spacing-1"
-                                    for="vietqr">
-                                    <i class="fas fa-qrcode me-2"></i> Chuyển khoản VietQR
+                                    for="sepay">
+                                    <i class="fas fa-qrcode me-2"></i> Chuyển khoản SePay
                                 </label>
                             </div>
                         </div>
@@ -183,6 +183,12 @@
                                 </div>
                                 <i class="fas fa-chevron-down small text-muted" id="voucherArrow"></i>
                             </div>
+                            <div class="mb-3">
+                                <input type="text" id="selectedVoucherCode" class="form-control form-control-sm"
+                                    th:value="${appliedVoucherCode}"
+                                    placeholder="Chọn mã từ danh sách bên dưới"
+                                    readonly>
+                            </div>
                             <div class="voucher-list" id="voucherList">
                                 <div th:if="${#lists.isEmpty(eligibleVouchers)}"
                                     class="text-muted small text-center py-3">
@@ -214,7 +220,7 @@
                         </div>
                         <input type="hidden" id="subtotalValue" th:value="${total}">
                         <input type="hidden" id="discountValue" th:value="${discount != null ? discount : 0}">
-                        <input type="hidden" id="shippingValue" th:value="${shippingFee}">
+                        <input type="hidden" name="shippingFee" id="shippingValue" th:value="${shippingFee}">
                         <div class="d-flex justify-content-between mb-3 font-size-0-9" id="discountRow"
                             th:if="${discount != null and discount > 0}">
                             <span class="text-muted">Giảm giá</span>

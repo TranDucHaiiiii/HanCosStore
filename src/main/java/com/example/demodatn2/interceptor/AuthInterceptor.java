@@ -24,6 +24,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 || uri.equals("/api/chatbot")
                 || uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/images/") || uri.startsWith("/data/")
                 || (uri.startsWith("/api/danh-muc/") && request.getMethod().equals("GET")) // Chỉ cho GET danh mục là public
+                || uri.startsWith("/api/order/status/")
                 || uri.startsWith("/products/")
                 || uri.startsWith("/cart/") || uri.startsWith("/order/checkout") || uri.startsWith("/order/success")
                 || uri.startsWith("/payment/")) {

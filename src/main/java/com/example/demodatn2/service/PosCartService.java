@@ -18,9 +18,12 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PosCartService {
 
-    private static final String SESSION_CARTS   = "POS_CARTS";
-    private static final String SESSION_ACTIVE  = "POS_ACTIVE_INVOICE";
+    private static final String SESSION_CARTS = "POS_CARTS";
+    private static final String SESSION_ACTIVE = "POS_ACTIVE_INVOICE";
     private static final String SESSION_COUNTER = "POS_INVOICE_COUNTER";
+    private static final String SESSION_TRANSFER_REFS = "POS_TRANSFER_REFS";
+    private static final String SESSION_INVOICE_CREATED_AT = "POS_INVOICE_CREATED_AT";
+    private static final long INVOICE_TTL_MINUTES = 30;
 
     private final BienTheSanPhamRepository bienTheSanPhamRepository;
 
@@ -104,7 +107,14 @@ public class PosCartService {
     }
 
     public void clear(HttpSession session) {
+        String activeId = getActiveInvoiceId(session);
         getMutableCart(session).clear();
+        getTransferRefs(session).remove(activeId);
+    }
+
+    public String ensureTransferReference(HttpSession session) {
+        String activeId = getActiveInvoiceId(session);
+        return getTransferRefs(session).computeIfAbsent(activeId, key -> generateTransferReference(session));
     }
 
     // ─── Invoice management ───────────────────────────────────────────────────
@@ -121,6 +131,7 @@ public class PosCartService {
     }
 
     public String getActiveInvoiceId(HttpSession session) {
+        purgeExpiredInvoices(session);
         String activeId = (String) session.getAttribute(SESSION_ACTIVE);
         if (activeId == null || !getAllCarts(session).containsKey(activeId)) {
             activeId = createInvoice(session);
@@ -129,18 +140,27 @@ public class PosCartService {
     }
 
     public String createInvoice(HttpSession session) {
+        purgeExpiredInvoices(session);
         LinkedHashMap<String, List<PosCartItemDTO>> carts = getAllCarts(session);
+        
+        // Giới hạn tối đa 5 hóa đơn
+        if (carts.size() >= 5) {
+            throw new RuntimeException("Tối đa 5 hóa đơn. Vui lòng thanh toán hoặc xóa hóa đơn cũ.");
+        }
+        
         Integer counter = (Integer) session.getAttribute(SESSION_COUNTER);
         if (counter == null) counter = 0;
         counter++;
         session.setAttribute(SESSION_COUNTER, counter);
         String invoiceId = "HD" + counter;
         carts.put(invoiceId, new ArrayList<>());
+        getInvoiceCreatedAt(session).put(invoiceId, java.time.Instant.now());
         session.setAttribute(SESSION_ACTIVE, invoiceId);
         return invoiceId;
     }
 
     public String switchInvoice(HttpSession session, String invoiceId) {
+        purgeExpiredInvoices(session);
         if (!getAllCarts(session).containsKey(invoiceId)) {
             throw new RuntimeException("Hóa đơn không tồn tại: " + invoiceId);
         }
@@ -151,6 +171,8 @@ public class PosCartService {
     public String deleteInvoice(HttpSession session, String invoiceId) {
         LinkedHashMap<String, List<PosCartItemDTO>> carts = getAllCarts(session);
         carts.remove(invoiceId);
+        getInvoiceCreatedAt(session).remove(invoiceId);
+        getTransferRefs(session).remove(invoiceId);
         String activeId = (String) session.getAttribute(SESSION_ACTIVE);
         if (invoiceId.equals(activeId)) {
             if (!carts.isEmpty()) {
@@ -164,6 +186,7 @@ public class PosCartService {
     }
 
     public List<PosInvoiceSummaryDTO> listInvoices(HttpSession session) {
+        purgeExpiredInvoices(session);
         String activeId = getActiveInvoiceId(session);
         LinkedHashMap<String, List<PosCartItemDTO>> carts = getAllCarts(session);
         List<PosInvoiceSummaryDTO> result = new ArrayList<>();
@@ -188,6 +211,80 @@ public class PosCartService {
     private List<PosCartItemDTO> getMutableCart(HttpSession session) {
         String activeId = getActiveInvoiceId(session);
         return getAllCarts(session).computeIfAbsent(activeId, k -> new ArrayList<>());
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> getTransferRefs(HttpSession session) {
+        Object raw = session.getAttribute(SESSION_TRANSFER_REFS);
+        if (raw instanceof Map<?, ?> refs) {
+            return (Map<String, String>) refs;
+        }
+        Map<String, String> refs = new HashMap<>();
+        session.setAttribute(SESSION_TRANSFER_REFS, refs);
+        return refs;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, java.time.Instant> getInvoiceCreatedAt(HttpSession session) {
+        Object raw = session.getAttribute(SESSION_INVOICE_CREATED_AT);
+        if (raw instanceof Map<?, ?> map) {
+            return (Map<String, java.time.Instant>) map;
+        }
+        Map<String, java.time.Instant> createdAt = new HashMap<>();
+        session.setAttribute(SESSION_INVOICE_CREATED_AT, createdAt);
+        return createdAt;
+    }
+
+    private void purgeExpiredInvoices(HttpSession session) {
+        Map<String, java.time.Instant> createdAt = getInvoiceCreatedAt(session);
+        if (createdAt.isEmpty()) {
+            return;
+        }
+
+        java.time.Instant cutoff = java.time.Instant.now().minus(java.time.Duration.ofMinutes(INVOICE_TTL_MINUTES));
+        List<String> expiredIds = createdAt.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && entry.getValue().isBefore(cutoff))
+                .map(Map.Entry::getKey)
+                .toList();
+
+        if (expiredIds.isEmpty()) {
+            return;
+        }
+
+        LinkedHashMap<String, List<PosCartItemDTO>> carts = getAllCarts(session);
+        String activeId = (String) session.getAttribute(SESSION_ACTIVE);
+        expiredIds.forEach(invoiceId -> {
+            carts.remove(invoiceId);
+            createdAt.remove(invoiceId);
+            getTransferRefs(session).remove(invoiceId);
+        });
+
+        if (activeId != null && expiredIds.contains(activeId)) {
+            if (!carts.isEmpty()) {
+                session.setAttribute(SESSION_ACTIVE, carts.keySet().iterator().next());
+            } else {
+                session.removeAttribute(SESSION_ACTIVE);
+            }
+        }
+    }
+
+    private String generateTransferReference(HttpSession session) {
+        while (true) {
+            String candidate = "DH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            if (!isTransferReferenceUsed(session, candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    private boolean isTransferReferenceUsed(HttpSession session, String code) {
+        if (code == null || code.isBlank()) {
+            return true;
+        }
+        if (getTransferRefs(session).containsValue(code)) {
+            return true;
+        }
+        return false;
     }
 
     private PosCartItemDTO toPosCartItem(BienTheSanPham variant, int qty) {

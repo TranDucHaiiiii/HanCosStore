@@ -52,6 +52,7 @@ public class SanPhamController {
     public String showProductListPage(@RequestParam(required = false) String keyword,
                                      @RequestParam(required = false) Integer danhMucId,
                                      @RequestParam(required = false) String trangThai,
+                                     @RequestParam(required = false, defaultValue = "newest") String sortBy,
                                      @RequestParam(defaultValue = "1") int page,
                                      @RequestParam(defaultValue = "10") int size,
                                      Model model) {
@@ -62,6 +63,7 @@ public class SanPhamController {
             keyword,
             danhMucId,
             trangThai,
+            sortBy,
             safePage - 1,
             safeSize
         );
@@ -72,6 +74,7 @@ public class SanPhamController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedDanhMucId", danhMucId);
         model.addAttribute("selectedTrangThai", trangThai);
+        model.addAttribute("selectedSortBy", sortBy);
         model.addAttribute("currentPage", safePage);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("pageSize", safeSize);

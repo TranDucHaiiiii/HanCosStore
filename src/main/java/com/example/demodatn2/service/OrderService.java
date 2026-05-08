@@ -48,7 +48,7 @@ public class OrderService {
         if (keyword == null || keyword.trim().isEmpty()) {
             sourceOrders = getAllOrders();
         } else {
-            sourceOrders = donHangRepository.search(keyword.trim());
+            sourceOrders = donHangRepository.timKiemTheoTuKhoa(keyword.trim());
         }
 
         return filterOrdersByStatus(sourceOrders, normalizedStatus);
@@ -103,6 +103,7 @@ public class OrderService {
         String normalized = status.trim().toUpperCase();
         return switch (normalized) {
             case "PENDING" -> "CHO_XAC_NHAN";
+            case "PAID" -> "DA_XAC_NHAN";
             case "CONFIRMED" -> "DA_XAC_NHAN";
             case "SHIPPING" -> "DANG_GIAO";
             case "LOST" -> "LOI_VAN_CHUYEN";
@@ -130,6 +131,40 @@ public class OrderService {
         return donHangRepository.findByTaiKhoanOrderByNgayDatDesc(taiKhoan);
     }
 
+    /**
+     * Lấy danh sách trạng thái hợp lệ tiếp theo từ trạng thái hiện tại
+     */
+    public List<String> getNextValidStatuses(String currentStatus) {
+        String normalized = normalizeStatus(currentStatus);
+        return switch (normalized) {
+            case "CHO_XAC_NHAN" -> List.of("DA_XAC_NHAN", "DA_HUY", "LOI_VAN_CHUYEN");
+            case "DA_XAC_NHAN" -> List.of("DANG_GIAO", "DA_HUY", "LOI_VAN_CHUYEN");
+            case "DANG_GIAO" -> List.of("HOAN_THANH", "LOI_VAN_CHUYEN", "TRA_HANG");
+            case "LOI_VAN_CHUYEN" -> List.of();  // Locked - no transitions
+            case "HOAN_THANH" -> List.of();      // Locked - no transitions
+            case "DA_HUY" -> List.of();          // Locked - no transitions
+            case "TRA_HANG" -> List.of();        // Locked - no transitions
+            default -> List.of();
+        };
+    }
+
+    /**
+     * Convert status code to Vietnamese label
+     */
+    public String getStatusLabel(String status) {
+        return switch (status) {
+            case "CHO_XAC_NHAN" -> "Chờ xác nhận";
+            case "DA_XAC_NHAN" -> "Đã xác nhận";
+            case "PAID" -> "Đã thanh toán";
+            case "DANG_GIAO" -> "Đang giao hàng";
+            case "HOAN_THANH", "COMPLETED", "DELIVERED" -> "Hoàn thành";
+            case "DA_HUY", "CANCELLED" -> "Đã hủy";
+            case "TRA_HANG", "RETURN_REQUESTED", "RETURNED" -> "Trả hàng";
+            case "LOI_VAN_CHUYEN", "LOST" -> "Lỗi vận chuyển";
+            default -> status;
+        };
+    }
+
     @Transactional
     public void updateOrderStatus(Integer orderId, String newStatus) {
         DonHang donHang = getOrderById(orderId);
@@ -148,8 +183,11 @@ public class OrderService {
             return;
         }
 
-        if ("DA_HUY".equals(currentStatus)) {
-            throw new RuntimeException("Không thể cập nhật trạng thái cho đơn hàng đã hủy.");
+        // Kiểm soát trạng thái hợp lệ
+        List<String> validNextStatuses = getNextValidStatuses(currentStatus);
+        if (validNextStatuses.isEmpty() || !validNextStatuses.contains(newStatus)) {
+            throw new RuntimeException("Không thể chuyển từ trạng thái '" + currentStatus + 
+                    "' sang '" + newStatus + "'. Các trạng thái hợp lệ: " + validNextStatuses);
         }
 
         if ("DA_HUY".equals(newStatus)) {
@@ -190,7 +228,7 @@ public class OrderService {
         donHang.setNgayCapNhat(Instant.now());
         
         restoreStock(donHang);
-        
+
         donHangRepository.save(donHang);
     }
 
@@ -201,7 +239,7 @@ public class OrderService {
         }
 
         Instant threshold = Instant.now().minus(days, ChronoUnit.DAYS);
-        List<DonHang> deliveredOrders = donHangRepository.findByTrangThaiAndLastUpdateBefore("DANG_GIAO", threshold);
+        List<DonHang> deliveredOrders = donHangRepository.timTheoTrangThaiVaCapNhatTruoc("DANG_GIAO", threshold);
 
         for (DonHang donHang : deliveredOrders) {
             if ("DA_HUY".equalsIgnoreCase(normalizeStatus(donHang.getTrangThai()))) {
@@ -213,6 +251,35 @@ public class OrderService {
         }
 
         return deliveredOrders.size();
+    }
+
+    @Transactional
+    public int cleanupExpiredPendingPosOrders(int minutes) {
+        if (minutes <= 0) {
+            return 0;
+        }
+
+        Instant threshold = Instant.now().minus(minutes, ChronoUnit.MINUTES);
+        List<DonHang> expiredOrders = new java.util.ArrayList<>();
+        expiredOrders.addAll(donHangRepository.timTheoTrangThaiVaCapNhatTruoc("PENDING", threshold));
+        expiredOrders.addAll(donHangRepository.timTheoTrangThaiVaCapNhatTruoc("CHO_XAC_NHAN", threshold));
+
+        int cleaned = 0;
+        for (DonHang donHang : expiredOrders) {
+            String currentStatus = normalizeStatus(donHang.getTrangThai());
+            if (!"PENDING".equalsIgnoreCase(donHang.getTrangThai()) && !"CHO_XAC_NHAN".equals(currentStatus)) {
+                continue;
+            }
+
+            donHang.setTrangThai("DA_HUY");
+            donHang.setLyDoHuy("Het han cho thanh toan chuyen khoan");
+            donHang.setNgayCapNhat(Instant.now());
+            restoreStock(donHang);
+            donHangRepository.save(donHang);
+            cleaned++;
+        }
+
+        return cleaned;
     }
 
     private void restoreStock(DonHang donHang) {
@@ -295,7 +362,25 @@ public class OrderService {
     }
 
     @Transactional
-    public DonHang createOrder(String hoTen, String soDienThoai, String email, String diaChi, String ghiChu, String paymentMethod, HttpSession session) {
+    public void updateOrderPaymentMethod(Integer orderId, String paymentMethod) {
+        DonHang donHang = getOrderById(orderId);
+        String status = normalizeStatus(donHang.getTrangThai());
+
+        if (!"CHO_XAC_NHAN".equals(status) && !"PENDING".equals(status)) {
+            throw new RuntimeException("Không thể thay đổi phương thức thanh toán cho đơn hàng ở trạng thái: " + status);
+        }
+
+        if (paymentMethod == null || paymentMethod.trim().isEmpty()) {
+            throw new RuntimeException("Vui lòng chọn phương thức thanh toán");
+        }
+
+        donHang.setPhuongThucThanhToan(paymentMethod.trim().toUpperCase());
+        donHang.setNgayCapNhat(Instant.now());
+        donHangRepository.save(donHang);
+    }
+
+    @Transactional
+    public DonHang createOrder(String hoTen, String soDienThoai, String email, String diaChi, String ghiChu, String paymentMethod, BigDecimal shippingFeeFromForm, HttpSession session) {
         TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
         TaiKhoan taiKhoan = null;
         if (loginUser != null) {
@@ -322,10 +407,8 @@ public class OrderService {
         donHang.setPhuongThucThanhToan(paymentMethod);
         
         // Đơn online khởi tạo ở trạng thái chờ xác nhận.
-        if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
-            donHang.setTrangThai("PENDING_PAYMENT");
-        } else if ("VIETQR".equals(paymentMethod)) {
-            donHang.setTrangThai("CHO_XAC_NHAN");
+        if ("SEPAY".equalsIgnoreCase(paymentMethod)) {
+            donHang.setTrangThai("PENDING");
         } else {
             donHang.setTrangThai("CHO_XAC_NHAN");
         }
@@ -337,7 +420,12 @@ public class OrderService {
             tamTinh = tamTinh.add(item.getDonGia().multiply(new BigDecimal(item.getSoLuong())));
         }
         donHang.setTamTinh(tamTinh);
-        donHang.setPhiVanChuyen(CartService.calculateShippingFee(tamTinh));
+        // Sử dụng phí ship từ form (GHTK API) nếu có, nếu không dùng công thức mặc định
+        BigDecimal phiVanChuyen = (shippingFeeFromForm != null && shippingFeeFromForm.compareTo(BigDecimal.ZERO) > 0)
+            ? shippingFeeFromForm
+            : CartService.calculateShippingFee(tamTinh);
+        donHang.setPhiVanChuyen(phiVanChuyen);
+        System.out.println("DEBUG: tamTinh=" + tamTinh + ", phiVanChuyen=" + phiVanChuyen + " (from form: " + shippingFeeFromForm + ")");
 
         // Áp dụng voucher từ session nếu có
         BigDecimal giamGiaAmount = BigDecimal.ZERO;
@@ -356,12 +444,16 @@ public class OrderService {
         donHang.setMaGiamGia(appliedVoucher);
         donHang.setTongTien(tamTinh.subtract(giamGiaAmount).add(donHang.getPhiVanChuyen()));
 
+        System.out.println("DEBUG: giamGia=" + giamGiaAmount + ", tongTien=" + donHang.getTongTien() + ", phiVanChuyen=" + donHang.getPhiVanChuyen());
+
         donHang = donHangRepository.save(donHang);
 
         // Nếu có voucher, lưu lịch sử sử dụng và cập nhật số lượng
         if (appliedVoucher != null) {
-            appliedVoucher.setSoLuongDaDung(appliedVoucher.getSoLuongDaDung() + 1);
-            maGiamGiaRepository.save(appliedVoucher);
+            int updatedVoucher = maGiamGiaRepository.incrementUsageIfAvailable(appliedVoucher.getId());
+            if (updatedVoucher == 0) {
+                throw new RuntimeException("Mã giảm giá đã hết lượt sử dụng");
+            }
             
             LichSuSuDungMaGiamGia lichSu = new LichSuSuDungMaGiamGia();
             lichSu.setDonHang(donHang);
@@ -373,9 +465,9 @@ public class OrderService {
 
         for (ChiTietGioHang item : gioHang.getChiTiets()) {
             BienTheSanPham bt = item.getBienTheSanPham();
-            
-            // Kiểm tra tồn kho lần cuối
-            if (bt.getSoLuongTon() < item.getSoLuong()) {
+
+            int updatedStock = bienTheSanPhamRepository.decrementStockIfEnough(bt.getId(), item.getSoLuong());
+            if (updatedStock == 0) {
                 throw new RuntimeException("Sản phẩm " + bt.getSanPham().getTen() + " không đủ số lượng trong kho");
             }
 
@@ -391,10 +483,7 @@ public class OrderService {
             
             chiTietDonHangRepository.save(ctdh);
 
-            // Trừ tồn kho
-            bt.setSoLuongTon(bt.getSoLuongTon() - item.getSoLuong());
-            bienTheSanPhamRepository.save(bt);
-                logStockTransaction(bt, "XUAT", item.getSoLuong(), donHang,
+            logStockTransaction(bt, "XUAT", item.getSoLuong(), donHang,
                     "Tru kho tu don " + donHang.getMaDonHang());
         }
         
@@ -413,6 +502,24 @@ public class OrderService {
      */
     @Transactional
     public DonHang createPosOrder(PosOrderRequestDTO req, TaiKhoanDTO staffUser) {
+        return buildPosOrder(req, staffUser, "HOAN_THANH", null);
+    }
+
+    /**
+     * Tạo đơn POS chuyển khoản ở trạng thái chờ xác nhận, dùng mã đơn đã reserve trước.
+     */
+    @Transactional
+    public DonHang createPendingPosTransferOrder(PosOrderRequestDTO req, TaiKhoanDTO staffUser) {
+        String orderCode = req.getOrderCode();
+        if (orderCode == null || orderCode.trim().isEmpty()) {
+            orderCode = "DH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
+        req.setOrderCode(orderCode);
+        req.setPaymentMethod("transfer");
+        return buildPosOrder(req, staffUser, "PENDING", orderCode);
+    }
+
+    private DonHang buildPosOrder(PosOrderRequestDTO req, TaiKhoanDTO staffUser, String trangThai, String orderCode) {
         if (req.getItems() == null || req.getItems().isEmpty()) {
             throw new RuntimeException("Giỏ hàng POS trống");
         }
@@ -430,7 +537,10 @@ public class OrderService {
         }
 
         DonHang donHang = new DonHang();
-        donHang.setMaDonHang("POS-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        // Tạo mã đơn hàng cùng format với web: DH-XXXXXXXX, hoặc dùng mã transfer đã reserve trước.
+        donHang.setMaDonHang(orderCode != null && !orderCode.trim().isEmpty()
+            ? orderCode.trim()
+            : "DH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         donHang.setTaiKhoan(customer);
         donHang.setHoTenNhan(req.getCustomerName().trim());
         donHang.setSoDienThoaiNhan(req.getCustomerPhone().trim());
@@ -438,7 +548,7 @@ public class OrderService {
         donHang.setDiaChiNhan("Mua tại quầy");
         donHang.setGhiChu(req.getNote());
         donHang.setPhuongThucThanhToan(req.getPaymentMethod() != null ? req.getPaymentMethod() : "cash");
-        donHang.setTrangThai("HOAN_THANH"); // POS = thanh toán xong ngay
+        donHang.setTrangThai(trangThai); // POS thường hoàn thành ngay, transfer có thể chờ webhook xác nhận
         donHang.setPhiVanChuyen(BigDecimal.ZERO); // Không ship
         donHang.setNgayDat(Instant.now());
 
@@ -474,8 +584,10 @@ public class OrderService {
 
         // Lưu lịch sử sử dụng voucher
         if (appliedVoucher != null) {
-            appliedVoucher.setSoLuongDaDung(appliedVoucher.getSoLuongDaDung() + 1);
-            maGiamGiaRepository.save(appliedVoucher);
+            int updatedVoucher = maGiamGiaRepository.incrementUsageIfAvailable(appliedVoucher.getId());
+            if (updatedVoucher == 0) {
+                throw new RuntimeException("Mã giảm giá đã hết lượt sử dụng");
+            }
 
             LichSuSuDungMaGiamGia lichSu = new LichSuSuDungMaGiamGia();
             lichSu.setDonHang(donHang);
@@ -489,6 +601,12 @@ public class OrderService {
         for (PosOrderRequestDTO.PosItemDTO item : req.getItems()) {
             BienTheSanPham bt = bienTheSanPhamRepository.findById(item.getVariantId()).orElseThrow();
 
+            int updatedStock = bienTheSanPhamRepository.decrementStockIfEnough(bt.getId(), item.getQty());
+            if (updatedStock == 0) {
+                throw new RuntimeException("Sản phẩm " + bt.getSanPham().getTen() +
+                        " (" + bt.getMauSac() + "/" + bt.getKichCo() + ") không đủ số lượng trong kho");
+            }
+
             ChiTietDonHang ctdh = new ChiTietDonHang();
             ctdh.setDonHang(donHang);
             ctdh.setBienTheSanPham(bt);
@@ -500,9 +618,7 @@ public class OrderService {
             ctdh.setThanhTien(item.getPrice().multiply(new BigDecimal(item.getQty())));
             chiTietDonHangRepository.save(ctdh);
 
-            bt.setSoLuongTon(bt.getSoLuongTon() - item.getQty());
-            bienTheSanPhamRepository.save(bt);
-                logStockTransaction(bt, "XUAT", item.getQty(), donHang,
+            logStockTransaction(bt, "XUAT", item.getQty(), donHang,
                     "Tru kho tu don POS " + donHang.getMaDonHang());
         }
 
