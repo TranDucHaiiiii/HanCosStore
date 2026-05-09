@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chỉnh Sửa Sản Phẩm - HANCOS</title>
+    <title>Chinh Sua San Pham - HANCOS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -13,269 +13,214 @@
 </head>
 
 <body>
-<div class="loading" id="loading">
-        // ===== Variants =====
-        function getLastVariantData() {
-                const lastItem = document.querySelector('#variantsList .variant-item:last-child');
-                if (!lastItem) return null;
+<div class="banner">
+    <h1>CHINH SUA SAN PHAM</h1>
+    <p>Quan ly san pham - Cap nhat thong tin</p>
+</div>
 
-                return {
-                        mauSac: lastItem.querySelector('select[name*=".mauSac"]')?.value || '',
-                        kichCo: lastItem.querySelector('select[name*=".kichCo"]')?.value || '',
-                        maSKU: lastItem.querySelector('input[name*=".maSKU"]')?.value || '',
-                        soLuongTon: lastItem.querySelector('input[name*=".soLuongTon"]')?.value || 0,
-                        gia: lastItem.querySelector('input[name*=".gia"]')?.value || 0,
-                        giaGoc: lastItem.querySelector('input[name*=".giaGoc"]')?.value || '',
-                };
-        }
+<div class="container">
+    <div class="form-container">
+        <form id="editForm" th:action="@{/admin/san-pham/edit/{id}(id=${product.id})}" method="post">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>DANG XU LY...</p>
+            </div>
 
-        function cloneVariant(btn) {
-                const item = btn.closest('.variant-item');
-                if (!item) return;
+            <!-- Thong tin co ban -->
+            <div class="section">
+                <h2 class="section-title">Thong Tin Co Ban</h2>
 
-                addVariant({
-                        id: null,
-                        mauSac: item.querySelector('select[name*=".mauSac"]')?.value || '',
-                        kichCo: item.querySelector('select[name*=".kichCo"]')?.value || '',
-                        maSKU: '',
-                        soLuongTon: item.querySelector('input[name*=".soLuongTon"]')?.value || 0,
-                        gia: item.querySelector('input[name*=".gia"]')?.value || 0,
-                        giaGoc: item.querySelector('input[name*=".giaGoc"]')?.value || '',
-                });
-        }
-
-        function addVariant(data = null) {
-                const list = document.getElementById('variantsList');
-                const index = list.children.length;
-                const seed = data || getLastVariantData();
-
-                const html = `
-            <div class="variant-item" data-index="${index}" style="border:1px solid #ddd; border-radius:12px; padding:16px; margin-bottom:12px; background:#fff;">
-                <input type="hidden" data-field="id" name="bienThes[${index}].id" value="${data ? (data.id ?? '') : ''}">
-
-                <div class="item-header" style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px;">
-                    <div style="display:flex; align-items:center; gap:12px; flex:1;">
-                        <span class="item-number" style="font-weight:600;"><i class="fas fa-tags"></i> Biến thể #${index + 1}</span>
-                        <span class="variant-badge" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:8px; background:#f0e6e0; font-size:12px; font-weight:600;">
-                            <span class="color-badge" style="width:12px; height:12px; border-radius:50%; border:1px solid rgba(0,0,0,0.2);"></span>
-                            <span class="size-badge">-</span>
-                        </span>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ma San Pham</label>
+                        <input type="text" id="maSanPham" name="maSanPham" th:value="${product.maSanPham}" readonly>
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button type="button" class="btn btn-secondary" onclick="cloneVariant(this)" style="padding:8px 12px; font-size:12px;">
-                            <i class="fas fa-copy"></i> Nhân bản
-                        </button>
-                        <button type="button" class="btn btn-danger" onclick="removeVariant(this)" style="padding:8px 12px; font-size:12px;">
-                            <i class="fas fa-trash"></i> Xóa
-                        </button>
+                    <div class="form-group">
+                        <label>Ten San Pham <span class="required">*</span></label>
+                        <input type="text" id="ten" name="ten" th:value="${product.ten}" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Màu Sắc <span class="required">*</span></label>
-                        <select name="mauSac" required onchange="updateSKUFromEl(this)">
-                            <option value="">-- Chọn màu --</option>
-                            ${renderOptions(COLORS, seed ? seed.mauSac : '')}
+                        <label>Chat Lieu</label>
+                        <input type="text" id="chatLieu" name="chatLieu" th:value="${product.chatLieu}">
+                    </div>
+                    <div class="form-group">
+                        <label>Gioi Tinh</label>
+                        <select id="gioiTinh" name="gioiTinh">
+                            <option value="UNISEX" th:selected="${product.gioiTinh == 'UNISEX'}">Unisex</option>
+                            <option value="NAM" th:selected="${product.gioiTinh == 'NAM'}">Nam</option>
+                            <option value="NU" th:selected="${product.gioiTinh == 'NU'}">Nu</option>
                         </select>
                     </div>
-
-                    <div class="form-group">
-                        <label>Kích Cỡ <span class="required">*</span></label>
-                                                <select name="kichCo" required onchange="updateSKUFromEl(this)">
-                                                        <option value="">-- Chọn size --</option>
-                                                        ${renderOptions(getSizeOptions(), seed ? seed.kichCo : '')}
-                                                </select>
-                    </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Mã SKU <span class="required">*</span></label>
-                        <input type="text" name="maSKU" required readonly
-                                     value="${seed ? seed.maSKU : ''}"
-                                     placeholder="AO_PHAO_AKP_DEN_S">
+                        <label>Danh Muc Cha</label>
+                        <select id="parentDanhMucId" onchange="loadChildren()">
+                            <option value="">-- Chon danh muc cha --</option>
+                                <option th:each="dm : ${parentDanhMuc}"
+                                    th:value="${dm.id}"
+                                    th:text="${dm.ten}"
+                                    th:selected="${product.parentDanhMucId != null and product.parentDanhMucId == dm.id}">
+                                Danh muc cha
+                            </option>
+                        </select>
                     </div>
-
                     <div class="form-group">
-                        <label>Số Lượng Tồn <span class="required">*</span></label>
-                        <input type="number" name="soLuongTon" required min="0"
-                                     value="${seed ? seed.soLuongTon : 0}">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Giá Bán <span class="required">*</span></label>
-                        <input type="number" name="gia" required min="0"
-                                     value="${seed ? seed.gia : 0}">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Giá Gốc</label>
-                        <input type="number" name="giaGoc" min="0"
-                                     value="${seed && seed.giaGoc != null ? seed.giaGoc : ''}">
-                    </div>
-                </div>
-            </div>
-        `;
-
-                list.insertAdjacentHTML('beforeend', html);
-
-                // auto generate sku for new item if has enough
-                const item = list.lastElementChild;
-                if (item) {
-                    // Nếu data có maSKU (từ API), thì set trực tiếp
-                    if (data && data.maSKU) {
-                        const skuInput = item.querySelector('input[name="maSKU"]');
-                        if (skuInput) {
-                            skuInput.value = data.maSKU;
-                        }
-                    } else {
-                        // Tính toán SKU từ maSanPham, màu, size
-                        updateSKUItem(item);
-                    }
-                    updateVariantBadge(item);
-                }
-        }
+                        <label>Danh Muc Con</label>
+                        <select id="danhMucId">
+                            <option value="">-- Chon danh muc con --</option>
+                        </select>
                         <input type="hidden" id="finalDanhMucId" name="danhMucId">
-                        <input type="hidden" id="maSanPham" name="maSanPham" th:value="${product.maSanPham}">
                     </div>
                 </div>
 
                 <div class="form-row full">
                     <div class="form-group">
-                        <label>Mô Tả Ngắn</label>
+                        <label>Mo Ta Ngan</label>
                         <textarea id="moTaNgan" name="moTaNgan" rows="3" th:text="${product.moTaNgan}"></textarea>
                     </div>
                 </div>
 
                 <div class="form-row full">
                     <div class="form-group">
-                        <label>Mô Tả Chi Tiết</label>
+                        <label>Mo Ta Chi Tiet</label>
                         <textarea id="moTa" name="moTa" rows="5" th:text="${product.moTa}"></textarea>
                     </div>
                 </div>
             </div>
 
-            <!-- Biến thể -->
+            <!-- Bien the -->
             <div class="section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h2 class="section-title" style="margin-bottom:0;">Biến Thể</h2>
+                    <h2 class="section-title" style="margin-bottom:0;">Bien The</h2>
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
                         <button type="button" class="btn btn-secondary" onclick="addVariant()">
-                            <i class="fas fa-plus"></i> Thêm Biến Thể
+                            <i class="fas fa-plus"></i> Them Bien The
                         </button>
                         <button type="button" class="btn btn-add" onclick="generateQuickVariants()">
-                            <i class="fas fa-wand-magic-sparkles"></i> Sinh Nhiều
+                            <i class="fas fa-wand-magic-sparkles"></i> Sinh Nhieu
+                        </button>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 16px; padding:12px 14px; border:1px dashed #d8d8d8; border-radius:10px; background:#fafafa;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#2d2d2d;">
+                        <input type="checkbox" id="selectAllVariants" onclick="toggleSelectAllVariants(this)">
+                        Chon tat ca bien the
+                    </label>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <input type="number" id="bulkSoLuong" min="0" placeholder="So luong" style="width:120px; border:1px solid #ddd; border-radius:8px; padding:8px 10px;">
+                        <input type="number" id="bulkGia" min="0" placeholder="Gia ban" style="width:120px; border:1px solid #ddd; border-radius:8px; padding:8px 10px;">
+                        <input type="number" id="bulkKhoiLuong" min="1" placeholder="Khoi luong" style="width:120px; border:1px solid #ddd; border-radius:8px; padding:8px 10px;">
+                        <select id="bulkTrangThai" style="border:1px solid #ddd; border-radius:8px; padding:8px 10px;">
+                            <option value="">Trang thai</option>
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                        <button type="button" class="btn btn-add" onclick="applyBulkEdit()">
+                            <i class="fas fa-edit"></i> Ap dung
                         </button>
                     </div>
                 </div>
                 <div style="margin:0 0 18px; border:1px solid rgba(139,77,77,0.14); border-radius:16px; background:linear-gradient(180deg,#fff8f4 0%,#ffffff 100%);">
-                    <!-- Header (Collapsible) -->
                     <div onclick="toggleQuickPanel()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:16px; gap:12px;">
                         <div>
                             <h3 style="margin:0; font-size:17px; font-weight:800; color:#2d2d2d;">
-                                <i class="fas fa-wand-magic-sparkles"></i> Sinh nhiều biến thể cùng lúc
+                                <i class="fas fa-wand-magic-sparkles"></i> Sinh nhieu bien the cung luc
                             </h3>
-                            <p style="margin:4px 0 0; color:#666; font-size:13px;">Chọn màu, size và tham số mặc định</p>
+                            <p style="margin:4px 0 0; color:#666; font-size:13px;">Chon mau, size va tham so mac dinh</p>
                         </div>
                         <i class="fas fa-chevron-down" id="quickPanelToggle" style="font-size:18px; color:#8b4d4d; transition:transform 0.2s;"></i>
                     </div>
-                    
-                    <!-- Content (Collapsible) -->
                     <div id="quickPanelContent" style="display:none; padding:0 16px 16px 16px; border-top:1px solid rgba(139,77,77,0.1);">
                         <div style="margin-bottom:16px;">
-                            <label style="display:block; margin-bottom:8px; font-weight:600; color:#2d2d2d;">Chế độ sinh</label>
+                            <label style="display:block; margin-bottom:8px; font-weight:600; color:#2d2d2d;">Che do sinh</label>
                             <select id="quickVariantMode" style="width:100%; max-width:400px; border:1px solid #ddd; border-radius:12px; padding:10px 12px; background:#fff;">
-                                <option value="replace_all">Thay thế toàn bộ</option>
-                                <option value="add_missing">Chỉ thêm các biến thể còn thiếu</option>
+                                <option value="replace_all">Thay the toan bo</option>
+                                <option value="add_missing">Chi them cac bien the con thieu</option>
                             </select>
                         </div>
-                        
+
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:16px;">
-                            <!-- Màu sắc -->
                             <div>
-                                <label style="display:block; margin-bottom:10px; font-weight:600; color:#2d2d2d;">Màu sắc</label>
-                                <div id="colorCheckboxList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; max-height:200px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:12px; background:#fafafa;">
-                                </div>
+                                <label style="display:block; margin-bottom:10px; font-weight:600; color:#2d2d2d;">Mau sac</label>
+                                <div id="colorCheckboxList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; max-height:200px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:12px; background:#fafafa;"></div>
                             </div>
-                            
-                            <!-- Kích cỡ -->
                             <div>
-                                <label style="display:block; margin-bottom:10px; font-weight:600; color:#2d2d2d;">Kích cỡ</label>
-                                <div id="sizeCheckboxList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:8px; max-height:200px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:12px; background:#fafafa;">
-                                </div>
+                                <label style="display:block; margin-bottom:10px; font-weight:600; color:#2d2d2d;">Kich co</label>
+                                <div id="sizeCheckboxList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:8px; max-height:200px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:12px; background:#fafafa;"></div>
                             </div>
                         </div>
-                        
-                        <!-- Input fields grid -->
+
                         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;">
                             <div>
-                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Tồn kho mặc định</label>
+                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Ton kho mac dinh</label>
                                 <input type="number" id="quickVariantStock" min="0" value="0" style="width:100%; border:1px solid #ddd; border-radius:12px; padding:10px 12px;">
                             </div>
                             <div>
-                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Giá bán mặc định</label>
+                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Gia ban mac dinh</label>
                                 <input type="number" id="quickVariantPrice" min="0" value="0" style="width:100%; border:1px solid #ddd; border-radius:12px; padding:10px 12px;">
                             </div>
                             <div>
-                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Khối lượng mặc định (gram)</label>
+                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Khoi luong mac dinh (gram)</label>
                                 <input type="number" id="quickVariantWeight" min="1" value="300" style="width:100%; border:1px solid #ddd; border-radius:12px; padding:10px 12px;">
                             </div>
                         </div>
-                        
+
                         <div style="display:flex; justify-content:flex-end;">
                             <button type="button" class="btn btn-add" onclick="generateQuickVariants()">
-                                <i class="fas fa-wand-magic-sparkles"></i> Tạo bộ biến thể
+                                <i class="fas fa-wand-magic-sparkles"></i> Tao bo bien the
                             </button>
                         </div>
                     </div>
                 </div>
-                <div id="variantsList"></div>
+                <div class="variant-summary" id="variantSummary">
+                    <span><i class="fas fa-layer-group"></i> 0 bien the</span>
+                    <span>Moi dong la 1 to hop Mau x Size</span>
+                </div>
+                <div id="variantsList" class="variants-list"></div>
             </div>
 
-            <!-- Hình ảnh gallery -->
+            <!-- Hinh anh gallery -->
             <div class="section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h2 class="section-title" style="margin-bottom:0;">Hình Ảnh Gallery</h2>
+                    <h2 class="section-title" style="margin-bottom:0;">Hinh Anh Gallery</h2>
                     <button type="button" class="btn btn-add" onclick="addImage()">
-                        <i class="fas fa-image"></i> Thêm Hình Ảnh
+                        <i class="fas fa-image"></i> Them Hinh Anh
                     </button>
                 </div>
-                <div id="imagePasteArea"
-                     tabindex="0"
-                     style="margin-bottom:16px; padding:12px; border:1px dashed #b8b8b8; border-radius:6px; background:#fafafa; color:#666; font-size:13px;">
-                    Chọn ô ảnh cần thay, bấm vào đây rồi nhấn Ctrl + V để thay ảnh đó.
+                <div id="imagePasteArea" tabindex="0" style="margin-bottom:16px; padding:12px; border:1px dashed #b8b8b8; border-radius:6px; background:#fafafa; color:#666; font-size:13px;">
+                    Chon o anh can thay, bam vao day roi nhan Ctrl + V de thay anh do.
                 </div>
                 <div id="imagesList"></div>
             </div>
 
-            <!-- Hình ảnh theo màu -->
+            <!-- Hinh anh theo mau -->
             <div class="section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h2 class="section-title" style="margin-bottom:0;">Hình Ảnh Theo Màu</h2>
+                    <h2 class="section-title" style="margin-bottom:0;">Hinh Anh Theo Mau</h2>
                     <div style="display:flex; gap:10px; align-items:center;">
                         <button type="button" class="btn btn-add" onclick="syncColors()">
-                            <i class="fas fa-sync"></i> Đồng Bộ Màu
+                            <i class="fas fa-sync"></i> Dong Bo Mau
                         </button>
                         <button type="button" class="btn btn-add" onclick="addColorImage()">
-                            <i class="fas fa-palette"></i> Thêm Hình Màu
+                            <i class="fas fa-palette"></i> Them Hinh Mau
                         </button>
                     </div>
                 </div>
-                <div id="colorImagePasteArea"
-                     tabindex="0"
-                     style="margin-bottom:16px; padding:12px; border:1px dashed #b8b8b8; border-radius:6px; background:#fafafa; color:#666; font-size:13px;">
-                    Chọn ô hình màu cần thay, bấm vào đây rồi nhấn Ctrl + V.
+                <div id="colorImagePasteArea" tabindex="0" style="margin-bottom:16px; padding:12px; border:1px dashed #b8b8b8; border-radius:6px; background:#fafafa; color:#666; font-size:13px;">
+                    Chon o hinh mau can thay, bam vao day roi nhan Ctrl + V.
                 </div>
                 <div id="colorImagesList"></div>
             </div>
 
             <div class="actions">
-                <a th:href="@{/san-pham}" class="btn btn-secondary">Hủy bỏ</a>
+                <a th:href="@{/san-pham}" class="btn btn-secondary">Huy bo</a>
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Lưu thay đổi
+                    <i class="fas fa-save"></i> Luu thay doi
                 </button>
             </div>
         </form>
@@ -293,10 +238,15 @@
     const SIZES  = ["XS","S","M","L","XL","XXL"];
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Initialize quick variant dropdowns
         initQuickVariantDropdowns();
-        
-        // Load danh mục con
+
+        if (initialProduct && initialProduct.danhMucId) {
+            const parentSelect = document.getElementById('parentDanhMucId');
+            if (parentSelect && !parentSelect.value) {
+                parentSelect.value = '';
+            }
+        }
+
         if (document.getElementById('parentDanhMucId').value) {
             await loadChildren();
             if (initialProduct && initialProduct.danhMucId) {
@@ -304,7 +254,6 @@
             }
         }
 
-        // Populate existing variants/images/color-images
         if (initialProduct && initialProduct.bienThes && initialProduct.bienThes.length) {
             initialProduct.bienThes.forEach(bt => addVariant(bt));
         } else {
@@ -353,7 +302,7 @@
     async function loadChildren() {
         const parentId = document.getElementById('parentDanhMucId').value;
         const select = document.getElementById('danhMucId');
-        select.innerHTML = '<option value="">-- Chọn danh mục con --</option>';
+        select.innerHTML = '<option value="">-- Chon danh muc con --</option>';
         if (!parentId) return;
 
         try {
@@ -374,16 +323,15 @@
         }
     }
 
-    // ===== Helpers =====
     function removeVietnameseTones(str) {
         if (!str) return "";
-        str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ|À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "a");
-        str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ|È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "e");
-        str = str.replace(/ì|í|ị|ỉ|ĩ|Ì|Í|Ị|Ỉ|Ĩ/g, "i");
-        str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ|Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "o");
-        str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ|Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "u");
-        str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ|Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "y");
-        str = str.replace(/đ|Đ/g, "d");
+        str = str.replace(/\u00e0|\u00e1|\u1ea1|\u1ea3|\u00e3|\u00e2|\u1ea7|\u1ea5|\u1ead|\u1ea9|\u1eab|\u0103|\u1eb1|\u1eaf|\u1eb7|\u1eb3|\u1eb5|\u00c0|\u00c1|\u1ea0|\u1ea2|\u00c3|\u00c2|\u1ea6|\u1ea4|\u1eac|\u1ea8|\u1eaa|\u0102|\u1eb0|\u1eae|\u1eb6|\u1eb2|\u1eb4/g, "a");
+        str = str.replace(/\u00e8|\u00e9|\u1eb9|\u1ebb|\u1ebd|\u00ea|\u1ec1|\u1ebf|\u1ec7|\u1ec3|\u1ec5|\u00c8|\u00c9|\u1eb8|\u1eba|\u1ebc|\u00ca|\u1ec0|\u1ebe|\u1ec6|\u1ec2|\u1ec4/g, "e");
+        str = str.replace(/\u00ec|\u00ed|\u1ecb|\u1ec9|\u0129|\u00cc|\u00cd|\u1eca|\u1ec8|\u0128/g, "i");
+        str = str.replace(/\u00f2|\u00f3|\u1ecd|\u1ecf|\u00f5|\u00f4|\u1ed3|\u1ed1|\u1ed9|\u1ed5|\u1ed7|\u01a1|\u1edd|\u1edb|\u1ee3|\u1edf|\u1ee1|\u00d2|\u00d3|\u1ecc|\u1ece|\u00d5|\u00d4|\u1ed2|\u1ed0|\u1ed8|\u1ed4|\u1ed6|\u01a0|\u1edc|\u1eda|\u1ee2|\u1ede|\u1ee0/g, "o");
+        str = str.replace(/\u00f9|\u00fa|\u1ee5|\u1ee7|\u0169|\u01b0|\u1eeb|\u1ee9|\u1ef1|\u1eed|\u1eef|\u00d9|\u00da|\u1ee4|\u1ee6|\u0168|\u01af|\u1eea|\u1ee8|\u1ef0|\u1eec|\u1eee/g, "u");
+        str = str.replace(/\u1ef3|\u00fd|\u1ef5|\u1ef7|\u1ef9|\u1ef2|\u00dd|\u1ef4|\u1ef6|\u1ef8/g, "y");
+        str = str.replace(/\u0111|\u0110/g, "d");
         return str;
     }
 
@@ -416,7 +364,7 @@
                 skuEl.value = newSku;
             }
         }
-        
+
         updateVariantBadge(item);
     }
 
@@ -424,12 +372,142 @@
         return arr.map(v => `<option value="${v}" ${selected === v ? 'selected' : ''}>${v}</option>`).join('');
     }
 
+    function getLastVariantData() {
+        const lastItem = document.querySelector('#variantsList .variant-item:last-child');
+        if (!lastItem) return null;
+
+        return {
+            mauSac: lastItem.querySelector('select[name*=".mauSac"]')?.value || '',
+            kichCo: lastItem.querySelector('select[name*=".kichCo"]')?.value || '',
+            maSKU: lastItem.querySelector('input[name*=".maSKU"]')?.value || '',
+            soLuongTon: lastItem.querySelector('input[name*=".soLuongTon"]')?.value || 0,
+            khoiLuongGram: lastItem.querySelector('input[name*=".khoiLuongGram"]')?.value || 300,
+            gia: lastItem.querySelector('input[name*=".gia"]')?.value || 0,
+            trangThai: lastItem.querySelector('[name*=".trangThai"]')?.value || 'ACTIVE'
+        };
+    }
+
+    function cloneVariant(btn) {
+        const item = btn.closest('.variant-item');
+        if (!item) return;
+
+        addVariant({
+            id: null,
+            mauSac: item.querySelector('select[name*=".mauSac"]')?.value || '',
+            kichCo: item.querySelector('select[name*=".kichCo"]')?.value || '',
+            maSKU: '',
+            soLuongTon: item.querySelector('input[name*=".soLuongTon"]')?.value || 0,
+            khoiLuongGram: item.querySelector('input[name*=".khoiLuongGram"]')?.value || 300,
+            gia: item.querySelector('input[name*=".gia"]')?.value || 0,
+            trangThai: item.querySelector('[name*=".trangThai"]')?.value || 'ACTIVE'
+        });
+    }
+
+    function addVariant(data = null) {
+        const list = document.getElementById('variantsList');
+        const index = list.children.length;
+        const seed = data || getLastVariantData();
+
+        const html = `
+            <div class="variant-item variant-row" data-index="${index}">
+                <input type="hidden" data-field="id" name="bienThes[${index}].id" value="${data ? (data.id ?? '') : ''}">
+
+                <div class="variant-row-select">
+                    <input type="checkbox" class="variant-select" data-index="${index}" aria-label="Chon bien the">
+                </div>
+
+                <div class="variant-row-info">
+                    <span class="item-number"><i class="fas fa-tags"></i> #${index + 1}</span>
+                    <span class="variant-badge">
+                        <span class="color-badge"></span>
+                        <span class="size-badge">-</span>
+                    </span>
+                </div>
+
+                <div class="form-group variant-field variant-color-field">
+                        <label>Mau Sac <span class="required">*</span></label>
+                        <select data-field="mauSac" name="bienThes[${index}].mauSac" required onchange="updateSKUFromEl(this)">
+                            <option value="">-- Chon mau --</option>
+                            ${renderOptions(COLORS, seed ? seed.mauSac : '')}
+                        </select>
+                </div>
+
+                <div class="form-group variant-field variant-size-field">
+                        <label>Kich Co <span class="required">*</span></label>
+                        <select data-field="kichCo" name="bienThes[${index}].kichCo" required onchange="updateSKUFromEl(this)">
+                            <option value="">-- Chon size --</option>
+                            ${renderOptions(SIZES, seed ? seed.kichCo : '')}
+                        </select>
+                </div>
+
+                <div class="form-group variant-field variant-sku-field">
+                        <label>Ma SKU <span class="required">*</span></label>
+                        <input type="text" data-field="maSKU" name="bienThes[${index}].maSKU" required readonly
+                               value="${seed ? seed.maSKU : ''}"
+                               placeholder="AO_PHAO_AKP_DEN_S">
+                </div>
+
+                <div class="form-group variant-field variant-stock-field">
+                        <label>So Luong Ton <span class="required">*</span></label>
+                        <input type="number" data-field="soLuongTon" name="bienThes[${index}].soLuongTon" required min="0"
+                               value="${seed ? seed.soLuongTon : 0}">
+                </div>
+
+                <div class="form-group variant-field variant-price-field">
+                        <label>Gia Ban <span class="required">*</span></label>
+                        <input type="number" data-field="gia" name="bienThes[${index}].gia" required min="0"
+                               value="${seed ? seed.gia : 0}">
+                </div>
+
+                <div class="form-group variant-field variant-weight-field">
+                        <label>Khoi Luong <span class="required">*</span></label>
+                        <input type="number" data-field="khoiLuongGram" name="bienThes[${index}].khoiLuongGram" required min="1"
+                               value="${seed && seed.khoiLuongGram != null ? seed.khoiLuongGram : 300}">
+                </div>
+
+                <div class="form-group variant-field variant-status-field">
+                        <label>Trang Thai</label>
+                        <select data-field="trangThai" name="bienThes[${index}].trangThai">
+                            <option value="ACTIVE" ${!seed || seed.trangThai !== 'INACTIVE' ? 'selected' : ''}>ACTIVE</option>
+                            <option value="INACTIVE" ${seed && seed.trangThai === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option>
+                        </select>
+                </div>
+
+                <div class="variant-row-actions">
+                    <button type="button" class="btn btn-secondary btn-icon-text" onclick="cloneVariant(this)">
+                        <i class="fas fa-copy"></i> Nhan ban
+                    </button>
+                    <button type="button" class="btn btn-danger btn-icon-text" onclick="removeVariant(this)">
+                        <i class="fas fa-trash"></i> Xoa
+                    </button>
+                </div>
+            </div>
+        `;
+
+        list.insertAdjacentHTML('beforeend', html);
+
+        const item = list.lastElementChild;
+        if (item) {
+            if (data && data.maSKU) {
+                const skuInput = item.querySelector('input[name$=".maSKU"]');
+                if (skuInput) skuInput.value = data.maSKU;
+            } else {
+                updateSKUItem(item);
+            }
+            updateVariantBadge(item);
+        }
+        updateVariantSummary();
+    }
+
     function reindexVariantsUI() {
         const list = document.getElementById('variantsList');
         list.querySelectorAll('.variant-item').forEach((item, i) => {
             item.setAttribute('data-index', i);
             const num = item.querySelector('.item-number');
-            if (num) num.innerHTML = `<i class="fas fa-tags"></i> Biến thể #${i + 1}`;
+            if (num) num.innerHTML = `<i class="fas fa-tags"></i> #${i + 1}`;
+
+            const selectCb = item.querySelector('.variant-select');
+            if (selectCb) selectCb.setAttribute('data-index', i);
 
             const idInput = item.querySelector('input[data-field="id"]');
             const mauSac = item.querySelector('select[data-field="mauSac"]');
@@ -439,6 +517,7 @@
             const khoiLuong = item.querySelector('input[data-field="khoiLuongGram"]');
             const gia = item.querySelector('input[data-field="gia"]');
             const trangThai = item.querySelector('input[data-field="trangThai"]');
+            const trangThaiSelect = item.querySelector('select[data-field="trangThai"]');
 
             if (idInput) idInput.name = `bienThes[${i}].id`;
             if (mauSac) mauSac.name = `bienThes[${i}].mauSac`;
@@ -448,7 +527,199 @@
             if (khoiLuong) khoiLuong.name = `bienThes[${i}].khoiLuongGram`;
             if (gia) gia.name = `bienThes[${i}].gia`;
             if (trangThai) trangThai.name = `bienThes[${i}].trangThai`;
+            if (trangThaiSelect) trangThaiSelect.name = `bienThes[${i}].trangThai`;
         });
+        updateVariantSummary();
+    }
+
+    function updateVariantSummary() {
+        const summary = document.getElementById('variantSummary');
+        if (!summary) return;
+
+        const items = Array.from(document.querySelectorAll('#variantsList .variant-item'));
+        const colors = new Set();
+        const sizes = new Set();
+        items.forEach(item => {
+            const color = item.querySelector('select[data-field="mauSac"]')?.value || '';
+            const size = item.querySelector('select[data-field="kichCo"]')?.value || '';
+            if (color) colors.add(color);
+            if (size) sizes.add(size);
+        });
+
+        summary.innerHTML = `
+            <span><i class="fas fa-layer-group"></i> ${items.length} bien the</span>
+            <span>${colors.size} mau / ${sizes.size} size</span>
+        `;
+    }
+
+    function getSelectedVariantItems() {
+        const selected = Array.from(document.querySelectorAll('.variant-select:checked'))
+            .map(cb => cb.closest('.variant-item'))
+            .filter(Boolean);
+        return selected;
+    }
+
+    function toggleSelectAllVariants(el) {
+        const checked = !!el.checked;
+        document.querySelectorAll('.variant-select').forEach(cb => {
+            cb.checked = checked;
+        });
+    }
+
+    function applyBulkEdit() {
+        const items = getSelectedVariantItems();
+        if (items.length === 0) {
+            Swal.fire('Chua chon bien the', 'Vui long chon it nhat 1 bien the de cap nhat.', 'warning');
+            return;
+        }
+
+        const soLuongVal = document.getElementById('bulkSoLuong')?.value;
+        const giaVal = document.getElementById('bulkGia')?.value;
+        const khoiLuongVal = document.getElementById('bulkKhoiLuong')?.value;
+        const trangThaiVal = document.getElementById('bulkTrangThai')?.value;
+
+        items.forEach(item => {
+            if (soLuongVal !== '' && soLuongVal !== null) {
+                const el = item.querySelector('input[name$=".soLuongTon"]');
+                if (el) el.value = soLuongVal;
+            }
+            if (giaVal !== '' && giaVal !== null) {
+                const el = item.querySelector('input[name$=".gia"]');
+                if (el) el.value = giaVal;
+            }
+            if (khoiLuongVal !== '' && khoiLuongVal !== null) {
+                const el = item.querySelector('input[name$=".khoiLuongGram"]');
+                if (el) el.value = khoiLuongVal;
+            }
+            if (trangThaiVal) {
+                const el = item.querySelector('[name$=".trangThai"]');
+                if (el) el.value = trangThaiVal;
+            }
+        });
+
+        Swal.fire('Da cap nhat', `Da cap nhat ${items.length} bien the.`, 'success');
+    }
+
+    function removeVariant(btn) {
+        const item = btn.closest('.variant-item');
+        if (item) item.remove();
+        reindexVariantsUI();
+    }
+
+    function trackUpload(promise) {
+        pendingUploads.add(promise);
+        promise.finally(() => pendingUploads.delete(promise));
+        return promise;
+    }
+
+    async function uploadFile(input, hiddenInputName, previewId) {
+        const uploadPromise = (async () => {
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            const preview = document.getElementById(previewId);
+            if (preview) {
+                preview.src = URL.createObjectURL(file);
+                preview.classList.add('show');
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch(`${API_URL}/upload`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const path = await res.text();
+                    const item = input.closest('.image-item');
+                    const hidden = item
+                        ? item.querySelector('input[type="hidden"]')
+                        : document.querySelector(`input[name="${hiddenInputName}"]`);
+                    if (hidden) hidden.value = path;
+                } else {
+                    let msg = await res.text();
+                    if (!msg || !msg.trim()) msg = `HTTP ${res.status}`;
+
+                    if (res.status === 401) {
+                        try {
+                            const parsed = JSON.parse(msg);
+                            if (parsed && parsed.message) msg = parsed.message;
+                        } catch (_) {
+                            // keep raw text fallback
+                        }
+
+                        await Swal.fire('Phien dang nhap da het han', msg, 'warning');
+                        window.location.href = '/login';
+                        return;
+                    }
+
+                    Swal.fire('Loi!', `Upload that bai: ${msg}`, 'error');
+                }
+            } catch (e) {
+                Swal.fire('Loi!', `Upload loi ket noi: ${e.message}`, 'error');
+            }
+        })();
+
+        return trackUpload(uploadPromise);
+    }
+
+    function addImage(data = null) {
+        const list = document.getElementById('imagesList');
+        const index = list.children.length;
+        const previewId = `preview_img_${index}`;
+
+        const html = `
+      <div class="image-item" data-index="${index}">
+        <div class="item-header">
+          <span class="item-number"><i class="fas fa-image"></i> Hinh anh #${index + 1}</span>
+          <button type="button" class="btn btn-danger" onclick="removeImage(this)">
+            <i class="fas fa-trash"></i> Xoa
+          </button>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Chon Anh <span class="required">*</span></label>
+
+            <input type="file"
+                   class="file-upload"
+                   accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
+                   onchange="uploadFile(this, 'hinhAnhSanPhams[${index}].duongDanAnh', '${previewId}')">
+
+            <input type="hidden" name="hinhAnhSanPhams[${index}].duongDanAnh" required value="${data ? (data.duongDanAnh ?? '') : ''}">
+
+            <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
+                 src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
+          </div>
+
+          <div class="form-group">
+            <label>Thu Tu</label>
+            <input type="number" name="hinhAnhSanPhams[${index}].thuTu" min="1"
+                   value="${data ? (data.thuTu ?? (index + 1)) : (index + 1)}">
+
+            <div class="checkbox-group">
+              <input type="checkbox" name="hinhAnhSanPhams[${index}].laAnhChinh" id="primary_${index}"
+                     ${data && data.laAnhChinh ? 'checked' : (index === 0 ? 'checked' : '')}
+                     onchange="handlePrimaryChange(${index})">
+              <label for="primary_${index}">Dat lam anh chinh</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+        list.insertAdjacentHTML('beforeend', html);
+    }
+
+    function removeImage(btn) {
+        const item = btn.closest('.image-item');
+        if (item) item.remove();
+        reindexImages();
     }
 
     function reindexImages() {
@@ -459,7 +730,7 @@
             item.setAttribute('data-index', i);
 
             const num = item.querySelector('.item-number');
-            if (num) num.innerHTML = `<i class="fas fa-image"></i> Hình ảnh #${i + 1}`;
+            if (num) num.innerHTML = `<i class="fas fa-image"></i> Hinh anh #${i + 1}`;
 
             const file = item.querySelector('input[type="file"]');
             const hidden = item.querySelector('input[type="hidden"]');
@@ -481,236 +752,6 @@
             if (img) img.id = previewId;
             if (file) file.setAttribute('onchange', `uploadFile(this, 'hinhAnhSanPhams[${i}].duongDanAnh', '${previewId}')`);
         });
-    }
-
-    function reindexColorImages() {
-        const list = document.getElementById('colorImagesList');
-        const items = list.querySelectorAll('.image-item');
-
-        items.forEach((item, i) => {
-            item.setAttribute('data-index', i);
-
-            const num = item.querySelector('.item-number');
-            if (num) num.innerHTML = `<i class="fas fa-palette"></i> Hình màu #${i + 1}`;
-
-            const sel = item.querySelector('select[name*=".mauSac"]');
-            const file = item.querySelector('input[type="file"]');
-            const hidden = item.querySelector('input[type="hidden"]');
-            const img = item.querySelector('img.preview-img');
-
-            const previewId = `preview_color_img_${i}`;
-
-            if (sel) sel.name = `hinhAnhMauSacs[${i}].mauSac`;
-            if (hidden) hidden.name = `hinhAnhMauSacs[${i}].duongDanAnh`;
-            if (img) img.id = previewId;
-            if (file) file.setAttribute('onchange', `uploadFile(this, 'hinhAnhMauSacs[${i}].duongDanAnh', '${previewId}')`);
-        });
-    }
-
-        // ===== Variants =====
-        function addVariant(data = null) {
-                const list = document.getElementById('variantsList');
-                const index = list.children.length;
-                const seed = data || getLastVariantData();
-
-                const html = `
-            <div class="variant-item" data-index="${index}">
-                <input type="hidden" data-field="id" name="bienThes[${index}].id" value="${data ? (data.id ?? '') : ''}">
-
-                <div class="item-header">
-                    <span class="item-number"><i class="fas fa-tags"></i> Biến thể #${index + 1}</span>
-                    <button type="button" class="btn btn-secondary" onclick="cloneVariant(this)">
-                        <i class="fas fa-copy"></i> Nhân bản
-                    </button>
-                    <button type="button" class="btn btn-danger" onclick="removeVariant(this)">
-                        <i class="fas fa-trash"></i> Xóa
-                    </button>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Màu Sắc <span class="required">*</span></label>
-                        <select data-field="mauSac" name="bienThes[${index}].mauSac" required onchange="updateSKUFromEl(this)">
-                            <option value="">-- Chọn màu --</option>
-                            ${renderOptions(COLORS, seed ? seed.mauSac : '')}
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Kích Cỡ <span class="required">*</span></label>
-                        <select data-field="kichCo" name="bienThes[${index}].kichCo" required onchange="updateSKUFromEl(this)">
-                            <option value="">-- Chọn size --</option>
-                            ${renderOptions(SIZES, seed ? seed.kichCo : '')}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Mã SKU <span class="required">*</span></label>
-                                 <input type="text" data-field="maSKU" name="bienThes[${index}].maSKU" required readonly
-                                     value="${seed ? seed.maSKU : ''}"
-                                     placeholder="AO_PHAO_AKP_DEN_S">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Số Lượng Tồn <span class="required">*</span></label>
-                                 <input type="number" data-field="soLuongTon" name="bienThes[${index}].soLuongTon" required min="0"
-                                     value="${seed ? seed.soLuongTon : 0}">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Khối Lượng (gram) <span class="required">*</span></label>
-                                 <input type="number" data-field="khoiLuongGram" name="bienThes[${index}].khoiLuongGram" required min="1"
-                                     value="${seed && seed.khoiLuongGram != null ? seed.khoiLuongGram : 300}">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Giá Bán <span class="required">*</span></label>
-                                 <input type="number" data-field="gia" name="bienThes[${index}].gia" required min="0"
-                                     value="${seed ? seed.gia : 0}">
-                    </div>
-
-                    <div class="form-group">
-                                 <input type="hidden" data-field="trangThai" name="bienThes[${index}].trangThai" value="ACTIVE">
-                    </div>
-                </div>
-            </div>
-        `;
-
-                list.insertAdjacentHTML('beforeend', html);
-
-                // auto generate sku for new item if has enough
-                const item = list.lastElementChild;
-                if (item) updateSKUItem(item);
-        }
-
-    function removeVariant(btn) {
-        const item = btn.closest('.variant-item');
-        if (item) item.remove();
-        reindexVariantsUI();
-    }
-
-    function trackUpload(promise) {
-        pendingUploads.add(promise);
-        promise.finally(() => pendingUploads.delete(promise));
-        return promise;
-    }
-
-    // ===== Upload (shared) =====
-    async function uploadFile(input, hiddenInputName, previewId) {
-        const uploadPromise = (async () => {
-        const file = input.files && input.files[0];
-        if (!file) return;
-
-        // local preview
-        const preview = document.getElementById(previewId);
-        if (preview) {
-            preview.src = URL.createObjectURL(file);
-            preview.classList.add('show');
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const res = await fetch(`${API_URL}/upload`, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            });
-
-            if (res.ok) {
-                const path = await res.text();
-                const item = input.closest('.image-item');
-                const hidden = item
-                    ? item.querySelector('input[type="hidden"]')
-                    : document.querySelector(`input[name="${hiddenInputName}"]`);
-                if (hidden) hidden.value = path;
-            } else {
-                let msg = await res.text();
-                if (!msg || !msg.trim()) msg = `HTTP ${res.status}`;
-
-                // Session timeout from AuthInterceptor for AJAX/API requests.
-                if (res.status === 401) {
-                    try {
-                        const parsed = JSON.parse(msg);
-                        if (parsed && parsed.message) msg = parsed.message;
-                    } catch (_) {
-                        // keep raw text fallback
-                    }
-
-                    await Swal.fire('Phiên đăng nhập đã hết hạn', msg, 'warning');
-                    window.location.href = '/login';
-                    return;
-                }
-
-                Swal.fire('Lỗi!', `Upload thất bại: ${msg}`, 'error');
-            }
-        } catch (e) {
-            Swal.fire('Lỗi!', `Upload lỗi kết nối: ${e.message}`, 'error');
-        }
-        })();
-
-        return trackUpload(uploadPromise);
-    }
-
-    // ===== Images Gallery =====
-    function addImage(data = null) {
-        const list = document.getElementById('imagesList');
-        const index = list.children.length;
-        const previewId = `preview_img_${index}`;
-
-        const html = `
-      <div class="image-item" data-index="${index}">
-        <div class="item-header">
-          <span class="item-number"><i class="fas fa-image"></i> Hình ảnh #${index + 1}</span>
-          <button type="button" class="btn btn-danger" onclick="removeImage(this)">
-            <i class="fas fa-trash"></i> Xóa
-          </button>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Chọn Ảnh <span class="required">*</span></label>
-
-            <input type="file"
-                   class="file-upload"
-                   accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
-                     onchange="uploadFile(this, 'hinhAnhSanPhams[${index}].duongDanAnh', '${previewId}')">
-
-                 <input type="hidden" name="hinhAnhSanPhams[${index}].duongDanAnh" required value="${data ? (data.duongDanAnh ?? '') : ''}">
-
-            <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
-                 src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
-          </div>
-
-          <div class="form-group">
-            <label>Thứ Tự</label>
-                        <input type="number" name="hinhAnhSanPhams[${index}].thuTu" min="1"
-                   value="${data ? (data.thuTu ?? (index + 1)) : (index + 1)}">
-
-            <div class="checkbox-group">
-                            <input type="checkbox" name="hinhAnhSanPhams[${index}].laAnhChinh" id="primary_${index}"
-                     ${data && data.laAnhChinh ? 'checked' : (index === 0 ? 'checked' : '')}
-                     onchange="handlePrimaryChange(${index})">
-              <label for="primary_${index}">Đặt làm ảnh chính</label>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-        list.insertAdjacentHTML('beforeend', html);
-    }
-
-    function removeImage(btn) {
-        const item = btn.closest('.image-item');
-        if (item) item.remove();
-        reindexImages();
     }
 
     function setActiveGalleryImage(item) {
@@ -777,7 +818,6 @@
         checkboxes.forEach((cb, i) => { if (i !== index) cb.checked = false; });
     }
 
-    // ===== Color Images =====
     function addColorImage(data = null) {
         const list = document.getElementById('colorImagesList');
         const index = list.children.length;
@@ -786,30 +826,30 @@
         const html = `
       <div class="image-item" data-index="${index}">
         <div class="item-header">
-          <span class="item-number"><i class="fas fa-palette"></i> Hình màu #${index + 1}</span>
+          <span class="item-number"><i class="fas fa-palette"></i> Hinh mau #${index + 1}</span>
           <button type="button" class="btn btn-danger" onclick="removeColorImage(this)">
-            <i class="fas fa-trash"></i> Xóa
+            <i class="fas fa-trash"></i> Xoa
           </button>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Màu Sắc <span class="required">*</span></label>
+            <label>Mau Sac <span class="required">*</span></label>
             <select name="hinhAnhMauSacs[${index}].mauSac" required>
-              <option value="">-- Chọn màu --</option>
+              <option value="">-- Chon mau --</option>
               ${renderOptions(COLORS, data ? data.mauSac : '')}
             </select>
           </div>
 
           <div class="form-group">
-            <label>Chọn Ảnh <span class="required">*</span></label>
+            <label>Chon Anh <span class="required">*</span></label>
 
             <input type="file"
                    class="file-upload"
                    accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
-                     onchange="uploadFile(this, 'hinhAnhMauSacs[${index}].duongDanAnh', '${previewId}')">
+                   onchange="uploadFile(this, 'hinhAnhMauSacs[${index}].duongDanAnh', '${previewId}')">
 
-                 <input type="hidden" name="hinhAnhMauSacs[${index}].duongDanAnh" required value="${data ? (data.duongDanAnh ?? '') : ''}">
+            <input type="hidden" name="hinhAnhMauSacs[${index}].duongDanAnh" required value="${data ? (data.duongDanAnh ?? '') : ''}">
 
             <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
                  src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
@@ -825,6 +865,30 @@
         const item = btn.closest('.image-item');
         if (item) item.remove();
         reindexColorImages();
+    }
+
+    function reindexColorImages() {
+        const list = document.getElementById('colorImagesList');
+        const items = list.querySelectorAll('.image-item');
+
+        items.forEach((item, i) => {
+            item.setAttribute('data-index', i);
+
+            const num = item.querySelector('.item-number');
+            if (num) num.innerHTML = `<i class="fas fa-palette"></i> Hinh mau #${i + 1}`;
+
+            const sel = item.querySelector('select[name*=".mauSac"]');
+            const file = item.querySelector('input[type="file"]');
+            const hidden = item.querySelector('input[type="hidden"]');
+            const img = item.querySelector('img.preview-img');
+
+            const previewId = `preview_color_img_${i}`;
+
+            if (sel) sel.name = `hinhAnhMauSacs[${i}].mauSac`;
+            if (hidden) hidden.name = `hinhAnhMauSacs[${i}].duongDanAnh`;
+            if (img) img.id = previewId;
+            if (file) file.setAttribute('onchange', `uploadFile(this, 'hinhAnhMauSacs[${i}].duongDanAnh', '${previewId}')`);
+        });
     }
 
     function setActiveColorImage(item) {
@@ -874,7 +938,6 @@
         uploadFile(fileInput, `hinhAnhMauSacs[${colorIndex}].duongDanAnh`, `preview_color_img_${colorIndex}`);
     }
 
-    // ===== Sync Colors (from variants -> colorImages) =====
     function normalizeColorKey(color) {
         return toSkuToken(color);
     }
@@ -908,14 +971,14 @@
     function validateBaseFields() {
         const ten = (document.getElementById('ten')?.value || '').trim();
         if (!ten) {
-            Swal.fire('Thiếu dữ liệu', 'Vui lòng nhập Tên sản phẩm.', 'warning');
+            Swal.fire('Thieu du lieu', 'Vui long nhap Ten san pham.', 'warning');
             return false;
         }
 
         const parentDanhMucId = document.getElementById('parentDanhMucId')?.value || '';
         const childDanhMucId = document.getElementById('danhMucId')?.value || '';
         if (!parentDanhMucId && !childDanhMucId) {
-            Swal.fire('Thiếu dữ liệu', 'Vui lòng chọn danh mục.', 'warning');
+            Swal.fire('Thieu du lieu', 'Vui long chon danh muc.', 'warning');
             return false;
         }
 
@@ -925,7 +988,7 @@
     function validateVariants() {
         const items = Array.from(document.querySelectorAll('#variantsList .variant-item'));
         if (items.length === 0) {
-            Swal.fire('Thiếu biến thể', 'Vui lòng thêm ít nhất 1 biến thể.', 'warning');
+            Swal.fire('Thieu bien the', 'Vui long them it nhat 1 bien the.', 'warning');
             return false;
         }
 
@@ -939,35 +1002,35 @@
             const giaRaw = item.querySelector('input[data-field="gia"]')?.value;
 
             if (!mau || !size) {
-                Swal.fire('Thiếu dữ liệu', 'Vui lòng chọn đầy đủ màu sắc và kích cỡ cho biến thể.', 'warning');
+                Swal.fire('Thieu du lieu', 'Vui long chon day du mau sac va kich co cho bien the.', 'warning');
                 return false;
             }
             if (!sku) {
-                Swal.fire('Thiếu dữ liệu', 'Vui lòng đảm bảo mã SKU được tạo cho biến thể.', 'warning');
+                Swal.fire('Thieu du lieu', 'Vui long dam bao ma SKU duoc tao cho bien the.', 'warning');
                 return false;
             }
 
             const soLuong = Number(soLuongRaw);
             if (!Number.isFinite(soLuong) || soLuong < 0) {
-                Swal.fire('Dữ liệu không hợp lệ', 'Số lượng tồn phải là số >= 0.', 'warning');
+                Swal.fire('Du lieu khong hop le', 'So luong ton phai la so >= 0.', 'warning');
                 return false;
             }
 
             const khoiLuong = Number(khoiLuongRaw);
             if (!Number.isFinite(khoiLuong) || khoiLuong <= 0) {
-                Swal.fire('Dữ liệu không hợp lệ', 'Khối lượng phải là số > 0.', 'warning');
+                Swal.fire('Du lieu khong hop le', 'Khoi luong phai la so > 0.', 'warning');
                 return false;
             }
 
             const gia = Number(giaRaw);
             if (!Number.isFinite(gia) || gia < 0) {
-                Swal.fire('Dữ liệu không hợp lệ', 'Giá bán phải là số >= 0.', 'warning');
+                Swal.fire('Du lieu khong hop le', 'Gia ban phai la so >= 0.', 'warning');
                 return false;
             }
 
             const key = `${mau}__${size}`.toLowerCase();
             if (seen.has(key)) {
-                Swal.fire('Trùng biến thể', 'Không được trùng màu sắc + kích cỡ.', 'warning');
+                Swal.fire('Trung bien the', 'Khong duoc trung mau sac + kich co.', 'warning');
                 return false;
             }
             seen.add(key);
@@ -979,7 +1042,7 @@
     function syncColors() {
         const variantColors = getVariantColors();
         if (variantColors.length === 0) {
-            Swal.fire('Thông báo', 'Chưa có màu trong biến thể để đồng bộ.', 'info');
+            Swal.fire('Thong bao', 'Chua co mau trong bien the de dong bo.', 'info');
             return;
         }
 
@@ -996,18 +1059,10 @@
         });
 
         if (added === 0) {
-            Swal.fire('OK', 'Tất cả màu trong biến thể đã có Hình màu rồi.', 'success');
+            Swal.fire('OK', 'Tat ca mau trong bien the da co Hinh mau roi.', 'success');
         } else {
-            Swal.fire('Thành công', `Đã thêm ${added} Hình màu mới.`, 'success');
+            Swal.fire('Thanh cong', `Da them ${added} Hinh mau moi.`, 'success');
         }
-    }
-
-    function parseQuickList(text) {
-        return (text || '')
-            .split(/[\n,;]+/)
-            .map(item => item.trim())
-            .filter(Boolean)
-            .filter((value, index, self) => self.indexOf(value) === index);
     }
 
     function getQuickVariantColors() {
@@ -1029,59 +1084,59 @@
                 "Cam": "#ff8800", "Tím": "#aa00ff", "Hồng": "#ff66cc",
                 "Nâu": "#8b4513", "Xám": "#888888", "Be": "#d4a574"
             };
-            
+
             COLORS.forEach(color => {
                 const label = document.createElement('label');
                 label.style.cssText = 'display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:8px; background:#fff; border:1px solid #ddd; transition:all 0.2s;';
-                
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = color;
                 checkbox.className = 'color-checkbox';
-                
+
                 const dot = document.createElement('span');
                 dot.style.cssText = `width:16px; height:16px; border-radius:50%; background-color:${colorMap[color]}; border:1px solid rgba(0,0,0,0.2); flex-shrink:0;`;
-                
+
                 const text = document.createElement('span');
                 text.textContent = color;
                 text.style.cssText = 'font-size:13px; flex:1;';
-                
+
                 label.appendChild(checkbox);
                 label.appendChild(dot);
                 label.appendChild(text);
-                
+
                 checkbox.addEventListener('change', () => {
                     label.style.background = checkbox.checked ? '#f0e6e0' : '#fff';
                     label.style.borderColor = checkbox.checked ? '#8b4d4d' : '#ddd';
                 });
-                
+
                 colorList.appendChild(label);
             });
         }
-        
+
         const sizeList = document.getElementById('sizeCheckboxList');
         if (sizeList && sizeList.children.length === 0) {
             SIZES.forEach(size => {
                 const label = document.createElement('label');
                 label.style.cssText = 'display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:8px; background:#fff; border:1px solid #ddd; transition:all 0.2s;';
-                
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = size;
                 checkbox.className = 'size-checkbox';
-                
+
                 const text = document.createElement('span');
                 text.textContent = size;
                 text.style.cssText = 'font-size:13px; font-weight:600; flex:1;';
-                
+
                 label.appendChild(checkbox);
                 label.appendChild(text);
-                
+
                 checkbox.addEventListener('change', () => {
                     label.style.background = checkbox.checked ? '#f0e6e0' : '#fff';
                     label.style.borderColor = checkbox.checked ? '#8b4d4d' : '#ddd';
                 });
-                
+
                 sizeList.appendChild(label);
             });
         }
@@ -1091,7 +1146,7 @@
         const content = document.getElementById('quickPanelContent');
         const toggle = document.getElementById('quickPanelToggle');
         const isHidden = content.style.display === 'none';
-        
+
         if (isHidden) {
             content.style.display = 'block';
             toggle.style.transform = 'rotate(180deg)';
@@ -1103,27 +1158,29 @@
 
     function updateVariantBadge(item) {
         if (!item) return;
-        
+
         const colorMap = {
             "Đen": "#000000", "Trắng": "#ffffff", "Đỏ": "#ff0000",
             "Xanh dương": "#0066ff", "Xanh lá": "#00aa00", "Vàng": "#ffff00",
             "Cam": "#ff8800", "Tím": "#aa00ff", "Hồng": "#ff66cc",
             "Nâu": "#8b4513", "Xám": "#888888", "Be": "#d4a574"
         };
-        
+
         const mauSac = item.querySelector('select[name*=".mauSac"]')?.value || '';
         const kichCo = item.querySelector('select[name*=".kichCo"]')?.value || '';
-        
+
         const colorBadge = item.querySelector('.color-badge');
         const sizeBadge = item.querySelector('.size-badge');
-        
+
         if (colorBadge) {
             colorBadge.style.backgroundColor = colorMap[mauSac] || '#ccc';
         }
-        
+
         if (sizeBadge) {
             sizeBadge.textContent = kichCo || '-';
         }
+
+        updateVariantSummary();
     }
 
     function getQuickVariantMode() {
@@ -1155,19 +1212,18 @@
         const mode = getQuickVariantMode();
 
         const result = await Swal.fire({
-            title: 'Sinh nhiều biến thể?',
+            title: 'Sinh nhieu bien the?',
             text: mode === 'replace_all'
-                ? 'Hệ thống sẽ thay thế toàn bộ danh sách biến thể hiện tại bằng các tổ hợp màu × size.'
-                : 'Hệ thống sẽ giữ biến thể hiện có và chỉ thêm các tổ hợp màu × size còn thiếu.',
+                ? 'He thong se thay the toan bo danh sach bien the hien tai bang cac to hop mau x size.'
+                : 'He thong se giu bien the hien co va chi them cac to hop mau x size con thieu.',
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Sinh ngay',
-            cancelButtonText: 'Hủy'
+            cancelButtonText: 'Huy'
         });
 
         if (!result.isConfirmed) return;
 
-        // Call Spring Boot API
         try {
             const maSanPham = document.getElementById('maSanPham')?.value || '';
             const stock = getNumberValue('quickVariantStock', 0);
@@ -1195,12 +1251,12 @@
 
             if (!response.ok) {
                 const errorText = await response.text();
-                Swal.fire('Lỗi', `API Error: ${errorText}`, 'error');
+                Swal.fire('Loi', `API Error: ${errorText}`, 'error');
                 return;
             }
 
             const variants = await response.json();
-            
+
             const list = document.getElementById('variantsList');
             if (mode === 'replace_all') {
                 list.innerHTML = '';
@@ -1223,22 +1279,20 @@
                     maSKU: variant.maSKU,
                     soLuongTon: variant.soLuongTon,
                     gia: variant.gia,
-                    giaGoc: null,
                     khoiLuongGram: variant.khoiLuongGram
                 });
             }
 
             if (addedCount === 0) {
-                Swal.fire('Thông báo', 'Không có biến thể mới cần thêm.', 'info');
+                Swal.fire('Thong bao', 'Khong co bien the moi can them.', 'info');
             } else {
-                Swal.fire('Thành công', `Đã ${mode === 'replace_all' ? 'sinh' : 'thêm'} ${addedCount} biến thể.`, 'success');
+                Swal.fire('Thanh cong', `Da ${mode === 'replace_all' ? 'sinh' : 'them'} ${addedCount} bien the.`, 'success');
             }
         } catch (error) {
-            Swal.fire('Lỗi', `Lỗi sinh biến thể: ${error.message}`, 'error');
+            Swal.fire('Loi', `Loi sinh bien the: ${error.message}`, 'error');
         }
     }
 
-    // ===== Submit =====
     document.getElementById('editForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -1252,15 +1306,12 @@
             await Promise.allSettled(Array.from(pendingUploads));
         }
 
-        // Ensure latest SKU update for all variants before submit
         document.querySelectorAll('#variantsList .variant-item').forEach(item => updateSKUItem(item));
 
-        // Resolve final category from child or parent selection.
         const childDanhMucId = document.getElementById('danhMucId').value;
         const parentDanhMucId = document.getElementById('parentDanhMucId').value;
         document.getElementById('finalDanhMucId').value = childDanhMucId || parentDanhMucId || '';
 
-        // Remove gallery items that do not have uploaded path.
         Array.from(document.querySelectorAll('#imagesList .image-item')).forEach((el) => {
             const hidden = el.querySelector('input[type="hidden"]');
             if (!hidden || !hidden.value || hidden.value.trim() === '') {
@@ -1268,7 +1319,6 @@
             }
         });
 
-        // Remove invalid color image items.
         Array.from(document.querySelectorAll('#colorImagesList .image-item')).forEach((el) => {
             const mauSac = el.querySelector('select[name$=".mauSac"]')?.value || '';
             const hidden = el.querySelector('input[type="hidden"]');
@@ -1284,11 +1334,10 @@
         const galleryItems = document.querySelectorAll('#imagesList .image-item');
         if (galleryItems.length === 0) {
             document.getElementById('loading').classList.remove('show');
-            Swal.fire('Thiếu ảnh', 'Vui lòng tải lên ít nhất 1 ảnh gallery trước khi lưu.', 'warning');
+            Swal.fire('Thieu anh', 'Vui long tai len it nhat 1 anh gallery truoc khi luu.', 'warning');
             return;
         }
 
-        // Ensure one primary image for backend rule.
         const checkedMain = document.querySelector('#imagesList input[type="checkbox"]:checked');
         if (!checkedMain) {
             const firstMain = document.querySelector('#imagesList input[type="checkbox"]');
@@ -1300,5 +1349,3 @@
 </script>
 </body>
 </html>
-
-

@@ -1,4 +1,4 @@
-package com.example.demodatn2.service;
+﻿package com.example.demodatn2.service;
 
 import com.example.demodatn2.dto.BienTheRequestDTO;
 import com.example.demodatn2.dto.BienTheResponseDTO;
@@ -36,6 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -64,7 +65,7 @@ public class SanPhamService {
 
         // Auto-generate product code if not provided
         if (requestDTO.getMaSanPham() == null || requestDTO.getMaSanPham().trim().isEmpty()) {
-            requestDTO.setMaSanPham(generateProductCode());
+            requestDTO.setMaSanPham(generateProductCode(requestDTO.getTen()));
         }
 
         validateSanPhamRequest(requestDTO);
@@ -115,8 +116,13 @@ public class SanPhamService {
     /**
      * Auto-generate unique product code with format SP-<timestamp>
      */
-    private String generateProductCode() {
-        String baseCode = "SP-" + System.currentTimeMillis();
+    public String generateProductCode(String productName) {
+        String normalized = normalizeVietnameseText(productName == null ? "" : productName)
+                .toUpperCase()
+                .replaceAll("\\s+", "")
+                .replaceAll("[^A-Z0-9]", "");
+        String prefix = normalized.isEmpty() ? "SP" : normalized.substring(0, Math.min(6, normalized.length()));
+        String baseCode = prefix + "_" + String.valueOf(System.currentTimeMillis()).substring(7);
         String code = baseCode;
         int counter = 0;
         
@@ -362,7 +368,7 @@ public class SanPhamService {
     public Page<SanPhamResponseDTO> searchSanPhamPaged(String keyword, Integer danhMucId, String trangThai, String sortBy, int page, int size) {
         List<SanPhamResponseDTO> allResults = searchSanPham(keyword, danhMucId, trangThai);
         
-        // Sort theo ngày tạo
+        // Sort theo ngÃ y táº¡o
         if ("oldest".equalsIgnoreCase(sortBy)) {
             allResults.sort((a, b) -> {
                 Instant timeA = a.getNgayTao() != null ? a.getNgayTao() : Instant.EPOCH;
@@ -747,10 +753,10 @@ public class SanPhamService {
      */
     public List<BienTheRequestDTO> generateQuickVariants(GenerateQuickVariantsRequest request) {
         if (request.getColors() == null || request.getColors().isEmpty()) {
-            throw new RuntimeException("Vui lòng chọn ít nhất 1 màu sắc");
+            throw new RuntimeException("Vui lÃ²ng chá»n Ã­t nháº¥t 1 mÃ u sáº¯c");
         }
         if (request.getSizes() == null || request.getSizes().isEmpty()) {
-            throw new RuntimeException("Vui lòng chọn ít nhất 1 kích cỡ");
+            throw new RuntimeException("Vui lÃ²ng chá»n Ã­t nháº¥t 1 kÃ­ch cá»¡");
         }
 
         List<BienTheRequestDTO> variants = new ArrayList<>();
@@ -796,7 +802,7 @@ public class SanPhamService {
         }
 
         if (variants.isEmpty()) {
-            throw new RuntimeException("Không thể sinh biến thể với các tham số được cung cấp");
+            throw new RuntimeException("KhÃ´ng thá»ƒ sinh biáº¿n thá»ƒ vá»›i cÃ¡c tham sá»‘ Ä‘Æ°á»£c cung cáº¥p");
         }
 
         log.info("Generated {} variants", variants.size());
@@ -804,29 +810,93 @@ public class SanPhamService {
     }
 
     /**
+     * Validate base product fields from FE before submit
+     */
+    public void validateBaseInfoForCreate(String maSanPham, String ten, Integer danhMucId) {
+        String code = maSanPham != null ? maSanPham.trim() : "";
+        String productName = ten != null ? ten.trim() : "";
+
+        if (productName.isEmpty()) {
+            throw new RuntimeException("Ten san pham khong duoc de trong");
+        }
+        if (danhMucId == null) {
+            throw new RuntimeException("Vui long chon danh muc.");
+        }
+        if (!code.isEmpty() && sanPhamRepository.findByMaSanPham(code).isPresent()) {
+            throw new RuntimeException("Ma san pham da ton tai: " + code);
+        }
+    }
+
+    /**
+     * Generate SKU preview from base fields
+     */
+    public String generateSkuPreview(String maSanPham, String mauSac, String kichCo) {
+        String color = mauSac != null ? mauSac.trim() : "";
+        String size = kichCo != null ? kichCo.trim() : "";
+        String productCode = maSanPham != null ? maSanPham.trim() : "";
+
+        if (color.isEmpty() || size.isEmpty()) {
+            throw new RuntimeException("Mau sac va kich co khong duoc de trong.");
+        }
+
+        if (!productCode.isEmpty()) {
+            return String.format("%s_%s_%s", toSkuToken(productCode), toSkuToken(color), toSkuToken(size));
+        }
+        return String.format("%s_%s", toSkuToken(color), toSkuToken(size));
+    }
+
+    /**
+     * Validate variant payload from FE before submit
+     */
+    public void validateVariantRequests(List<BienTheRequestDTO> variants) {
+        if (variants == null || variants.isEmpty()) {
+            throw new RuntimeException("Vui long them it nhat 1 bien the.");
+        }
+
+        Set<String> comboSet = new HashSet<>();
+        for (BienTheRequestDTO variant : variants) {
+            String color = variant.getMauSac() != null ? variant.getMauSac().trim() : "";
+            String size = variant.getKichCo() != null ? variant.getKichCo().trim() : "";
+            String sku = variant.getMaSKU() != null ? variant.getMaSKU().trim() : "";
+
+            if (color.isEmpty() || size.isEmpty()) {
+                throw new RuntimeException("Vui long chon day du mau sac va kich co cho bien the.");
+            }
+            if (sku.isEmpty()) {
+                throw new RuntimeException("Vui long dam bao ma SKU duoc tao cho bien the.");
+            }
+            if (variant.getSoLuongTon() == null || variant.getSoLuongTon() < 0) {
+                throw new RuntimeException("So luong ton phai la so >= 0.");
+            }
+            if (variant.getGia() == null || variant.getGia().compareTo(BigDecimal.ZERO) < 0) {
+                throw new RuntimeException("Gia ban phai la so >= 0.");
+            }
+            if (variant.getKhoiLuongGram() == null || variant.getKhoiLuongGram() <= 0) {
+                throw new RuntimeException("Khoi luong phai la so > 0.");
+            }
+
+            String comboKey = (color + "__" + size).toLowerCase();
+            if (!comboSet.add(comboKey)) {
+                throw new RuntimeException("Khong duoc trung mau sac + kich co.");
+            }
+        }
+    }
+
+    /**
      * Convert string to SKU token (remove Vietnamese tones, uppercase, replace spaces with underscore)
      */
     private String toSkuToken(String s) {
         if (s == null || s.isEmpty()) return "";
-        return removeVietnameseTones(s)
+        return normalizeVietnameseText(s)
                 .trim()
                 .toUpperCase()
                 .replaceAll("\\s+", "_");
     }
 
-    /**
-     * Remove Vietnamese tone marks
-     */
-    private String removeVietnameseTones(String str) {
-        if (str == null || str.isEmpty()) return "";
-        str = str.replaceAll("[àáạảãâầấậẩẫăằắặẳẵÀÁẠẢÃÂẦẤẬẨẪĂĂĐẰĐẮẬẲẵ]", "a");
-        str = str.replaceAll("[èéẹẻẽêềếệểễÈÉẸẺẼÊỀẾỆỂỄ]", "e");
-        str = str.replaceAll("[ìíịỉĩÌÍỊỈĨ]", "i");
-        str = str.replaceAll("[òóọỏõôồốộổỗơờớợởỡÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]", "o");
-        str = str.replaceAll("[ùúụủũưừứựửữÙÚỤỦŨƯỪỨỰỬỮ]", "u");
-        str = str.replaceAll("[ỳýỵỷỹỲÝỴỶỸ]", "y");
-        str = str.replaceAll("[đĐ]", "d");
-        return str;
+    private String normalizeVietnameseText(String value) {
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        return normalized.replace('\u0111', 'd').replace('\u0110', 'D');
     }
 
     private boolean isAllowedProduct(SanPham sanPham) {
@@ -847,3 +917,4 @@ public class SanPhamService {
         return new PageImpl<>(items.subList(start, end), PageRequest.of(safePage, safeSize), items.size());
     }
 }
+

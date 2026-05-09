@@ -11,6 +11,7 @@ let invoices = Array.isArray(window.POS_INVOICES) ? window.POS_INVOICES : [];
 let activeInvoiceId = window.POS_ACTIVE_INVOICE || '';
 let tempOrderCode = null; // Mã đơn hàng tạm cho transfer QR
 const invoiceMetas = {};
+const MAX_PENDING_INVOICES = 5;
 
 /* ══════════════════════════════════════════
    FORMAT
@@ -79,15 +80,15 @@ function clearPosCart(silent) {
 function renderInvoiceTabs() {
     const bar = document.getElementById('invoiceBar');
     if (!bar) return;
+    const canAddInvoice = invoices.length < MAX_PENDING_INVOICES;
     bar.innerHTML = invoices.map(inv => `
         <div class="pos-invoice-tab${inv.active ? ' active' : ''}" onclick="activateInvoice('${inv.invoiceId}')">
             <span class="pos-inv-label">${inv.label}</span>
             ${inv.itemCount > 0 ? `<span class="pos-inv-badge">${inv.itemCount}</span>` : ''}
-            ${invoices.length > 1 ? `<button class="pos-inv-close" onclick="event.stopPropagation();removeInvoice('${inv.invoiceId}')" title="Đóng"><i class="fas fa-times"></i></button>` : ''}
+            ${invoices.length > 1 ? `<button class="pos-inv-close" onclick="event.stopPropagation();removeInvoice('${inv.invoiceId}')" title="Dong"><i class="fas fa-times"></i></button>` : ''}
         </div>
-    `).join('') + `<button class="pos-invoice-add" onclick="addInvoice()" title="Thêm hóa đơn mới"><i class="fas fa-plus"></i></button>`;
+    `).join('') + `<button class="pos-invoice-add${canAddInvoice ? '' : ' disabled'}" onclick="addInvoice()" title="${canAddInvoice ? 'Them hoa don moi' : 'Toi da 5 hoa don cho'}"><i class="fas fa-plus"></i></button>`;
 }
-
 function saveCurrentMeta() {
     if (!activeInvoiceId) return;
     invoiceMetas[activeInvoiceId] = {
@@ -144,6 +145,10 @@ function restoreMeta(invoiceId) {
 }
 
 async function addInvoice() {
+    if (invoices.length >= MAX_PENDING_INVOICES) {
+        showToast('Chi duoc tao toi da 5 hoa don cho', 'error');
+        return;
+    }
     saveCurrentMeta();
     const res = await fetch('/admin/pos/api/invoices', { method: 'POST' });
     const data = await res.json();
@@ -600,6 +605,48 @@ function removeVoucher() {
     recalc();
 }
 
+function renderVoucherSuggestions(list) {
+    const wrap = document.getElementById('voucherSuggestList');
+    const suggestWrap = document.getElementById('voucherSuggestWrap');
+    if (!wrap || !suggestWrap) return;
+
+    const suggestions = Array.isArray(list) ? list.filter(Boolean).slice(0, 8) : [];
+    if (suggestions.length === 0) {
+        suggestWrap.style.display = 'none';
+        return;
+    }
+
+    suggestWrap.style.display = '';
+    wrap.innerHTML = suggestions.map(item => {
+        const code = item.code || '';
+        const desc = item.label || item.description || item.name || '';
+        const label = desc ? `${code} - ${desc}` : code;
+        const safeCode = (code || '').replace(/"/g, '&quot;');
+        return `<button type="button" class="voucher-suggest-chip" onclick="applySuggestedVoucher('${safeCode}')">${label}</button>`;
+    }).join('');
+}
+
+function applySuggestedVoucher(code) {
+    const input = document.getElementById('voucherCode');
+    if (!input) return;
+    input.value = code;
+    applyVoucher();
+}
+
+async function loadVoucherSuggestions() {
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    try {
+        const res = await fetch('/admin/pos/api/vouchers/eligible?amount=' + encodeURIComponent(subtotal));
+        if (!res.ok) throw new Error('no-api');
+        const data = await res.json();
+        const list = Array.isArray(data.vouchers) ? data.vouchers : [];
+        renderVoucherSuggestions(list);
+        return;
+    } catch (e) {
+        renderVoucherSuggestions([]);
+    }
+}
+
 /* ══════════════════════════════════════════
    RECALC
    ══════════════════════════════════════════ */
@@ -616,6 +663,7 @@ function recalc() {
         document.getElementById('discountRow').style.display = 'none';
     }
     document.getElementById('totalAmount').textContent = fmt(total);
+    loadVoucherSuggestions();
 
     // Enable/disable checkout
     document.getElementById('btnCheckout').disabled = cart.length === 0;
@@ -882,5 +930,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderCart();
     recalc();
     filterProducts();
+    loadVoucherSuggestions();
     await syncPosCart(true);
 });
+
+
+
+
+

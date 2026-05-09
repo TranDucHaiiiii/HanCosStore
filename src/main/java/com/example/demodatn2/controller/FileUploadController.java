@@ -2,7 +2,10 @@ package com.example.demodatn2.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -11,17 +14,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/upload")
 public class FileUploadController {
 
-    private final String UPLOAD_DIR = "src/main/resources/static/images/products/";
+    private static final String UPLOAD_DIR = "src/main/resources/static/images/products/";
 
     @PostMapping
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> uploadFile(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("File is empty");
+            return badRequest("File is empty");
         }
 
         try {
@@ -30,60 +35,63 @@ public class FileUploadController {
                 Files.createDirectories(uploadPath);
             }
 
-            // 1. Lấy tên file gốc (ví dụ: ao-khoac.jpg)
             String originalFilename = file.getOriginalFilename();
-            // Xử lý an toàn: Thay khoảng trắng bằng gạch dưới (tránh lỗi URL)
-            if (originalFilename != null) {
-                originalFilename = originalFilename.replaceAll("\\s+", "_");
+            if (originalFilename == null || originalFilename.isBlank()) {
+                return badRequest("Invalid filename");
             }
-            
-            Path filePath = uploadPath.resolve(originalFilename);
+            originalFilename = originalFilename.replaceAll("\\s+", "_");
 
-            // 2. KIỂM TRA: Nếu file tên này đã tồn tại
+            Path filePath = uploadPath.resolve(originalFilename);
             if (Files.exists(filePath)) {
-                // A. So sánh xem có phải là 1 ảnh không (Dựa vào kích thước & nội dung)
                 if (isSameContent(file, filePath)) {
-                    // Nếu đúng là ảnh đó rồi -> Trả về đường dẫn luôn, KHÔNG LƯU MỚI
-                    return ResponseEntity.ok("/images/products/" + originalFilename);
-                } 
-                
-                // B. Nếu trùng tên nhưng nội dung khác (ảnh mới) -> Đổi tên nhẹ để tránh ghi đè
-                // Ví dụ: ao-khoac.jpg -> ao-khoac_1715482.jpg
+                    return success("/images/products/" + originalFilename);
+                }
                 String newName = renameFile(originalFilename);
                 filePath = uploadPath.resolve(newName);
-                originalFilename = newName; // Cập nhật tên mới để trả về
+                originalFilename = newName;
             }
 
-            // 3. Lưu file
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            return ResponseEntity.ok("/images/products/" + originalFilename);
-
+            return success("/images/products/" + originalFilename);
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Failed to upload: " + e.getMessage());
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("success", false);
+            body.put("message", "Failed to upload: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(body);
         }
     }
 
-    // Hàm phụ: Kiểm tra xem file mới up lên có giống hệt file cũ không
+    private ResponseEntity<Map<String, Object>> success(String url) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("success", true);
+        body.put("url", url);
+        return ResponseEntity.ok(body);
+    }
+
+    private ResponseEntity<Map<String, Object>> badRequest(String message) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("success", false);
+        body.put("message", message);
+        return ResponseEntity.badRequest().body(body);
+    }
+
     private boolean isSameContent(MultipartFile file, Path existingFilePath) throws IOException {
-        // Cách 1: So sánh kích thước file trước (Nhanh)
         if (file.getSize() != Files.size(existingFilePath)) {
-            return false; // Khác kích thước -> Chắc chắn là ảnh khác
+            return false;
         }
-        
-        // Cách 2: So sánh mã Hash MD5 (Chính xác 100%)
+
         String newFileHash = DigestUtils.md5DigestAsHex(file.getInputStream());
         String existingFileHash;
         try (InputStream is = Files.newInputStream(existingFilePath)) {
             existingFileHash = DigestUtils.md5DigestAsHex(is);
         }
-        
+
         return newFileHash.equals(existingFileHash);
     }
 
-    // Hàm phụ: Tạo tên mới nếu bị trùng (thêm timestamp)
     private String renameFile(String originalName) {
         String name = originalName;
         String ext = "";
@@ -92,7 +100,6 @@ public class FileUploadController {
             name = originalName.substring(0, dotIndex);
             ext = originalName.substring(dotIndex);
         }
-        // Thêm thời gian hiện tại vào sau tên để đảm bảo không trùng
         return name + "_" + System.currentTimeMillis() + ext;
     }
 }

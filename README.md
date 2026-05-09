@@ -66,7 +66,7 @@ Dat cac bien moi truong sau truoc khi chay app:
 Vi du PowerShell:
 
 ```powershell
-$env:GEMINI_API_KEY="AIzaSyCg6TB8oBVukrKW4Mb-Y9t6sV_YqNVGl58echo AIzaSyCg6TB8oBVukrKW4Mb-Y9t6sV_YqNVGl58"
+setx GEMINI_API_KEY "AIzaSyCOLrFHMtTkdFveTyuxI1ONBgBNAMk5xEk"
 $env:GHTK_TOKEN="3QEjuuFP1N9Ph17zUBiIZFgytdvSabdl1oFEjqg"
 $env:GHTK_PARTNER_CODE="HanCosStore"
 

@@ -37,8 +37,9 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Mã Sản Phẩm <span class="hint">(tự động sinh nếu để trống)</span></label>
-                        <input type="text" name="maSanPham" id="maSanPham" placeholder="Để trống để tự động sinh mã" oninput="updateAllSKUs()">
+                        <label>Mã Sản Phẩm</label>
+                        <input type="text" name="maSanPham" id="maSanPham" oninput="capNhatTatCaSku()">
+                        <small id="maSanPhamStatus" style="display:block; margin-top:6px; font-size:12px; color:#7a7a7a;"></small>
                     </div>
                     <div class="form-group">
                         <label>Tên Sản Phẩm <span class="required">*</span></label>
@@ -64,7 +65,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Danh Mục Cha</label>
-                        <select id="parentDanhMucId" onchange="loadChildren()">
+                        <select id="parentDanhMucId" onchange="taiDanhMucCon()">
                             <option value="">-- Chọn danh mục cha --</option>
                             <option th:each="dm : ${parentDanhMuc}"
                                     th:value="${dm.id}"
@@ -99,17 +100,17 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                     <h2 class="section-title" style="margin-bottom: 0;">Biến Thể Sản Phẩm</h2>
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <button type="button" class="btn btn-secondary" onclick="addVariant()" style="margin-top: 0;">
+                        <button type="button" class="btn btn-secondary" onclick="themBienThe()" style="margin-top: 0;">
                             <i class="fas fa-plus"></i> Thêm Biến Thể
                         </button>
-                        <button type="button" class="btn btn-add" onclick="generateQuickVariants()" style="margin-top: 0;">
+                        <button type="button" class="btn btn-add" onclick="taoNhanhBienThe()" style="margin-top: 0;">
                             <i class="fas fa-wand-magic-sparkles"></i> Sinh Nhiều
                         </button>
                     </div>
                 </div>
                 <div class="quick-variant-panel" style="margin-bottom:18px; border:1px solid rgba(139,77,77,0.14); border-radius:16px; background:linear-gradient(180deg,#fff8f4 0%,#ffffff 100%);">
                     <!-- Header (Collapsible) -->
-                    <div onclick="toggleQuickPanel()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:16px; gap:12px;">
+                    <div onclick="dongMoBangTaoNhanh()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:16px; gap:12px;">
                         <div>
                             <h3 style="margin:0; font-size:17px; font-weight:800; color:#2d2d2d;">
                                 <i class="fas fa-wand-magic-sparkles"></i> Sinh nhiều biến thể cùng lúc
@@ -162,20 +163,24 @@
                         </div>
                         
                         <div style="display:flex; justify-content:flex-end;">
-                            <button type="button" class="btn btn-add" onclick="generateQuickVariants()">
+                            <button type="button" class="btn btn-add" onclick="taoNhanhBienThe()">
                                 <i class="fas fa-wand-magic-sparkles"></i> Tạo bộ biến thể
                             </button>
                         </div>
                     </div>
                 </div>
-                <div id="variantsList"></div>
+                <div class="variant-summary" id="variantSummary">
+                    <span><i class="fas fa-layer-group"></i> 0 biến thể</span>
+                    <span>Mỗi dòng là 1 tổ hợp Màu x Size</span>
+                </div>
+                <div id="variantsList" class="variants-list"></div>
             </div>
 
             <!-- Hình ảnh sản phẩm -->
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                     <h2 class="section-title" style="margin-bottom: 0;">Hình Ảnh Sản Phẩm</h2>
-                    <button type="button" class="btn btn-add" onclick="addImage()" style="margin-top: 0;">
+                    <button type="button" class="btn btn-add" onclick="themAnh()" style="margin-top: 0;">
                         <i class="fas fa-image"></i> Thêm Hình Ảnh
                     </button>
                 </div>
@@ -191,7 +196,7 @@
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                     <h2 class="section-title" style="margin-bottom: 0;">Hình Ảnh Theo Màu Sắc</h2>
-                    <button type="button" class="btn btn-add" onclick="addColorImage()" style="margin-top: 0;">
+                    <button type="button" class="btn btn-add" onclick="themAnhTheoMau()" style="margin-top: 0;">
                         <i class="fas fa-palette"></i> Thêm Hình Màu
                     </button>
                 </div>
@@ -200,10 +205,10 @@
 
             <!-- Actions -->
             <div class="form-actions">
-                <button type="button" class="btn btn-info" onclick="syncColors()" style="background: #5dade2; color: white; border: none;">
+                <button type="button" class="btn btn-info" onclick="dongBoMau()" style="background: #5dade2; color: white; border: none;">
                     <i class="fas fa-sync"></i> Đồng Bộ Màu
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                <button type="button" class="btn btn-secondary" onclick="datLaiForm()">
                     <i class="fas fa-redo"></i> Làm Mới
                 </button>
                 <button type="submit" class="btn btn-primary">

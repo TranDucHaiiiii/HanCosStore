@@ -9,6 +9,7 @@ import com.example.demodatn2.repository.VaiTroRepository;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.mindrot.jbcrypt.BCrypt;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-// Service xử lý đăng ký, đăng nhập và quản lý session đăng nhập.
 public class AuthService {
 
     private final TaiKhoanRepository taiKhoanRepository;
@@ -28,24 +28,42 @@ public class AuthService {
 
     @Transactional
     public void register(RegisterRequestDTO request) {
-        if (taiKhoanRepository.findByTenDangNhap(request.getTenDangNhap()).isPresent()) {
-            throw new RuntimeException("Tên đăng nhập đã tồn tại!");
+        String tenDangNhap = request.getTenDangNhap() != null ? request.getTenDangNhap().trim() : "";
+        String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+
+        if (tenDangNhap.isEmpty()) {
+            throw new RuntimeException("Ten dang nhap khong duoc de trong!");
+        }
+        if (email.isEmpty()) {
+            throw new RuntimeException("Email khong duoc de trong!");
+        }
+        if (request.getMatKhau() == null || request.getMatKhau().isEmpty()) {
+            throw new RuntimeException("Mat khau khong duoc de trong!");
+        }
+        if (taiKhoanRepository.findByTenDangNhap(tenDangNhap).isPresent()) {
+            throw new RuntimeException("Ten dang nhap da ton tai!");
+        }
+        if (taiKhoanRepository.findByEmailIgnoreCase(email).isPresent()) {
+            throw new RuntimeException("Email da duoc su dung!");
         }
 
         TaiKhoan taiKhoan = new TaiKhoan();
-        taiKhoan.setTenDangNhap(request.getTenDangNhap());
+        taiKhoan.setTenDangNhap(tenDangNhap);
         taiKhoan.setMatKhau(BCrypt.hashpw(request.getMatKhau(), BCrypt.gensalt()));
-        taiKhoan.setHoTen(request.getHoTen());
-        taiKhoan.setEmail(request.getEmail());
-        taiKhoan.setSoDienThoai(request.getSoDienThoai());
+        taiKhoan.setHoTen(request.getHoTen() != null ? request.getHoTen().trim() : null);
+        taiKhoan.setEmail(email);
+        taiKhoan.setSoDienThoai(request.getSoDienThoai() != null ? request.getSoDienThoai().trim() : null);
         taiKhoan.setTrangThai("ACTIVE");
 
-        // Gán vai trò mặc định là CUSTOMER
         VaiTro customerRole = vaiTroRepository.findByMa("CUSTOMER")
-            .orElseThrow(() -> new RuntimeException("Vai trò CUSTOMER không tồn tại!"));
+                .orElseThrow(() -> new RuntimeException("Vai tro CUSTOMER khong ton tai!"));
         taiKhoan.setVaiTros(new HashSet<>(Collections.singletonList(customerRole)));
 
-        taiKhoanRepository.save(taiKhoan);
+        try {
+            taiKhoanRepository.saveAndFlush(taiKhoan);
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("Email hoac ten dang nhap da ton tai!");
+        }
     }
 
     public boolean login(String tenDangNhap, String matKhau, HttpSession session) {
@@ -58,18 +76,17 @@ public class AuthService {
         if (optUser.isEmpty()) {
             optUser = taiKhoanRepository.findByEmailIgnoreCase(loginValue);
         }
-        
+
         if (optUser.isPresent()) {
             TaiKhoan user = optUser.get();
-            
+
             if (!"ACTIVE".equals(user.getTrangThai())) {
                 return false;
             }
 
-            boolean isMatch = false;
+            boolean isMatch;
             String hashed = user.getMatKhau();
 
-            // Tự nhận biết BCrypt: nếu hash bắt đầu bằng $2a$ hoặc $2b$
             if (hashed != null && (hashed.startsWith("$2a$") || hashed.startsWith("$2b$"))) {
                 try {
                     isMatch = BCrypt.checkpw(matKhau, hashed);
@@ -77,7 +94,6 @@ public class AuthService {
                     isMatch = false;
                 }
             } else {
-                // So sánh trực tiếp cho plain text
                 isMatch = matKhau.equals(hashed);
             }
 

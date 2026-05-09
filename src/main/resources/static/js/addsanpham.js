@@ -1,8 +1,37 @@
 const API_URL = '/api';
-
 const SIZE_LETTERS = ["XS", "S", "M", "L", "XL", "XXL"];
 const SIZE_PANTS = ["28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38"];
+const COLORS = [
+    "\u0110en", "Tr\u1eafng", "\u0110\u1ecf", "Xanh d\u01b0\u01a1ng", "Xanh l\u00e1", "V\u00e0ng",
+    "Cam", "T\u00edm", "H\u1ed3ng", "N\u00e2u", "X\u00e1m", "Be"
+];
 const PARENT_DANH_MUC_TREE = window.PARENT_DANH_MUC_TREE || [];
+const skuPreviewCache = new Map();
+//
+async function ensureMaSanPham() {
+    const input = document.getElementById('maSanPham');
+    if (!input) return;
+    if (input.value.trim()) return;
+
+    try {
+        const ten = (document.getElementById('ten')?.value || '').trim();
+        const response = await fetch('/api/san-pham/generate-code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ ten })
+        });
+        const data = await response.json();
+        if (response.ok && data.success && data.code) {
+            input.value = data.code;
+            updateAllSKUs();
+        }
+    } catch (error) {
+        // Keep quiet to avoid blocking form usage when code API is temporarily unavailable
+    }
+}
 
 function normalizeCategoryName(name) {
     return removeVietnameseTones((name || "").toLowerCase());
@@ -77,6 +106,7 @@ function updateAllSizeSelects() {
             updateSKU(index);
         }
     });
+    renderQuickSizeCheckboxes();
 }
 
 async function loadChildren() {
@@ -139,63 +169,61 @@ function addVariant(data = null) {
     const seed = data || getLastVariantData();
 
     const html = `
-        <div class="variant-item" data-index="${index}">
-            <div class="item-header">
-                <span class="item-number"><i class="fas fa-tags"></i> Biến thể #${index + 1}</span>
-                <button type="button" class="btn btn-secondary" onclick="cloneVariant(this)">
-                    <i class="fas fa-copy"></i> Nhân bản
+        <div class="variant-item variant-row" data-index="${index}">
+            <div class="variant-row-info">
+                <span class="item-number"><i class="fas fa-tags"></i> #${index + 1}</span>
+                <span class="variant-badge">
+                    <span class="color-badge"></span>
+                    <span class="size-badge">-</span>
+                </span>
+            </div>
+            <div class="form-group variant-field variant-color-field">
+                <label>Mau Sac <span class="required">*</span></label>
+                <select name="bienThes[${index}].mauSac" required onchange="updateSKUFromEl(this)">
+                    <option value="">-- Chon mau --</option>
+                    <option value="\u0110en" ${seed && seed.mauSac === '\u0110en' ? 'selected' : ''}>\u0110en</option>
+                    <option value="Tr\u1eafng" ${seed && seed.mauSac === 'Tr\u1eafng' ? 'selected' : ''}>Tr\u1eafng</option>
+                    <option value="\u0110\u1ecf" ${seed && seed.mauSac === '\u0110\u1ecf' ? 'selected' : ''}>\u0110\u1ecf</option>
+                    <option value="Xanh d\u01b0\u01a1ng" ${seed && seed.mauSac === 'Xanh d\u01b0\u01a1ng' ? 'selected' : ''}>Xanh d\u01b0\u01a1ng</option>
+                    <option value="Xanh l\u00e1" ${seed && seed.mauSac === 'Xanh l\u00e1' ? 'selected' : ''}>Xanh l\u00e1</option>
+                    <option value="V\u00e0ng" ${seed && seed.mauSac === 'V\u00e0ng' ? 'selected' : ''}>V\u00e0ng</option>
+                    <option value="Cam" ${seed && seed.mauSac === 'Cam' ? 'selected' : ''}>Cam</option>
+                    <option value="T\u00edm" ${seed && seed.mauSac === 'T\u00edm' ? 'selected' : ''}>T\u00edm</option>
+                    <option value="H\u1ed3ng" ${seed && seed.mauSac === 'H\u1ed3ng' ? 'selected' : ''}>H\u1ed3ng</option>
+                    <option value="N\u00e2u" ${seed && seed.mauSac === 'N\u00e2u' ? 'selected' : ''}>N\u00e2u</option>
+                    <option value="X\u00e1m" ${seed && seed.mauSac === 'X\u00e1m' ? 'selected' : ''}>X\u00e1m</option>
+                    <option value="Be" ${seed && seed.mauSac === 'Be' ? 'selected' : ''}>Be</option>
+                </select>
+            </div>
+            <div class="form-group variant-field variant-size-field">
+                <label>Kich Co <span class="required">*</span></label>
+                <select name="bienThes[${index}].kichCo" required onchange="updateSKUFromEl(this)">
+                    ${buildSizeOptionsHtml(seed ? seed.kichCo : '')}
+                </select>
+            </div>
+            <div class="form-group variant-field variant-sku-field">
+                <label>Ma SKU <span class="required">*</span></label>
+                <input type="text" name="bienThes[${index}].maSKU" required readonly value="" placeholder="AO_PHAO_AKP_DEN_S">
+            </div>
+            <div class="form-group variant-field variant-stock-field">
+                <label>So Luong Ton <span class="required">*</span></label>
+                <input type="number" name="bienThes[${index}].soLuongTon" required min="0" value="${seed ? seed.soLuongTon : ''}" placeholder="100">
+            </div>
+            <div class="form-group variant-field variant-price-field">
+                <label>Gia Ban <span class="required">*</span></label>
+                <input type="number" name="bienThes[${index}].gia" required min="0" value="${seed ? seed.gia : ''}" placeholder="850000">
+            </div>
+            <div class="form-group variant-field variant-weight-field">
+                <label>Khoi Luong (gram) <span class="required">*</span></label>
+                <input type="number" name="bienThes[${index}].khoiLuongGram" required min="1" value="${seed ? seed.khoiLuongGram : 300}" placeholder="500">
+            </div>
+            <div class="variant-row-actions">
+                <button type="button" class="btn btn-secondary btn-icon-text" onclick="cloneVariant(this)">
+                    <i class="fas fa-copy"></i> Nhan ban
                 </button>
-                <button type="button" class="btn btn-danger" onclick="removeVariant(${index})">
-                    <i class="fas fa-trash"></i> Xóa
+                <button type="button" class="btn btn-danger btn-icon-text" onclick="removeVariant(this)">
+                    <i class="fas fa-trash"></i> Xoa
                 </button>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Màu Sắc <span class="required">*</span></label>
-                    <select name="bienThes[${index}].mauSac" required onchange="updateSKU(this.closest('.variant-item').dataset.index)" class="form-control">
-                        <option value="">-- Chọn màu --</option>
-                        <option value="Đen" ${seed && seed.mauSac === 'Đen' ? 'selected' : ''}>Đen</option>
-                        <option value="Trắng" ${seed && seed.mauSac === 'Trắng' ? 'selected' : ''}>Trắng</option>
-                        <option value="Đỏ" ${seed && seed.mauSac === 'Đỏ' ? 'selected' : ''}>Đỏ</option>
-                        <option value="Xanh dương" ${seed && seed.mauSac === 'Xanh dương' ? 'selected' : ''}>Xanh dương</option>
-                        <option value="Xanh lá" ${seed && seed.mauSac === 'Xanh lá' ? 'selected' : ''}>Xanh lá</option>
-                        <option value="Vàng" ${seed && seed.mauSac === 'Vàng' ? 'selected' : ''}>Vàng</option>
-                        <option value="Cam" ${seed && seed.mauSac === 'Cam' ? 'selected' : ''}>Cam</option>
-                        <option value="Tím" ${seed && seed.mauSac === 'Tím' ? 'selected' : ''}>Tím</option>
-                        <option value="Hồng" ${seed && seed.mauSac === 'Hồng' ? 'selected' : ''}>Hồng</option>
-                        <option value="Nâu" ${seed && seed.mauSac === 'Nâu' ? 'selected' : ''}>Nâu</option>
-                        <option value="Xám" ${seed && seed.mauSac === 'Xám' ? 'selected' : ''}>Xám</option>
-                        <option value="Be" ${seed && seed.mauSac === 'Be' ? 'selected' : ''}>Be</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Kích Cỡ <span class="required">*</span></label>
-                    <select name="bienThes[${index}].kichCo" required onchange="updateSKU(${index})">
-                        ${buildSizeOptionsHtml(seed ? seed.kichCo : '')}
-                    </select>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Mã SKU <span class="required">*</span></label>
-                    <input type="text" name="bienThes[${index}].maSKU" required readonly value="" placeholder="AO_PHAO_AKP_DEN_S">
-                </div>
-                <div class="form-group">
-                    <label>Số Lượng Tồn <span class="required">*</span></label>
-                    <input type="number" name="bienThes[${index}].soLuongTon" required min="0" value="${seed ? seed.soLuongTon : ''}" placeholder="100">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Giá Bán <span class="required">*</span></label>
-                    <input type="number" name="bienThes[${index}].gia" required min="0" value="${seed ? seed.gia : ''}" placeholder="850000">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Khối Lượng (gram) <span class="required">*</span></label>
-                    <input type="number" name="bienThes[${index}].khoiLuongGram" required min="1" value="${seed ? seed.khoiLuongGram : 300}" placeholder="500">
-                </div>
             </div>
         </div>
     `;
@@ -203,7 +231,22 @@ function addVariant(data = null) {
     variantsList.insertAdjacentHTML('beforeend', html);
 
     const item = variantsList.lastElementChild;
-    if (item) updateSKU(index);
+    if (item) {
+        updateSKU(index);
+        updateVariantBadge(item);
+    }
+    updateVariantSummary();
+}
+
+function themBienThe(data = null) {
+    addVariant(data);
+}
+
+function updateSKUFromEl(el) {
+    const item = el.closest('.variant-item');
+    if (!item) return;
+    const index = item.getAttribute('data-index');
+    if (index !== null) updateSKU(index);
 }
 
 function updateSKU(index) {
@@ -220,14 +263,85 @@ function updateSKU(index) {
     const mauSac = mauSacEl.value;
     const kichCo = kichCoEl.value;
 
-    if (maSP && mauSac && kichCo) {
-        const sku = `${toSkuToken(maSP)}_${toSkuToken(mauSac)}_${toSkuToken(kichCo)}`;
-        if (skuEl.value !== sku) {
-            skuEl.value = sku;
+    if (mauSac && kichCo) {
+        const requestToken = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        item.dataset.skuReqToken = requestToken;
+        requestSkuPreview(maSP, mauSac, kichCo).then((sku) => {
+            if (!sku) return;
+            if (item.dataset.skuReqToken !== requestToken) return;
+            if (skuEl.value !== sku) {
+                skuEl.value = sku;
+            }
+        });
+    }
+
+    updateVariantBadge(item);
+}
+
+async function requestSkuPreview(maSanPham, mauSac, kichCo) {
+    const cacheKey = `${maSanPham || ''}__${mauSac || ''}__${kichCo || ''}`;
+    if (skuPreviewCache.has(cacheKey)) {
+        return skuPreviewCache.get(cacheKey);
+    }
+
+    try {
+        const response = await fetch('/api/san-pham/preview-sku', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ maSanPham, mauSac, kichCo })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.sku) {
+            return '';
         }
+        skuPreviewCache.set(cacheKey, data.sku);
+        return data.sku;
+    } catch (error) {
+        return '';
     }
 }
 
+function updateVariantBadge(item) {
+    if (!item) return;
+
+    const colorMap = {
+        "\u0110en": "#000000", "Tr\u1eafng": "#ffffff", "\u0110\u1ecf": "#ff0000",
+        "Xanh d\u01b0\u01a1ng": "#0066ff", "Xanh l\u00e1": "#00aa00", "V\u00e0ng": "#ffff00",
+        "Cam": "#ff8800", "T\u00edm": "#aa00ff", "H\u1ed3ng": "#ff66cc",
+        "N\u00e2u": "#8b4513", "X\u00e1m": "#888888", "Be": "#d4a574"
+    };
+
+    const mauSac = item.querySelector('select[name*=".mauSac"]')?.value || '';
+    const kichCo = item.querySelector('select[name*=".kichCo"]')?.value || '';
+    const colorBadge = item.querySelector('.color-badge');
+    const sizeBadge = item.querySelector('.size-badge');
+
+    if (colorBadge) colorBadge.style.backgroundColor = colorMap[mauSac] || '#ccc';
+    if (sizeBadge) sizeBadge.textContent = kichCo || '-';
+}
+
+function updateVariantSummary() {
+    const summary = document.getElementById('variantSummary');
+    if (!summary) return;
+
+    const items = Array.from(document.querySelectorAll('#variantsList .variant-item'));
+    const colors = new Set();
+    const sizes = new Set();
+    items.forEach(item => {
+        const color = item.querySelector('select[name*=".mauSac"]')?.value || '';
+        const size = item.querySelector('select[name*=".kichCo"]')?.value || '';
+        if (color) colors.add(color);
+        if (size) sizes.add(size);
+    });
+
+    summary.innerHTML = `
+        <span><i class="fas fa-layer-group"></i> ${items.length} bien the</span>
+        <span>${colors.size} mau / ${sizes.size} size</span>
+    `;
+}
 function toSkuToken(s) {
     return removeVietnameseTones(s)
         .trim()
@@ -266,6 +380,222 @@ function syncColors() {
     }
 }
 
+function getQuickVariantColors() {
+    const checkboxes = Array.from(document.querySelectorAll('.color-checkbox:checked'));
+    return checkboxes.length > 0 ? checkboxes.map(cb => cb.value) : ["\u0110en", "Tr\u1eafng", "X\u00e1m"];
+}
+
+function getQuickVariantSizes() {
+    const checkboxes = Array.from(document.querySelectorAll('.size-checkbox:checked'));
+    return checkboxes.length > 0 ? checkboxes.map(cb => cb.value) : getSizeOptions().slice();
+}
+
+function getQuickVariantMode() {
+    const mode = document.getElementById('quickVariantMode')?.value || 'replace_all';
+    return mode === 'add_missing' ? 'add_missing' : 'replace_all';
+}
+
+function getNumberValue(id, fallback) {
+    const el = document.getElementById(id);
+    const value = Number(el?.value);
+    return Number.isFinite(value) ? value : fallback;
+}
+
+function getExistingVariantKeys() {
+    const keys = new Set();
+    document.querySelectorAll('#variantsList .variant-item').forEach((item) => {
+        const color = (item.querySelector('select[name*=".mauSac"]')?.value || '').trim();
+        const size = (item.querySelector('select[name*=".kichCo"]')?.value || '').trim();
+        if (color && size) {
+            keys.add(`${toSkuToken(color)}__${toSkuToken(size)}`);
+        }
+    });
+    return keys;
+}
+
+function renderQuickSizeCheckboxes() {
+    const sizeList = document.getElementById('sizeCheckboxList');
+    if (!sizeList) return;
+
+    const selectedSizes = new Set(
+        Array.from(sizeList.querySelectorAll('.size-checkbox:checked')).map(cb => cb.value)
+    );
+
+    sizeList.innerHTML = '';
+    getSizeOptions().forEach(size => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:8px; background:#fff; border:1px solid #ddd; transition:all 0.2s;';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = size;
+        checkbox.className = 'size-checkbox';
+        checkbox.checked = selectedSizes.has(size);
+
+        const text = document.createElement('span');
+        text.textContent = size;
+        text.style.cssText = 'font-size:13px; font-weight:600; flex:1;';
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+
+        const syncLabelState = () => {
+            label.style.background = checkbox.checked ? '#f0e6e0' : '#fff';
+            label.style.borderColor = checkbox.checked ? '#8b4d4d' : '#ddd';
+        };
+        checkbox.addEventListener('change', syncLabelState);
+        syncLabelState();
+
+        sizeList.appendChild(label);
+    });
+}
+
+function dongBoMau() {
+    syncColors();
+}
+
+function initQuickVariantDropdowns() {
+    const colorList = document.getElementById('colorCheckboxList');
+    if (colorList && colorList.children.length === 0) {
+        const colorMap = {
+            "\u0110en": "#000000", "Tr\u1eafng": "#ffffff", "\u0110\u1ecf": "#ff0000",
+            "Xanh d\u01b0\u01a1ng": "#0066ff", "Xanh l\u00e1": "#00aa00", "V\u00e0ng": "#ffff00",
+            "Cam": "#ff8800", "T\u00edm": "#aa00ff", "H\u1ed3ng": "#ff66cc",
+            "N\u00e2u": "#8b4513", "X\u00e1m": "#888888", "Be": "#d4a574"
+        };
+
+        COLORS.forEach(color => {
+            const label = document.createElement('label');
+            label.style.cssText = 'display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:8px; background:#fff; border:1px solid #ddd; transition:all 0.2s;';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = color;
+            checkbox.className = 'color-checkbox';
+
+            const dot = document.createElement('span');
+            dot.style.cssText = `width:16px; height:16px; border-radius:50%; background-color:${colorMap[color]}; border:1px solid rgba(0,0,0,0.2); flex-shrink:0;`;
+
+            const text = document.createElement('span');
+            text.textContent = color;
+            text.style.cssText = 'font-size:13px; flex:1;';
+
+            label.appendChild(checkbox);
+            label.appendChild(dot);
+            label.appendChild(text);
+
+            checkbox.addEventListener('change', () => {
+                label.style.background = checkbox.checked ? '#f0e6e0' : '#fff';
+                label.style.borderColor = checkbox.checked ? '#8b4d4d' : '#ddd';
+            });
+
+            colorList.appendChild(label);
+        });
+    }
+
+    renderQuickSizeCheckboxes();
+}
+
+function toggleQuickPanel() {
+    const content = document.getElementById('quickPanelContent');
+    const toggle = document.getElementById('quickPanelToggle');
+    if (!content || !toggle) return;
+
+    const isHidden = content.style.display === 'none';
+    if (isHidden) {
+        content.style.display = 'block';
+        toggle.style.transform = 'rotate(180deg)';
+    } else {
+        content.style.display = 'none';
+        toggle.style.transform = 'rotate(0deg)';
+    }
+}
+
+function dongMoBangTaoNhanh() {
+    toggleQuickPanel();
+}
+
+async function generateQuickVariants() {
+    const colors = getQuickVariantColors();
+    const sizes = getQuickVariantSizes();
+    const mode = getQuickVariantMode();
+
+    const result = await Swal.fire({
+        title: 'Sinh nhiều biến thể?',
+        text: mode === 'replace_all'
+            ? 'Hệ thống sẽ thay thế toàn bộ biến thể hiện tại.'
+            : 'Hệ thống chỉ thêm các biến thể còn thiếu.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sinh ngay',
+        cancelButtonText: 'Huy'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+        const maSanPham = document.getElementById('maSanPham')?.value || '';
+        const stock = getNumberValue('quickVariantStock', 0);
+        const price = getNumberValue('quickVariantPrice', 0);
+        const weight = getNumberValue('quickVariantWeight', 300);
+
+        const response = await fetch('/api/san-pham/generate-variants', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                colors: colors,
+                sizes: sizes,
+                stock: stock,
+                price: price,
+                weight: weight,
+                mode: mode,
+                maSanPham: maSanPham
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            showAlert('error', `API Error: ${err}`);
+            return;
+        }
+
+        const variants = await response.json();
+        const list = document.getElementById('variantsList');
+        if (mode === 'replace_all') list.innerHTML = '';
+
+        const existingKeys = mode === 'add_missing' ? getExistingVariantKeys() : new Set();
+        const createdKeys = new Set();
+        let added = 0;
+
+        for (const variant of variants) {
+            const key = `${toSkuToken(variant.mauSac)}__${toSkuToken(variant.kichCo)}`;
+            if (createdKeys.has(key) || existingKeys.has(key)) continue;
+            createdKeys.add(key);
+            added++;
+
+            addVariant({
+                mauSac: variant.mauSac,
+                kichCo: variant.kichCo,
+                soLuongTon: variant.soLuongTon,
+                gia: variant.gia,
+                khoiLuongGram: variant.khoiLuongGram
+            });
+        }
+
+        if (added === 0) showAlert('success', 'Khong co bien the moi can them.');
+        else showAlert('success', `Da them ${added} bien the.`);
+    } catch (error) {
+        showAlert('error', `Loi sinh bien the: ${error.message}`);
+    }
+}
+
+async function taoNhanhBienThe() {
+    await generateQuickVariants();
+}
+
 function addColorImageWithColor(color) {
     const colorImagesList = document.getElementById('colorImagesList');
     const index = colorImagesList.children.length;
@@ -299,19 +629,19 @@ function addColorImageWithColor(color) {
     colorImagesList.insertAdjacentHTML('beforeend', html);
 }
 
-function removeVariant(index) {
-    const variant = document.querySelector(`#variantsList .variant-item[data-index="${index}"]`);
-    if (variant) {
-        variant.remove();
-        updateVariantNumbers();
-    }
+function removeVariant(target) {
+    const variant = typeof target === 'number'
+        ? document.querySelector(`#variantsList .variant-item[data-index="${target}"]`)
+        : target.closest('.variant-item');
+    if (!variant) return;
+    variant.remove();
+    updateVariantNumbers();
 }
 
 function updateVariantNumbers() {
     const variants = document.querySelectorAll('#variantsList .variant-item');
     variants.forEach((variant, idx) => {
         variant.setAttribute('data-index', idx);
-        const removeBtn = variant.querySelector('.item-header .btn-danger');
         const mauSacEl = variant.querySelector('select[name*=".mauSac"]');
         const kichCoEl = variant.querySelector('select[name*=".kichCo"]');
         const maSkuEl = variant.querySelector('input[name*=".maSKU"]');
@@ -319,25 +649,18 @@ function updateVariantNumbers() {
         const giaEl = variant.querySelector('input[name*=".gia"]');
         const khoiLuongEl = variant.querySelector('input[name*=".khoiLuongGram"]');
 
-        variant.querySelector('.item-number').innerHTML = `<i class="fas fa-tags"></i> Biến thể #${idx + 1}`;
+        variant.querySelector('.item-number').innerHTML = `<i class="fas fa-tags"></i> #${idx + 1}`;
 
-        if (removeBtn) {
-            removeBtn.setAttribute('onclick', `removeVariant(${idx})`);
-        }
-        if (mauSacEl) {
-            mauSacEl.name = `bienThes[${idx}].mauSac`;
-        }
-        if (kichCoEl) {
-            kichCoEl.name = `bienThes[${idx}].kichCo`;
-            kichCoEl.setAttribute('onchange', `updateSKU(${idx})`);
-        }
+        if (mauSacEl) mauSacEl.name = `bienThes[${idx}].mauSac`;
+        if (kichCoEl) kichCoEl.name = `bienThes[${idx}].kichCo`;
         if (maSkuEl) maSkuEl.name = `bienThes[${idx}].maSKU`;
         if (soLuongTonEl) soLuongTonEl.name = `bienThes[${idx}].soLuongTon`;
         if (giaEl) giaEl.name = `bienThes[${idx}].gia`;
         if (khoiLuongEl) khoiLuongEl.name = `bienThes[${idx}].khoiLuongGram`;
+        updateVariantBadge(variant);
     });
+    updateVariantSummary();
 }
-
 function validateBaseFields() {
     const maSanPham = (document.getElementById('maSanPham')?.value || '').trim();
     const ten = (document.getElementById('ten')?.value || '').trim();
@@ -412,6 +735,68 @@ function validateVariants() {
     return true;
 }
 
+function collectVariantPayload() {
+    return Array.from(document.querySelectorAll('#variantsList .variant-item')).map((variant) => ({
+        maSKU: (variant.querySelector('input[name*=".maSKU"]')?.value || '').trim(),
+        mauSac: (variant.querySelector('select[name*=".mauSac"]')?.value || '').trim(),
+        kichCo: (variant.querySelector('select[name*=".kichCo"]')?.value || '').trim(),
+        soLuongTon: Number(variant.querySelector('input[name*=".soLuongTon"]')?.value || 0),
+        gia: Number(variant.querySelector('input[name*=".gia"]')?.value || 0),
+        khoiLuongGram: Number(variant.querySelector('input[name*=".khoiLuongGram"]')?.value || 0)
+    }));
+}
+
+async function validateVariantsWithServer() {
+    const payload = collectVariantPayload();
+    try {
+        const response = await fetch('/api/san-pham/validate-variants', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            showAlert('error', data.message || 'Du lieu bien the khong hop le.');
+            return false;
+        }
+        return true;
+    } catch (error) {
+        showAlert('error', `Khong the validate bien the: ${error.message}`);
+        return false;
+    }
+}
+
+async function validateBaseWithServer() {
+    const payload = {
+        maSanPham: (document.getElementById('maSanPham')?.value || '').trim(),
+        ten: (document.getElementById('ten')?.value || '').trim(),
+        danhMucId: (document.getElementById('selectedDanhMucId')?.value || '').trim()
+    };
+
+    try {
+        const response = await fetch('/api/san-pham/validate-base', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            showAlert('error', data.message || 'Thong tin co ban khong hop le.');
+            return false;
+        }
+        return true;
+    } catch (error) {
+        showAlert('error', `Khong the validate thong tin co ban: ${error.message}`);
+        return false;
+    }
+}
+
 function getNextImageIndex() {
     const images = document.querySelectorAll('#imagesList .image-item');
     if (images.length === 0) return 0;
@@ -460,6 +845,10 @@ function addImage() {
 
     imagesList.insertAdjacentHTML('beforeend', html);
     return index;
+}
+
+function themAnh() {
+    addImage();
 }
 
 async function handleFileUpload(fileInput, hiddenInputName, previewId) {
@@ -620,6 +1009,10 @@ function addColorImage() {
     colorImagesList.insertAdjacentHTML('beforeend', html);
 }
 
+function themAnhTheoMau() {
+    addColorImage();
+}
+
 function removeColorImage(index) {
     const image = document.querySelector(`#colorImagesList .image-item[data-index="${index}"]`);
     if (image) {
@@ -692,13 +1085,29 @@ async function resetForm() {
     }
 }
 
-document.getElementById('productForm').addEventListener('submit', (e) => {
+async function datLaiForm() {
+    await resetForm();
+}
+
+document.getElementById('productForm').addEventListener('submit', async (e) => {
     updateSelectedDanhMucId();
 
     const variants = document.querySelectorAll('#variantsList .variant-item');
     const images = document.querySelectorAll('#imagesList .image-item');
 
     if (!validateBaseFields() || !validateVariants()) {
+        e.preventDefault();
+        return;
+    }
+
+    const baseValid = await validateBaseWithServer();
+    if (!baseValid) {
+        e.preventDefault();
+        return;
+    }
+
+    const serverValid = await validateVariantsWithServer();
+    if (!serverValid) {
         e.preventDefault();
         return;
     }
@@ -712,7 +1121,9 @@ document.getElementById('productForm').addEventListener('submit', (e) => {
     document.getElementById('loading').classList.add('show');
 });
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    await ensureMaSanPham();
+    initQuickVariantDropdowns();
     addVariant();
     addImage();
 
@@ -730,6 +1141,16 @@ window.addEventListener('DOMContentLoaded', () => {
         danhMucEl.addEventListener('change', () => {
             updateAllSizeSelects();
             updateSelectedDanhMucId();
+        });
+    }
+
+    const tenEl = document.getElementById('ten');
+    if (tenEl) {
+        tenEl.addEventListener('input', async () => {
+            const maSanPhamEl = document.getElementById('maSanPham');
+            if (maSanPhamEl && !maSanPhamEl.value.trim()) {
+                await ensureMaSanPham();
+            }
         });
     }
 
@@ -751,3 +1172,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     updateSelectedDanhMucId();
 });
+
+
+
+
