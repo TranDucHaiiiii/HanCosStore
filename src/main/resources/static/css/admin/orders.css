@@ -63,8 +63,14 @@ body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; color: #333;
     border: 1px solid #eee;
     background: #fff;
     color: #888;
+    text-decoration: none;
 }
-.filter-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
+.filter-btn:hover,
+.filter-btn:focus {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    text-decoration: none;
+}
 .filter-btn.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
 
 .form-control {

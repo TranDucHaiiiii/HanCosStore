@@ -562,6 +562,7 @@ CREATE TABLE [dbo].[YEU_CAU_DOI_TRA](
 	[DonHangId] [int] NOT NULL,
 	[TaiKhoanId] [int] NOT NULL,
 	[LyDo] [nvarchar](500) NOT NULL,
+	[AnhMinhChung] [nvarchar](255) NULL,
 	[TrangThai] [nvarchar](30) NOT NULL,
 	[NgayTao] [datetime2](7) NOT NULL,
 PRIMARY KEY CLUSTERED 
@@ -1779,13 +1780,13 @@ SET IDENTITY_INSERT [dbo].[VAI_TRO] OFF
 GO
 SET IDENTITY_INSERT [dbo].[YEU_CAU_DOI_TRA] ON 
 GO
-INSERT [dbo].[YEU_CAU_DOI_TRA] ([Id], [DonHangId], [TaiKhoanId], [LyDo], [TrangThai], [NgayTao]) VALUES (1, 5, 2, N'Không vừa size', N'REJECTED', CAST(N'2026-03-12T06:13:57.4578796' AS DateTime2))
+INSERT [dbo].[YEU_CAU_DOI_TRA] ([Id], [DonHangId], [TaiKhoanId], [LyDo], [AnhMinhChung], [TrangThai], [NgayTao]) VALUES (1, 5, 2, N'Không vừa size', NULL, N'REJECTED', CAST(N'2026-03-12T06:13:57.4578796' AS DateTime2))
 GO
-INSERT [dbo].[YEU_CAU_DOI_TRA] ([Id], [DonHangId], [TaiKhoanId], [LyDo], [TrangThai], [NgayTao]) VALUES (2, 15010, 3005, N'Không vừa size', N'REJECTED', CAST(N'2026-03-13T12:29:02.9939387' AS DateTime2))
+INSERT [dbo].[YEU_CAU_DOI_TRA] ([Id], [DonHangId], [TaiKhoanId], [LyDo], [AnhMinhChung], [TrangThai], [NgayTao]) VALUES (2, 15010, 3005, N'Không vừa size', NULL, N'REJECTED', CAST(N'2026-03-13T12:29:02.9939387' AS DateTime2))
 GO
-INSERT [dbo].[YEU_CAU_DOI_TRA] ([Id], [DonHangId], [TaiKhoanId], [LyDo], [TrangThai], [NgayTao]) VALUES (1002, 15008, 1, N'Sản phẩm lỗi / hư hỏng', N'APPROVED', CAST(N'2026-03-16T11:49:58.5946479' AS DateTime2))
+INSERT [dbo].[YEU_CAU_DOI_TRA] ([Id], [DonHangId], [TaiKhoanId], [LyDo], [AnhMinhChung], [TrangThai], [NgayTao]) VALUES (1002, 15008, 1, N'Sản phẩm lỗi / hư hỏng', NULL, N'APPROVED', CAST(N'2026-03-16T11:49:58.5946479' AS DateTime2))
 GO
-INSERT [dbo].[YEU_CAU_DOI_TRA] ([Id], [DonHangId], [TaiKhoanId], [LyDo], [TrangThai], [NgayTao]) VALUES (1003, 17006, 1, N'Sản phẩm lỗi / hư hỏng', N'APPROVED', CAST(N'2026-03-16T11:52:52.0145779' AS DateTime2))
+INSERT [dbo].[YEU_CAU_DOI_TRA] ([Id], [DonHangId], [TaiKhoanId], [LyDo], [AnhMinhChung], [TrangThai], [NgayTao]) VALUES (1003, 17006, 1, N'Sản phẩm lỗi / hư hỏng', NULL, N'APPROVED', CAST(N'2026-03-16T11:52:52.0145779' AS DateTime2))
 GO
 SET IDENTITY_INSERT [dbo].[YEU_CAU_DOI_TRA] OFF
 GO

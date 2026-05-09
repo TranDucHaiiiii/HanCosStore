@@ -20,6 +20,7 @@ public class DoanhThuDTO {
     private Long soDonHomNay;
     private Long soKhachHang;
     private Long soDonChuaXuLy;
+    private Long soYeuCauTraHangCanXuLy;
     private Long soSanPhamSapHetHang;
     private Long soDonBiHuyHomNay;
     private BigDecimal tyLeHuyHomNay;

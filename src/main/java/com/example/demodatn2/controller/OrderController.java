@@ -19,7 +19,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -28,11 +36,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Controller
 @RequestMapping("/order")
 @RequiredArgsConstructor
 public class OrderController {
+
+    private static final Path RETURN_IMAGE_UPLOAD_DIR = Paths.get("src/main/resources/static/images/returns");
 
     private final OrderService orderService;
     private final CartService cartService;
@@ -305,14 +316,18 @@ public class OrderController {
 
     @PostMapping("/return/{id}")
     @ResponseBody
-    public String requestReturn(@PathVariable Integer id, @RequestParam String reason, HttpSession session) {
+    public String requestReturn(@PathVariable Integer id,
+                                @RequestParam String reason,
+                                @RequestParam(value = "image", required = false) MultipartFile image,
+                                HttpSession session) {
         TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
         if (loginUser == null) {
             return "Bạn cần đăng nhập để thực hiện thao tác này.";
         }
 
         try {
-            orderService.createReturnRequest(id, loginUser.getId(), reason);
+            String imageUrl = saveReturnImage(image);
+            orderService.createReturnRequest(id, loginUser.getId(), reason, imageUrl);
             return "SUCCESS";
         } catch (Exception e) {
             return e.getMessage();
@@ -396,6 +411,7 @@ public class OrderController {
     @PostMapping("/my-orders/{id}/return-request")
     public String requestReturnFromDetail(@PathVariable Integer id,
                                           @RequestParam String reason,
+                                          @RequestParam(value = "image", required = false) MultipartFile image,
                                           HttpSession session,
                                           RedirectAttributes redirectAttributes) {
         TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
@@ -404,13 +420,48 @@ public class OrderController {
         }
 
         try {
-            orderService.createReturnRequest(id, loginUser.getId(), reason);
+            String imageUrl = saveReturnImage(image);
+            orderService.createReturnRequest(id, loginUser.getId(), reason, imageUrl);
             redirectAttributes.addFlashAttribute("actionSuccess", "Yêu cầu trả hàng đã được gửi. Vui lòng chờ admin xử lý.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("actionError", e.getMessage());
         }
 
         return "redirect:/order/my-orders/" + id;
+    }
+
+    private String saveReturnImage(MultipartFile image) throws IOException {
+        if (image == null || image.isEmpty()) {
+            throw new RuntimeException("Vui lòng upload ảnh sản phẩm khi yêu cầu trả hàng.");
+        }
+
+        String contentType = image.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            throw new RuntimeException("File minh chứng phải là ảnh sản phẩm.");
+        }
+
+        String originalName = StringUtils.cleanPath(image.getOriginalFilename() != null ? image.getOriginalFilename() : "");
+        String ext = "";
+        int dotIndex = originalName.lastIndexOf('.');
+        if (dotIndex >= 0 && dotIndex < originalName.length() - 1) {
+            ext = originalName.substring(dotIndex).toLowerCase();
+        }
+        if (!Set.of(".jpg", ".jpeg", ".png", ".webp", ".gif").contains(ext)) {
+            throw new RuntimeException("Ảnh minh chứng chỉ hỗ trợ JPG, PNG, WEBP hoặc GIF.");
+        }
+
+        Files.createDirectories(RETURN_IMAGE_UPLOAD_DIR);
+        String fileName = UUID.randomUUID() + ext;
+        Path target = RETURN_IMAGE_UPLOAD_DIR.resolve(fileName).normalize();
+        if (!target.startsWith(RETURN_IMAGE_UPLOAD_DIR.normalize())) {
+            throw new RuntimeException("Tên file ảnh không hợp lệ.");
+        }
+
+        try (InputStream inputStream = image.getInputStream()) {
+            Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        return "/images/returns/" + fileName;
     }
 
     @PostMapping("/my-orders/{id}/update-address")

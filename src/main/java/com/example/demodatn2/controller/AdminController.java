@@ -6,6 +6,7 @@ import com.example.demodatn2.dto.InventoryVariantDTO;
 import com.example.demodatn2.dto.PosCartItemDTO;
 import com.example.demodatn2.dto.PosCartItemRequestDTO;
 import com.example.demodatn2.dto.PosOrderRequestDTO;
+import com.example.demodatn2.dto.ReturnWarehouseItemDTO;
 import com.example.demodatn2.dto.SanPhamResponseDTO;
 import com.example.demodatn2.dto.TaiKhoanDTO;
 import com.example.demodatn2.entity.DonHang;
@@ -38,6 +39,7 @@ public class AdminController {
     private final TaiKhoanService taiKhoanService;
     private final VoucherService voucherService;
     private final PosCartService posCartService;
+    private final KhoHangHoanService khoHangHoanService;
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
@@ -55,9 +57,11 @@ public class AdminController {
 
         Page<InventoryVariantDTO> variantPage = sanPhamService.getInventoryVariants(q, safePage - 1, safeSize);
         List<InventoryLogDTO> logs = sanPhamService.getRecentInventoryLogs();
+        List<ReturnWarehouseItemDTO> returnWarehouseItems = khoHangHoanService.getReturnWarehouseItems();
 
         model.addAttribute("q", q);
         model.addAttribute("inventoryVariants", variantPage.getContent());
+        model.addAttribute("returnWarehouseItems", returnWarehouseItems);
         model.addAttribute("currentPage", safePage);
         model.addAttribute("totalPages", Math.max(variantPage.getTotalPages(), 1));
         model.addAttribute("pageSize", safeSize);
@@ -85,6 +89,47 @@ public class AdminController {
                     ghiChu
             );
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật tồn kho thành công.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/inventory";
+    }
+
+    @PostMapping("/inventory/returns/{id}/import-main")
+    public String importReturnItemToMainStock(@PathVariable Long id,
+                                              @RequestParam(required = false) String ghiChu,
+                                              HttpSession session,
+                                              RedirectAttributes redirectAttributes) {
+        try {
+            TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+            khoHangHoanService.importToMainStock(id, loginUser != null ? loginUser.getId() : null, ghiChu);
+            redirectAttributes.addFlashAttribute("successMessage", "Da nhap hang hoan vao kho chinh.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/inventory";
+    }
+
+    @PostMapping("/inventory/returns/{id}/liquidate")
+    public String liquidateReturnItem(@PathVariable Long id,
+                                      @RequestParam(required = false) String ghiChu,
+                                      RedirectAttributes redirectAttributes) {
+        try {
+            khoHangHoanService.markForLiquidation(id, ghiChu);
+            redirectAttributes.addFlashAttribute("successMessage", "Da dua hang hoan vao thanh ly.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/inventory";
+    }
+
+    @PostMapping("/inventory/returns/{id}/resell")
+    public String resellReturnItem(@PathVariable Long id,
+                                   @RequestParam(required = false) String ghiChu,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            khoHangHoanService.markForResell(id, ghiChu);
+            redirectAttributes.addFlashAttribute("successMessage", "Da danh dau hang hoan de ban lai.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }

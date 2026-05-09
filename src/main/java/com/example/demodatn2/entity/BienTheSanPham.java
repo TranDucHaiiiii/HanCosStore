@@ -40,6 +40,10 @@ public class BienTheSanPham {
     @Column(name = "SoLuongTon", nullable = false)
     private Integer soLuongTon;
 
+    @ColumnDefault("0")
+    @Column(name = "SoLuongLoi", nullable = false)
+    private Integer soLuongLoi = 0;
+
     @Column(name = "KhoiLuongGram")
     private Integer khoiLuongGram;
 

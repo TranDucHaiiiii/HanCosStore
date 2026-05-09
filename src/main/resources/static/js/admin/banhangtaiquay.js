@@ -822,6 +822,7 @@ async function checkout() {
             const successContent = document.getElementById('successContent');
             const successOrderCode = document.getElementById('successOrderCode');
             const successTotal = document.getElementById('successTotal');
+            const successInvoiceLink = document.getElementById('successInvoiceLink');
 
             // Debug log
             console.log('Checkout success. OrderCode:', data.orderCode, 'Total:', data.total, 'PaymentMethod:', paymentMethod);
@@ -829,6 +830,10 @@ async function checkout() {
             // Set data FIRST (before showing)
             if (successOrderCode) { successOrderCode.textContent = data.orderCode || ''; }
             if (successTotal) { successTotal.textContent = fmt(data.total) || '0₫'; }
+
+            if (successInvoiceLink && data.orderId) {
+                successInvoiceLink.href = '/admin/orders/' + data.orderId + '/invoice';
+            }
 
             // If transfer payment, show QR code with order code
             if (paymentMethod === 'transfer') {
@@ -856,6 +861,9 @@ async function checkout() {
             setTimeout(() => {
                 successLoading.style.display = 'none';
                 successContent.style.display = 'block';
+                if (data.orderId) {
+                    window.open('/admin/orders/' + data.orderId + '/invoice', '_blank');
+                }
             }, 1500);
         } else {
             showToast(data.message || 'Thanh toán thất bại', 'error');

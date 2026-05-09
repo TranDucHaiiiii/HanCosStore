@@ -843,6 +843,54 @@ footer a:hover {
     opacity: 1;
 }
 
+.zalo-footer-link {
+    font-weight: 800;
+    letter-spacing: 0;
+}
+
+.zalo-floating-contact {
+    position: fixed;
+    right: 22px;
+    bottom: 92px;
+    z-index: 1030;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 8px 14px 8px 8px;
+    border-radius: 999px;
+    background: #0068ff;
+    color: #fff;
+    box-shadow: 0 14px 30px rgba(0, 104, 255, 0.28);
+    opacity: 1;
+    text-decoration: none;
+}
+
+.zalo-floating-contact:hover {
+    color: #fff;
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.zalo-floating-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fff;
+    color: #0068ff;
+    font-size: 0.72rem;
+    font-weight: 900;
+}
+
+.zalo-floating-text {
+    font-size: 0.85rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
 .footer-bottom {
     margin-top: 5rem;
     padding-top: 2rem;
@@ -872,6 +920,16 @@ footer a:hover {
 
     .quick-buy-layout {
         grid-template-columns: 1fr;
+    }
+
+    .zalo-floating-contact {
+        right: 16px;
+        bottom: 82px;
+        padding-right: 8px;
+    }
+
+    .zalo-floating-text {
+        display: none;
     }
 }
 .quick-buy-qty-stepper{

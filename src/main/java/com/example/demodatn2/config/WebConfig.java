@@ -35,6 +35,16 @@ public class WebConfig implements WebMvcConfigurer {
 
         registry.addResourceHandler("/images/products/**")
                 .addResourceLocations("file:///" + productPath);
+
+        Path returnDir = Paths.get("src/main/resources/static/images/returns/");
+        String returnPath = returnDir.toFile().getAbsolutePath();
+
+        if (!returnPath.endsWith("/")) {
+            returnPath += "/";
+        }
+
+        registry.addResourceHandler("/images/returns/**")
+                .addResourceLocations("file:///" + returnPath);
     }
 
 

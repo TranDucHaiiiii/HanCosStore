@@ -642,7 +642,7 @@ public class OrderService {
     }
 
     @Transactional
-    public YeuCauDoiTra createReturnRequest(Integer orderId, Integer taiKhoanId, String lyDo) {
+    public YeuCauDoiTra createReturnRequest(Integer orderId, Integer taiKhoanId, String lyDo, String anhMinhChung) {
         DonHang donHang = getOrderById(orderId);
 
         if (!donHang.getTaiKhoan().getId().equals(taiKhoanId)) {
@@ -663,14 +663,24 @@ public class OrderService {
             throw new RuntimeException("Đơn hàng này đã có yêu cầu trả hàng.");
         }
 
+        if (lyDo == null || lyDo.trim().isEmpty()) {
+            throw new RuntimeException("Vui lòng chọn lý do trả hàng.");
+        }
+
+        if (anhMinhChung == null || anhMinhChung.trim().isEmpty()) {
+            throw new RuntimeException("Vui lòng upload ảnh sản phẩm khi yêu cầu trả hàng.");
+        }
+
         TaiKhoan taiKhoan = taiKhoanRepository.findById(taiKhoanId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản."));
 
         YeuCauDoiTra yeuCau = new YeuCauDoiTra();
         yeuCau.setDonHang(donHang);
         yeuCau.setTaiKhoan(taiKhoan);
-        yeuCau.setLyDo(lyDo);
-        yeuCau.setTrangThai("PENDING");
+        yeuCau.setLyDo(lyDo.trim());
+        yeuCau.setPhuongThucHoanTien("BANK_TRANSFER");
+        yeuCau.setAnhMinhChung(anhMinhChung.trim());
+        yeuCau.setTrangThai("CHO_DUYET");
         yeuCau.setNgayTao(Instant.now());
 
         donHang.setTrangThai("TRA_HANG");
@@ -685,11 +695,11 @@ public class OrderService {
         YeuCauDoiTra yeuCau = yeuCauDoiTraRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu trả hàng."));
 
-        if (!"PENDING".equals(yeuCau.getTrangThai())) {
+        if (!"PENDING".equals(yeuCau.getTrangThai()) && !"CHO_DUYET".equals(yeuCau.getTrangThai())) {
             throw new RuntimeException("Yêu cầu này đã được xử lý.");
         }
 
-        yeuCau.setTrangThai("APPROVED");
+        yeuCau.setTrangThai("DA_DUYET");
         yeuCauDoiTraRepository.save(yeuCau);
 
         DonHang donHang = yeuCau.getDonHang();
@@ -697,7 +707,7 @@ public class OrderService {
         donHang.setNgayCapNhat(Instant.now());
         donHangRepository.save(donHang);
 
-        restoreStock(donHang);
+        // Hàng trả chỉ được cộng tồn sau bước kiểm định PASSED.
     }
 
     @Transactional
@@ -705,11 +715,11 @@ public class OrderService {
         YeuCauDoiTra yeuCau = yeuCauDoiTraRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu trả hàng."));
 
-        if (!"PENDING".equals(yeuCau.getTrangThai())) {
+        if (!"PENDING".equals(yeuCau.getTrangThai()) && !"CHO_DUYET".equals(yeuCau.getTrangThai())) {
             throw new RuntimeException("Yêu cầu này đã được xử lý.");
         }
 
-        yeuCau.setTrangThai("REJECTED");
+        yeuCau.setTrangThai("TU_CHOI");
         yeuCauDoiTraRepository.save(yeuCau);
 
         DonHang donHang = yeuCau.getDonHang();

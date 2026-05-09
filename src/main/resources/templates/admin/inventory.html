@@ -47,6 +47,7 @@
     </div>
 
     <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white fw-700">Danh sách tồn kho chính</div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -118,6 +119,88 @@
                         </li>
                     </ul>
                 </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <div class="fw-700">Kho hàng hoàn / Thanh lý</div>
+                <small class="text-muted">Hàng khách trả đã đạt QC, chờ quyết định bán lại, thanh lý hoặc nhập kho chính.</small>
+            </div>
+            <span class="badge text-bg-light" th:text="${#lists.size(returnWarehouseItems)} + ' dòng chờ xử lý'">0 dòng chờ xử lý</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th class="ps-3">Sản phẩm</th>
+                        <th>SKU</th>
+                        <th>Số lượng</th>
+                        <th>Tình trạng</th>
+                        <th>Nguồn</th>
+                        <th>Ngày nhập</th>
+                        <th>Hướng xử lý</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${returnWarehouseItems}">
+                        <td class="ps-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <img class="thumb" th:src="${#strings.isEmpty(item.hinhAnh) ? '/images/no-image.png' : item.hinhAnh}" alt="Ảnh sản phẩm">
+                                <div>
+                                    <div class="fw-700" th:text="${item.tenSanPham}">Sản phẩm</div>
+                                    <small class="text-muted" th:text="${item.mauSac + ' / ' + item.kichCo}">Màu / Size</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><code th:text="${item.maSKU}">SKU</code></td>
+                        <td><span class="stock-badge return-stock" th:text="${item.soLuong}">1</span></td>
+                        <td>
+                            <span class="badge text-bg-secondary"
+                                  th:text="${item.tinhTrang == 'NEW' ? 'Mới' :
+                                           (item.tinhTrang == 'OPEN_BOX' ? 'Đã mở hộp' :
+                                           (item.tinhTrang == 'BOX_DAMAGED' ? 'Hộp móp' : item.tinhTrang))}">Đã mở hộp</span>
+                        </td>
+                        <td><span th:text="${item.maDonHoan}">DH-001</span></td>
+                        <td th:text="${item.ngayNhap != null ? #temporals.format(item.ngayNhap, 'dd/MM/yyyy HH:mm') : '-'}">10/05/2026 10:00</td>
+                        <td>
+                            <span class="badge text-bg-info"
+                                  th:text="${item.huongXuLy == 'BAN_LAI' ? 'Bán lại' :
+                                           (item.huongXuLy == 'THANH_LY' ? 'Thanh lý' :
+                                           (item.huongXuLy == 'NHAP_KHO_CHINH' ? 'Nhập kho chính' : item.huongXuLy))}">Bán lại</span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="d-flex justify-content-end gap-2">
+                                <form method="post" th:action="@{/admin/inventory/returns/{id}/import-main(id=${item.id})}">
+                                    <input type="hidden" name="ghiChu" value="Nhập kho chính từ kho hàng hoàn">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-warehouse me-1"></i>Nhập kho
+                                    </button>
+                                </form>
+                                <form method="post" th:action="@{/admin/inventory/returns/{id}/liquidate(id=${item.id})}">
+                                    <input type="hidden" name="ghiChu" value="Đưa vào livestream thanh lý">
+                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-tags me-1"></i>Thanh lý
+                                    </button>
+                                </form>
+                                <form method="post" th:action="@{/admin/inventory/returns/{id}/resell(id=${item.id})}">
+                                    <input type="hidden" name="ghiChu" value="Đóng seal rồi bán lại">
+                                    <button type="submit" class="btn btn-sm btn-outline-dark">
+                                        <i class="fas fa-box-open me-1"></i>Bán lại
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(returnWarehouseItems)}">
+                        <td colspan="8" class="text-center text-muted py-4">Chưa có hàng hoàn đạt QC chờ xử lý.</td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

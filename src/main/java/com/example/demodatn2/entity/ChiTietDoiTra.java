@@ -18,6 +18,18 @@ public class ChiTietDoiTra {
     @Column(name = "SoLuong", nullable = false)
     private Integer soLuong;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "YeuCauDoiTraId", nullable = false)
+    private YeuCauDoiTra yeuCauDoiTra;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "ChiTietDonHangId", nullable = false)
+    private ChiTietDonHang chiTietDonHang;
+
+    @Nationalized
+    @Column(name = "InspectionStatus", nullable = false, length = 30)
+    private String inspectionStatus = "PENDING_INSPECTION";
+
     @Nationalized
     @Column(name = "GhiChu", length = 300)
     private String ghiChu;

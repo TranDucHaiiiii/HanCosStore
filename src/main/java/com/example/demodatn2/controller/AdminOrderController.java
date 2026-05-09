@@ -54,6 +54,14 @@ public class AdminOrderController {
         return "admin/order-detail";
     }
 
+    @GetMapping("/{id}/invoice")
+    public String printInvoice(@PathVariable Integer id, Model model) {
+        DonHang order = orderService.getOrderById(id);
+        model.addAttribute("order", order);
+        model.addAttribute("items", orderService.getOrderItems(id));
+        return "admin/order-invoice";
+    }
+
     @PostMapping("/{id}/update-status")
     public String updateStatus(@PathVariable Integer id, @RequestParam String status, RedirectAttributes redirectAttributes) {
         try {

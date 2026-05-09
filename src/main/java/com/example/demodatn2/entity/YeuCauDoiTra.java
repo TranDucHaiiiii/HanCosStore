@@ -7,6 +7,8 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -31,6 +33,22 @@ public class YeuCauDoiTra {
     private String lyDo;
 
     @Nationalized
+    @Column(name = "MoTaChiTiet", length = 1000)
+    private String moTaChiTiet;
+
+    @Nationalized
+    @Column(name = "PhuongThucHoanTien", nullable = false, length = 50)
+    private String phuongThucHoanTien;
+
+    @Nationalized
+    @Column(name = "GhiChuXuLy", length = 1000)
+    private String ghiChuXuLy;
+
+    @Nationalized
+    @Column(name = "AnhMinhChung", length = 255)
+    private String anhMinhChung;
+
+    @Nationalized
     @ColumnDefault("N'PENDING'")
     @Column(name = "TrangThai", nullable = false, length = 30)
     private String trangThai;
@@ -38,6 +56,19 @@ public class YeuCauDoiTra {
     @ColumnDefault("sysdatetime()")
     @Column(name = "NgayTao", nullable = false)
     private Instant ngayTao;
+
+    @Column(name = "NgayCapNhat")
+    private Instant ngayCapNhat;
+
+    @OneToMany(mappedBy = "yeuCauDoiTra", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChiTietDoiTra> chiTiets = new ArrayList<>();
+
+    @OneToMany(mappedBy = "yeuCauDoiTra", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HinhAnhDoiTra> hinhAnhs = new ArrayList<>();
+
+    @OneToMany(mappedBy = "yeuCauDoiTra", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("thoiGian ASC")
+    private List<LichSuXuLyDoiTra> lichSuXuLy = new ArrayList<>();
 
 
 }

@@ -52,18 +52,23 @@
 
     <!-- Return Request Section -->
     <div th:if="${returnRequest != null}" class="alert border-0 rounded-0 small mb-4"
-         th:classappend="${returnRequest.trangThai == 'PENDING' ? 'alert-warning' : (returnRequest.trangThai == 'APPROVED' ? 'alert-success' : 'alert-danger')}">
+         th:classappend="${returnRequest.trangThai == 'CHO_DUYET' ? 'alert-warning' : (returnRequest.trangThai == 'TU_CHOI' ? 'alert-danger' : 'alert-success')}">
         <div class="d-flex justify-content-between align-items-start">
             <div>
                 <i class="fas fa-undo me-2"></i>
                 <strong>Yêu cầu trả hàng</strong>
                 <span class="badge ms-2"
-                      th:classappend="${returnRequest.trangThai == 'PENDING' ? 'bg-warning text-dark' : (returnRequest.trangThai == 'APPROVED' ? 'bg-success' : 'bg-danger')}"
-                      th:text="${returnRequest.trangThai == 'PENDING' ? 'Đang chờ duyệt' : (returnRequest.trangThai == 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối')}"></span>
+                      th:classappend="${returnRequest.trangThai == 'CHO_DUYET' ? 'bg-warning text-dark' : (returnRequest.trangThai == 'TU_CHOI' ? 'bg-danger' : 'bg-success')}"
+                      th:text="${returnRequest.trangThai}"></span>
                 <div class="mt-1"><strong>Lý do:</strong> <span th:text="${returnRequest.lyDo}"></span></div>
                 <div class="text-muted" style="font-size:0.75rem;" th:text="'Ngày gửi: ' + ${#temporals.format(returnRequest.ngayTao, 'dd/MM/yyyy HH:mm')}"></div>
+                <div th:if="${returnRequest.anhMinhChung != null}" class="mt-3">
+                    <a th:href="${returnRequest.anhMinhChung}" target="_blank" class="d-inline-block">
+                        <img th:src="${returnRequest.anhMinhChung}" alt="Ảnh sản phẩm trả hàng" style="max-width: 180px; max-height: 180px; object-fit: cover;" class="border bg-white">
+                    </a>
+                </div>
             </div>
-            <div th:if="${returnRequest.trangThai == 'PENDING'}" class="d-flex gap-2">
+            <div th:if="${returnRequest.trangThai == 'CHO_DUYET'}" class="d-flex gap-2">
                 <form th:action="@{/admin/orders/return/{id}/approve(id=${returnRequest.id})}" method="post">
                     <button type="submit" class="btn btn-success btn-sm fw-bold"><i class="fas fa-check me-1"></i>Duyệt</button>
                 </form>
@@ -93,7 +98,7 @@
                             </thead>
                             <tbody>
                                 <tr th:each="item : ${items}">
-                                    <!-- <td th:text="${item.maHoaDon}">DH-XXXXXXXX</td> -->
+                                    <td class="fw-700 text-dark" th:text="${order.maDonHang}">DH-XXXXXXXX</td>
                                     <td>
                                         <div class="d-flex align-items-center gap-3">
                                             <div>
@@ -109,19 +114,19 @@
                             </tbody>
                             <tfoot class="bg-light">
                                 <tr>
-                                    <td colspan="3" class="text-end text-muted small text-uppercase fw-700 letter-spacing-1">Tạm tính</td>
+                                    <td colspan="4" class="text-end text-muted small text-uppercase fw-700 letter-spacing-1">Tạm tính</td>
                                     <td class="text-end fw-700" th:text="${#numbers.formatDecimal(order.tamTinh, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
                                 </tr>
                                 <tr>
-                                    <td colspan="3" class="text-end text-muted small text-uppercase fw-700 letter-spacing-1">Giảm giá</td>
+                                    <td colspan="4" class="text-end text-muted small text-uppercase fw-700 letter-spacing-1">Giảm giá</td>
                                     <td class="text-end fw-700" th:text="${#numbers.formatDecimal(order.giamGia, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
                                 </tr>
                                 <tr>
-                                    <td colspan="3" class="text-end text-muted small text-uppercase fw-700 letter-spacing-1">Phí vận chuyển</td>
+                                    <td colspan="4" class="text-end text-muted small text-uppercase fw-700 letter-spacing-1">Phí vận chuyển</td>
                                     <td class="text-end fw-700" th:text="${#numbers.formatDecimal(order.phiVanChuyen, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
                                 </tr>
                                 <tr class="table-dark">
-                                    <td colspan="3" class="text-end text-uppercase fw-800 letter-spacing-1">Tổng cộng</td>
+                                    <td colspan="4" class="text-end text-uppercase fw-800 letter-spacing-1">Tổng cộng</td>
                                     <td class="text-end fw-900 fs-5 text-warning" th:text="${#numbers.formatDecimal(order.tongTien, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
                                 </tr>
                             </tfoot>

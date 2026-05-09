@@ -39,6 +39,15 @@ body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; color: #333;
     color: #c93045;
 }
 
+.stock-badge.return-stock {
+    background: rgba(25, 135, 84, 0.12);
+    color: #198754;
+}
+
+td form {
+    margin: 0;
+}
+
 .variant-preview {
     border: 1px solid #eceff3;
     border-radius: 10px;

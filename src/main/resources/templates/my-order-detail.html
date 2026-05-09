@@ -131,13 +131,16 @@
     <div class="flat-alert alert alert-danger" th:if="${actionError != null}" th:text="${actionError}"></div>
 
     <div th:if="${returnRequest != null}" class="flat-alert alert"
-         th:classappend="${returnRequest.trangThai == 'PENDING' ? 'alert-warning' : (returnRequest.trangThai == 'APPROVED' ? 'alert-success' : 'alert-danger')}">
+         th:classappend="${returnRequest.trangThai == 'CHO_DUYET' ? 'alert-warning' : (returnRequest.trangThai == 'TU_CHOI' ? 'alert-danger' : 'alert-success')}">
         <i class="fas fa-undo me-2"></i>
         <strong>Yêu cầu trả hàng:</strong>
         <span th:text="${returnRequest.lyDo}"></span>
         <span class="badge ms-2"
-              th:classappend="${returnRequest.trangThai == 'PENDING' ? 'bg-warning text-dark' : (returnRequest.trangThai == 'APPROVED' ? 'bg-success' : 'bg-danger')}"
-              th:text="${returnRequest.trangThai == 'PENDING' ? 'Đang chờ duyệt' : (returnRequest.trangThai == 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối')}"></span>
+              th:classappend="${returnRequest.trangThai == 'CHO_DUYET' ? 'bg-warning text-dark' : (returnRequest.trangThai == 'TU_CHOI' ? 'bg-danger' : 'bg-success')}"
+              th:text="${returnRequest.trangThai}"></span>
+        <div th:if="${returnRequest.anhMinhChung != null}" class="mt-2">
+            <a th:href="${returnRequest.anhMinhChung}" target="_blank" class="fw-700">Xem ảnh sản phẩm</a>
+        </div>
     </div>
 
     <div class="row">
@@ -241,7 +244,7 @@
     <input type="hidden" id="cancelReason" name="reason">
 </form>
 
-<form id="returnOrderForm" method="post" th:action="@{/order/my-orders/{id}/return-request(id=${order.id})}">
+<form id="returnOrderForm" method="post" enctype="multipart/form-data" th:action="@{/order/my-orders/{id}/return-request(id=${order.id})}">
     <input type="hidden" id="returnReason" name="reason">
 </form>
 

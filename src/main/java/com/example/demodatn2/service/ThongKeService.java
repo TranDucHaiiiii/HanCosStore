@@ -11,6 +11,7 @@ import com.example.demodatn2.repository.ChiTietDonHangRepository;
 import com.example.demodatn2.repository.DonHangRepository;
 import com.example.demodatn2.repository.HinhAnhSanPhamRepository;
 import com.example.demodatn2.repository.TaiKhoanRepository;
+import com.example.demodatn2.repository.YeuCauDoiTraRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -45,6 +46,7 @@ public class ThongKeService {
     private final TaiKhoanRepository taiKhoanRepository;
     private final BienTheSanPhamRepository bienTheSanPhamRepository;
     private final HinhAnhSanPhamRepository hinhAnhSanPhamRepository;
+    private final YeuCauDoiTraRepository yeuCauDoiTraRepository;
 
     public DoanhThuDTO getDoanhThuTongHop() {
         BigDecimal tongDoanhThu = donHangRepository.tinhTongDoanhThu();
@@ -58,6 +60,9 @@ public class ThongKeService {
         Long soDonHomNay = donHangRepository.demDonHangTuNgay(dauNgay);
 
         Long soDonChuaXuLy = donHangRepository.countByTrangThaiIn(List.of("CHO_XAC_NHAN", "PENDING"));
+        Long soYeuCauTraHangCanXuLy = yeuCauDoiTraRepository.countByTrangThaiIn(List.of(
+            "CHO_DUYET", "PENDING", "DA_DUYET", "APPROVED", "CHO_KIEM_DINH"
+        ));
         Long soSanPhamSapHetHang = bienTheSanPhamRepository.countActiveLowStock(LOW_STOCK_THRESHOLD);
         Long soDonBiHuyHomNay = donHangRepository.demTheoTrangThaiVaNgayDatTu(
             List.of("DA_HUY", "CANCELLED"), dauNgay);
@@ -129,6 +134,7 @@ public class ThongKeService {
                 .soDonHomNay(soDonHomNay != null ? soDonHomNay : 0L)
             .soKhachHang(soKhachHang != null ? soKhachHang : 0L)
             .soDonChuaXuLy(soDonChuaXuLy != null ? soDonChuaXuLy : 0L)
+            .soYeuCauTraHangCanXuLy(soYeuCauTraHangCanXuLy != null ? soYeuCauTraHangCanXuLy : 0L)
             .soSanPhamSapHetHang(soSanPhamSapHetHang != null ? soSanPhamSapHetHang : 0L)
             .soDonBiHuyHomNay(soDonBiHuyHomNay != null ? soDonBiHuyHomNay : 0L)
             .tyLeHuyHomNay(tyLeHuyHomNay)
