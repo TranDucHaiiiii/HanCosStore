@@ -1,5 +1,6 @@
 let myChart = null;
 
+// Khởi tạo bộ lọc mặc định 30 ngày gần nhất và tải dữ liệu thống kê.
 document.addEventListener('DOMContentLoaded', function() {
     // Mặc định load 30 ngày gần đây
     const today = new Date();
@@ -12,12 +13,14 @@ document.addEventListener('DOMContentLoaded', function() {
     updateStatistics();
 });
 
+// Xóa bộ lọc ngày và tải lại thống kê.
 function resetFilter() {
     document.getElementById('tuNgay').value = '';
     document.getElementById('denNgay').value = '';
     updateStatistics();
 }
 
+// Áp dụng nhanh khoảng thời gian tính từ hôm nay lùi lại số ngày truyền vào.
 function quickFilter(days) {
     const today = new Date();
     const pastDate = new Date();
@@ -35,6 +38,7 @@ function quickFilter(days) {
     updateStatistics();
 }
 
+// Xuất file Excel theo khoảng ngày đang lọc.
 function exportExcel() {
     const tuNgay = document.getElementById('tuNgay').value;
     const denNgay = document.getElementById('denNgay').value;
@@ -51,6 +55,7 @@ function exportExcel() {
     window.location.href = url;
 }
 
+// Tải dữ liệu thống kê, cập nhật chỉ số tổng hợp và vẽ lại biểu đồ doanh thu.
 function updateStatistics() {
     const tuNgay = document.getElementById('tuNgay').value;
     const denNgay = document.getElementById('denNgay').value;
@@ -136,6 +141,7 @@ function updateStatistics() {
     });
 }
 
+// Chuyển ngày dạng yyyy-MM-dd sang dd/MM/yyyy để hiển thị.
 function formatDateDisplay(dateStr) {
     if (!dateStr) return "";
     const parts = dateStr.split('-');

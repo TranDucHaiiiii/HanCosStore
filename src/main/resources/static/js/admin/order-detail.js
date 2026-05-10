@@ -1,3 +1,4 @@
+// Hiển thị hộp thoại nhập lý do và gửi form hủy đơn hàng từ trang admin.
 function adminCancelOrder() {
     const orderId = document.body?.dataset?.orderId;
     if (!orderId) {
@@ -37,6 +38,7 @@ function adminCancelOrder() {
     });
 }
 
+// Hiển thị hộp thoại nhập lý do và gửi form từ chối yêu cầu trả hàng.
 function rejectReturn(requestId) {
     Swal.fire({
         title: 'Từ chối yêu cầu trả hàng',

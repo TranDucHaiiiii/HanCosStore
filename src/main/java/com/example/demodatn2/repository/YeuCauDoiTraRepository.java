@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface YeuCauDoiTraRepository extends JpaRepository<YeuCauDoiTra, Integer> {
+    boolean existsByDonHangId(Integer donHangId);
+
     @EntityGraph(attributePaths = {"donHang", "taiKhoan"})
     Optional<YeuCauDoiTra> findByDonHangId(Integer donHangId);
 

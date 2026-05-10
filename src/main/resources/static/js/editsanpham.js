@@ -8,6 +8,7 @@ const COLORS = ["Đen","Trắng","Đỏ","Xanh dương","Xanh lá","Vàng","Cam"
 const SIZE_LETTERS = ["XS","S","M","L","XL","XXL"];
 const SIZE_PANTS = ["28","29","30","31","32","33","34","35","36","37","38"];
 
+// Khởi tạo dữ liệu form sửa sản phẩm, biến thể, gallery và sự kiện UI.
 document.addEventListener('DOMContentLoaded', async () => {
     // Load danh mục con
     if (document.getElementById('parentDanhMucId').value) {
@@ -79,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// Tải danh mục con theo danh mục cha đang chọn.
 async function loadChildren() {
     const parentId = document.getElementById('parentDanhMucId').value;
     const select = document.getElementById('danhMucId');
@@ -105,6 +107,7 @@ async function loadChildren() {
 }
 
 // ===== Helpers =====
+// Loại bỏ dấu tiếng Việt để phục vụ tạo mã/SKU ổn định.
 function removeVietnameseTones(str) {
     if (!str) return "";
     str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ|À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "a");
@@ -117,6 +120,7 @@ function removeVietnameseTones(str) {
     return str;
 }
 
+// Chuyển chuỗi thành token viết hoa dùng trong mã SKU.
 function toSkuToken(s) {
     return removeVietnameseTones(s)
         .trim()
@@ -124,10 +128,12 @@ function toSkuToken(s) {
         .replace(/\s+/g, "_");
 }
 
+// Chuẩn hóa tên danh mục để suy luận loại size.
 function normalizeCategoryName(name) {
     return removeVietnameseTones((name || "").toLowerCase());
 }
 
+// Lấy tên danh mục con hoặc danh mục cha đang được chọn.
 function getSelectedCategoryName() {
     const child = document.getElementById('danhMucId');
     const parent = document.getElementById('parentDanhMucId');
@@ -143,6 +149,7 @@ function getSelectedCategoryName() {
     return "";
 }
 
+// Chọn danh sách size phù hợp theo danh mục sản phẩm.
 function getSizeOptions() {
     const name = normalizeCategoryName(getSelectedCategoryName());
 
@@ -157,6 +164,7 @@ function getSizeOptions() {
     return SIZE_LETTERS;
 }
 
+// Cập nhật option size cho một select và giữ lại giá trị cũ nếu còn hợp lệ.
 function updateSizeSelect(selectEl) {
     if (!selectEl) return;
     const current = selectEl.value;
@@ -169,6 +177,7 @@ function updateSizeSelect(selectEl) {
     }
 }
 
+// Cập nhật toàn bộ select size của các biến thể hiện có.
 function updateAllSizeSelects() {
     document.querySelectorAll('#variantsList select[name="kichCo"]').forEach(selectEl => {
         updateSizeSelect(selectEl);
@@ -176,11 +185,13 @@ function updateAllSizeSelects() {
     });
 }
 
+// Tìm dòng biến thể từ input/select vừa đổi và cập nhật SKU của dòng đó.
 function updateSKUFromEl(el) {
     const item = el.closest('.variant-item');
     if (item) updateSKUItem(item);
 }
 
+// Tự sinh mã SKU cho một dòng biến thể từ mã sản phẩm, màu và size.
 function updateSKUItem(item) {
     const maSP = (document.getElementById('maSanPham').value || '').trim();
     const mauEl = item.querySelector('select[name="mauSac"]');
@@ -200,10 +211,12 @@ function updateSKUItem(item) {
     }
 }
 
+// Render danh sách option HTML với giá trị được chọn sẵn.
 function renderOptions(arr, selected) {
     return arr.map(v => `<option value="${v}" ${selected === v ? 'selected' : ''}>${v}</option>`).join('');
 }
 
+// Đánh lại số thứ tự hiển thị cho danh sách biến thể.
 function reindexVariantsUI() {
     const list = document.getElementById('variantsList');
     list.querySelectorAll('.variant-item').forEach((item, i) => {
@@ -213,6 +226,7 @@ function reindexVariantsUI() {
     });
 }
 
+// Đánh lại index, name input và preview id cho gallery ảnh sản phẩm.
 function reindexImages() {
     const list = document.getElementById('imagesList');
     const items = list.querySelectorAll('.image-item');
@@ -252,6 +266,7 @@ function reindexImages() {
     }
 }
 
+// Đánh lại index, name input và preview id cho ảnh theo màu.
 function reindexColorImages() {
     const list = document.getElementById('colorImagesList');
     const items = list.querySelectorAll('.image-item');
@@ -284,6 +299,7 @@ function reindexColorImages() {
 }
 
 // ===== Variants =====
+// Thêm một dòng biến thể mới hoặc render biến thể đã có từ dữ liệu ban đầu.
 function addVariant(data = null) {
     const list = document.getElementById('variantsList');
     const index = list.children.length;
@@ -302,7 +318,7 @@ function addVariant(data = null) {
         <div class="form-row">
           <div class="form-group">
             <label>Màu Sắc <span class="required">*</span></label>
-            <select name="mauSac" required onchange="updateSKUFromEl(this)">
+            <select name="mauSac" onchange="updateSKUFromEl(this)">
               <option value="">-- Chọn màu --</option>
               ${renderOptions(COLORS, data ? data.mauSac : '')}
             </select>
@@ -310,7 +326,7 @@ function addVariant(data = null) {
 
           <div class="form-group">
             <label>Kích Cỡ <span class="required">*</span></label>
-                        <select name="kichCo" required onchange="updateSKUFromEl(this)">
+                        <select name="kichCo" onchange="updateSKUFromEl(this)">
                             <option value="">-- Chọn size --</option>
                             ${renderOptions(getSizeOptions(), data ? data.kichCo : '')}
                         </select>
@@ -320,14 +336,14 @@ function addVariant(data = null) {
         <div class="form-row">
           <div class="form-group">
             <label>Mã SKU <span class="required">*</span></label>
-            <input type="text" name="maSKU" required readonly
+            <input type="text" name="maSKU" readonly
                    value="${data ? (data.maSKU ?? '') : ''}"
                    placeholder="AO_PHAO_AKP_DEN_S">
           </div>
 
           <div class="form-group">
             <label>Số Lượng Tồn <span class="required">*</span></label>
-            <input type="number" name="soLuongTon" required min="0"
+            <input type="number" name="soLuongTon"
                    value="${data ? (data.soLuongTon ?? 0) : 0}">
           </div>
         </div>
@@ -335,13 +351,13 @@ function addVariant(data = null) {
         <div class="form-row">
           <div class="form-group">
             <label>Giá Bán <span class="required">*</span></label>
-            <input type="number" name="gia" required min="0"
+            <input type="number" name="gia"
                    value="${data ? (data.gia ?? 0) : 0}">
           </div>
 
           <div class="form-group">
             <label>Giá Gốc</label>
-            <input type="number" name="giaGoc" min="0"
+            <input type="number" name="giaGoc"
                    value="${data && data.giaGoc != null ? data.giaGoc : ''}">
           </div>
         </div>
@@ -355,12 +371,14 @@ function addVariant(data = null) {
     if (item) updateSKUItem(item);
 }
 
+// Xóa dòng biến thể khỏi giao diện và đánh lại số thứ tự.
 function removeVariant(btn) {
     const item = btn.closest('.variant-item');
     if (item) item.remove();
     reindexVariantsUI();
 }
 
+// Theo dõi các upload đang chạy để chờ hoàn tất trước khi submit.
 function trackUpload(promise) {
     pendingUploads.add(promise);
     promise.finally(() => pendingUploads.delete(promise));
@@ -368,6 +386,7 @@ function trackUpload(promise) {
 }
 
 // ===== Upload (shared) =====
+// Upload file ảnh, cập nhật preview và ghi đường dẫn trả về vào input hidden.
 async function uploadFile(input, hiddenInputName, previewId) {
     const uploadPromise = (async () => {
         const file = input.files && input.files[0];
@@ -410,6 +429,7 @@ async function uploadFile(input, hiddenInputName, previewId) {
 }
 
 // ===== Images Gallery =====
+// Thêm một dòng ảnh gallery mới hoặc render ảnh gallery đã có.
 function addImage(data = null) {
     const list = document.getElementById('imagesList');
     const index = list.children.length;
@@ -433,7 +453,7 @@ function addImage(data = null) {
                    accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
                    onchange="uploadFile(this, 'images[${index}].duongDanAnh', '${previewId}')">
 
-            <input type="hidden" name="images[${index}].duongDanAnh" required value="${data ? (data.duongDanAnh ?? '') : ''}">
+            <input type="hidden" name="images[${index}].duongDanAnh" value="${data ? (data.duongDanAnh ?? '') : ''}">
 
             <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
                  src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
@@ -441,7 +461,7 @@ function addImage(data = null) {
 
           <div class="form-group">
             <label>Thứ Tự</label>
-            <input type="number" name="images[${index}].thuTu" min="1"
+            <input type="number" name="images[${index}].thuTu"
                    value="${data ? (data.thuTu ?? (index + 1)) : (index + 1)}">
 
             <div class="checkbox-group">
@@ -459,12 +479,14 @@ function addImage(data = null) {
     return index;
 }
 
+// Xóa một ảnh gallery khỏi giao diện và đánh lại index.
 function removeImage(btn) {
     const item = btn.closest('.image-item');
     if (item) item.remove();
     reindexImages();
 }
 
+// Đánh dấu ảnh gallery đang được chọn để dán ảnh từ clipboard vào đúng vị trí.
 function setActiveGalleryImage(item) {
     const allItems = document.querySelectorAll('#imagesList .image-item');
     allItems.forEach((el) => {
@@ -478,6 +500,7 @@ function setActiveGalleryImage(item) {
     activeGalleryImageIndex = Number.isNaN(idx) ? null : idx;
 }
 
+// Lấy ảnh gallery mục tiêu khi paste, ưu tiên ảnh đang được chọn.
 function getTargetGalleryItem() {
     if (activeGalleryImageIndex !== null) {
         const selected = document.querySelector(`#imagesList .image-item[data-index="${activeGalleryImageIndex}"]`);
@@ -486,18 +509,21 @@ function getTargetGalleryItem() {
     return document.querySelector('#imagesList .image-item');
 }
 
+// Gán file được tạo từ clipboard vào input file.
 function setFileToInput(input, file) {
     const dt = new DataTransfer();
     dt.items.add(file);
     input.files = dt.files;
 }
 
+// Chuẩn hóa tên file ảnh paste để có tên file hợp lệ khi upload.
 function normalizePastedImage(file, seq) {
     const ext = (file.type && file.type.includes('/')) ? file.type.split('/')[1] : 'png';
     const safeExt = (ext || 'png').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'png';
     return new File([file], `pasted_${Date.now()}_${seq}.${safeExt}`, { type: file.type || 'image/png' });
 }
 
+// Xử lý paste ảnh vào gallery và tự upload ảnh đó.
 function handleGalleryPaste(event) {
     const items = event.clipboardData?.items || [];
     const imageFiles = [];
@@ -532,12 +558,14 @@ function handleGalleryPaste(event) {
     uploadFile(fileInput, `images[${imageIndex}].duongDanAnh`, `preview_img_${imageIndex}`);
 }
 
+// Đảm bảo chỉ một ảnh gallery được chọn làm ảnh chính.
 function handlePrimaryChange(index) {
     const checkboxes = document.querySelectorAll('#imagesList input[type="checkbox"]');
     checkboxes.forEach((cb, i) => { if (i !== index) cb.checked = false; });
 }
 
 // ===== Color Images =====
+// Thêm một dòng ảnh theo màu mới hoặc render ảnh màu đã có.
 function addColorImage(data = null) {
     const list = document.getElementById('colorImagesList');
     const index = list.children.length;
@@ -555,7 +583,7 @@ function addColorImage(data = null) {
         <div class="form-row">
           <div class="form-group">
             <label>Màu Sắc <span class="required">*</span></label>
-            <select name="colorImages[${index}].mauSac" required>
+            <select name="colorImages[${index}].mauSac">
               <option value="">-- Chọn màu --</option>
               ${renderOptions(COLORS, data ? data.mauSac : '')}
             </select>
@@ -569,7 +597,7 @@ function addColorImage(data = null) {
                    accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
                    onchange="uploadFile(this, 'colorImages[${index}].duongDanAnh', '${previewId}')">
 
-            <input type="hidden" name="colorImages[${index}].duongDanAnh" required value="${data ? (data.duongDanAnh ?? '') : ''}">
+            <input type="hidden" name="colorImages[${index}].duongDanAnh" value="${data ? (data.duongDanAnh ?? '') : ''}">
 
             <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
                  src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
@@ -582,12 +610,14 @@ function addColorImage(data = null) {
     return index;
 }
 
+// Xóa một ảnh theo màu khỏi giao diện và đánh lại index.
 function removeColorImage(btn) {
     const item = btn.closest('.image-item');
     if (item) item.remove();
     reindexColorImages();
 }
 
+// Đánh dấu ảnh màu đang được chọn để dán ảnh từ clipboard vào đúng vị trí.
 function setActiveColorImage(item) {
     const allItems = document.querySelectorAll('#colorImagesList .image-item');
     allItems.forEach((el) => {
@@ -601,6 +631,7 @@ function setActiveColorImage(item) {
     activeColorImageIndex = Number.isNaN(idx) ? null : idx;
 }
 
+// Lấy ảnh màu mục tiêu khi paste, ưu tiên ảnh màu đang được chọn.
 function getTargetColorImageItem() {
     if (activeColorImageIndex !== null) {
         const selected = document.querySelector(`#colorImagesList .image-item[data-index="${activeColorImageIndex}"]`);
@@ -609,6 +640,7 @@ function getTargetColorImageItem() {
     return document.querySelector('#colorImagesList .image-item');
 }
 
+// Xử lý paste ảnh vào danh sách ảnh theo màu và tự upload ảnh đó.
 function handleColorImagePaste(event) {
     const items = event.clipboardData?.items || [];
     const imageFiles = [];
@@ -644,10 +676,12 @@ function handleColorImagePaste(event) {
 }
 
 // ===== Sync Colors (from variants -> colorImages) =====
+// Chuẩn hóa màu thành khóa so sánh để tránh trùng khi đồng bộ ảnh màu.
 function normalizeColorKey(color) {
     return toSkuToken(color);
 }
 
+// Lấy danh sách màu duy nhất từ các biến thể hiện có.
 function getVariantColors() {
     const colors = Array.from(document.querySelectorAll('#variantsList select[name="mauSac"]'))
         .map(el => (el.value || '').trim())
@@ -665,6 +699,7 @@ function getVariantColors() {
     return unique;
 }
 
+// Lấy tập màu đã có ảnh màu để tránh thêm trùng khi đồng bộ.
 function getExistingColorImageKeys() {
     const keys = new Set();
     document.querySelectorAll('#colorImagesList select[name^="colorImages["][name$="].mauSac"]').forEach(sel => {
@@ -674,6 +709,7 @@ function getExistingColorImageKeys() {
     return keys;
 }
 
+// Đồng bộ màu từ biến thể sang danh sách ảnh màu.
 function syncColors() {
     const variantColors = getVariantColors();
     if (variantColors.length === 0) {
@@ -701,6 +737,7 @@ function syncColors() {
 }
 
 // ===== Submit =====
+// Gom dữ liệu form, chờ upload hoàn tất và gửi request cập nhật sản phẩm.
 document.getElementById('editForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     document.getElementById('loading').classList.add('show');
@@ -746,12 +783,6 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
         })).filter(img => img.mauSac && img.mauSac.trim() !== '' && img.duongDanAnh && img.duongDanAnh.trim() !== '')
     };
 
-    if (dto.hinhAnhSanPhams.length === 0) {
-        document.getElementById('loading').classList.remove('show');
-        Swal.fire('Thiếu ảnh', 'Vui lòng tải lên ít nhất 1 ảnh gallery trước khi lưu.', 'warning');
-        return;
-    }
-
     try {
         const res = await fetch(`${API_URL}/san-pham/${dto.id}`, {
             method: 'PUT',
@@ -768,7 +799,10 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
             Swal.fire('Thành công!', 'Đã cập nhật sản phẩm.', 'success')
                 .then(() => window.location.href = '/san-pham');
         } else {
-            const msg = await res.text();
+            const contentType = res.headers.get('content-type') || '';
+            const msg = contentType.includes('application/json')
+                ? ((await res.json()).message || 'Cập nhật sản phẩm thất bại.')
+                : await res.text();
             Swal.fire('Lỗi!', msg, 'error');
         }
     } catch (e2) {

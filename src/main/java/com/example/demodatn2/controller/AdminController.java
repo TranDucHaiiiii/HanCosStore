@@ -11,6 +11,8 @@ import com.example.demodatn2.dto.SanPhamResponseDTO;
 import com.example.demodatn2.dto.TaiKhoanDTO;
 import com.example.demodatn2.entity.DonHang;
 import com.example.demodatn2.entity.MaGiamGia;
+import com.example.demodatn2.entity.TaiKhoan;
+import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.service.*;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class AdminController {
     private final VoucherService voucherService;
     private final PosCartService posCartService;
     private final KhoHangHoanService khoHangHoanService;
+    private final TaiKhoanRepository taiKhoanRepository;
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
@@ -155,7 +158,23 @@ public class AdminController {
     @GetMapping("/pos/api/cart")
     @ResponseBody
     public Map<String, Object> posCart(HttpSession session) {
-        return Map.of("success", true, "cart", posCartService.getCart(session));
+        List<PosCartItemDTO> cart = posCartService.getCart(session);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("cart", cart);
+        response.put("summary", buildPosSummary(cart, null, null));
+        return response;
+    }
+
+    @GetMapping("/pos/api/cart/summary")
+    @ResponseBody
+    public Map<String, Object> posCartSummary(@RequestParam(required = false) String voucherCode,
+                                              @RequestParam(required = false) BigDecimal cashGiven,
+                                              HttpSession session) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("summary", buildPosSummary(posCartService.getCart(session), voucherCode, cashGiven));
+        return response;
     }
 
     @PostMapping("/pos/api/cart/items")
@@ -163,7 +182,11 @@ public class AdminController {
     public Map<String, Object> addPosCartItem(@RequestBody PosCartItemRequestDTO req, HttpSession session) {
         try {
             List<PosCartItemDTO> cart = posCartService.addItem(session, req.getVariantId(), req.getQty());
-            return Map.of("success", true, "cart", cart);
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("success", true);
+            response.put("cart", cart);
+            response.put("summary", buildPosSummary(cart, null, null));
+            return response;
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
@@ -176,7 +199,11 @@ public class AdminController {
                                                  HttpSession session) {
         try {
             List<PosCartItemDTO> cart = posCartService.updateQty(session, variantId, req.getQty());
-            return Map.of("success", true, "cart", cart);
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("success", true);
+            response.put("cart", cart);
+            response.put("summary", buildPosSummary(cart, null, null));
+            return response;
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
@@ -186,14 +213,22 @@ public class AdminController {
     @ResponseBody
     public Map<String, Object> removePosCartItem(@PathVariable Integer variantId, HttpSession session) {
         List<PosCartItemDTO> cart = posCartService.removeItem(session, variantId);
-        return Map.of("success", true, "cart", cart);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("cart", cart);
+        response.put("summary", buildPosSummary(cart, null, null));
+        return response;
     }
 
     @DeleteMapping("/pos/api/cart")
     @ResponseBody
     public Map<String, Object> clearPosCart(HttpSession session) {
         posCartService.clear(session);
-        return Map.of("success", true, "cart", List.of());
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("cart", List.of());
+        response.put("summary", buildPosSummary(List.of(), null, null));
+        return response;
     }
 
     @GetMapping("/orders/pending-count")
@@ -222,10 +257,15 @@ public class AdminController {
 
     @PostMapping("/pos/api/voucher/validate")
     @ResponseBody
-    public Map<String, Object> validatePosVoucher(@RequestBody Map<String, Object> body) {
+    public Map<String, Object> validatePosVoucher(@RequestBody Map<String, Object> body, HttpSession session) {
         String code = (String) body.get("code");
+        if (isBlank(code)) {
+            return Map.of("success", false, "message", "Vui lòng nhập mã giảm giá");
+        }
         Object amountObj = body.get("amount");
-        BigDecimal amount = new BigDecimal(amountObj.toString());
+        BigDecimal amount = amountObj != null
+                ? new BigDecimal(amountObj.toString())
+                : calculatePosSubtotal(posCartService.getCart(session));
 
         Optional<MaGiamGia> voucherOpt = voucherService.validateVoucher(code, amount);
         if (voucherOpt.isPresent()) {
@@ -239,8 +279,9 @@ public class AdminController {
 
     @GetMapping("/pos/api/vouchers/eligible")
     @ResponseBody
-    public Map<String, Object> getEligiblePosVouchers(@RequestParam(name = "amount", required = false) BigDecimal amount) {
-        BigDecimal safeAmount = amount != null ? amount : BigDecimal.ZERO;
+    public Map<String, Object> getEligiblePosVouchers(@RequestParam(name = "amount", required = false) BigDecimal amount,
+                                                      HttpSession session) {
+        BigDecimal safeAmount = amount != null ? amount : calculatePosSubtotal(posCartService.getCart(session));
         List<Map<String, Object>> vouchers = voucherService.getEligibleVouchers(safeAmount).stream()
                 .map(v -> {
                     Map<String, Object> item = new LinkedHashMap<>();
@@ -354,6 +395,9 @@ public class AdminController {
             }
             req.setItems(items);
 
+            validateAndNormalizePosCustomer(req);
+            validatePosPayment(req, cart);
+
             TaiKhoanDTO staff = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
             DonHang donHang = orderService.createPosOrder(req, staff);
             posCartService.clear(session);
@@ -362,5 +406,117 @@ public class AdminController {
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
+    }
+
+    private void validateAndNormalizePosCustomer(PosOrderRequestDTO req) {
+        String mode = req.getCustomerMode() != null ? req.getCustomerMode().trim().toLowerCase() : "guest";
+        req.setCustomerMode(mode);
+
+        if ("guest".equals(mode)) {
+            req.setCustomerId(null);
+            req.setCustomerName("Khách lẻ");
+            req.setCustomerPhone("N/A");
+            return;
+        }
+
+        if ("existing".equals(mode)) {
+            if (req.getCustomerId() == null) {
+                throw new RuntimeException("Vui lòng chọn khách hàng");
+            }
+            TaiKhoan customer = taiKhoanRepository.findById(req.getCustomerId())
+                    .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại"));
+            if (!"ACTIVE".equalsIgnoreCase(customer.getTrangThai())) {
+                throw new RuntimeException("Khách hàng không hoạt động");
+            }
+            String customerName = firstNonBlank(customer.getHoTen(), customer.getTenDangNhap());
+            req.setCustomerName(customerName);
+            req.setCustomerPhone(firstNonBlank(customer.getSoDienThoai(), "N/A"));
+            return;
+        }
+
+        if ("new".equals(mode)) {
+            if (isBlank(req.getCustomerName())) {
+                throw new RuntimeException("Vui lòng nhập tên khách hàng");
+            }
+            if (isBlank(req.getCustomerPhone())) {
+                throw new RuntimeException("Vui lòng nhập số điện thoại khách hàng");
+            }
+            req.setCustomerId(null);
+            req.setCustomerName(req.getCustomerName().trim());
+            req.setCustomerPhone(req.getCustomerPhone().trim());
+            return;
+        }
+
+        throw new RuntimeException("Chế độ khách hàng không hợp lệ");
+    }
+
+    private void validatePosPayment(PosOrderRequestDTO req, List<PosCartItemDTO> cart) {
+        String paymentMethod = req.getPaymentMethod() != null ? req.getPaymentMethod().trim().toLowerCase() : "cash";
+        if (!paymentMethod.equals("cash") && !paymentMethod.equals("transfer")) {
+            throw new RuntimeException("Phương thức thanh toán không hợp lệ");
+        }
+        req.setPaymentMethod(paymentMethod);
+
+        Map<String, Object> summary = buildPosSummary(cart, req.getVoucherCode(), req.getCashGiven());
+        if (!isBlank(req.getVoucherCode()) && summary.get("voucherCode") == null) {
+            throw new RuntimeException("Mã giảm giá không hợp lệ hoặc không đủ điều kiện");
+        }
+        BigDecimal total = (BigDecimal) summary.get("total");
+        if ("cash".equals(paymentMethod)) {
+            BigDecimal cashGiven = req.getCashGiven() != null ? req.getCashGiven() : BigDecimal.ZERO;
+            if (cashGiven.compareTo(total) < 0) {
+                throw new RuntimeException("Tiền khách đưa chưa đủ!");
+            }
+        } else if (!Boolean.TRUE.equals(req.getTransferConfirmed())) {
+            throw new RuntimeException("Vui lòng xác nhận đã nhận được tiền chuyển khoản!");
+        }
+    }
+
+    private BigDecimal calculatePosSubtotal(List<PosCartItemDTO> cart) {
+        BigDecimal subtotal = BigDecimal.ZERO;
+        if (cart == null) {
+            return subtotal;
+        }
+        for (PosCartItemDTO item : cart) {
+            BigDecimal price = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
+            BigDecimal qty = BigDecimal.valueOf(item.getQty() != null ? item.getQty() : 0);
+            subtotal = subtotal.add(price.multiply(qty));
+        }
+        return subtotal;
+    }
+
+    private Map<String, Object> buildPosSummary(List<PosCartItemDTO> cart, String voucherCode, BigDecimal cashGiven) {
+        BigDecimal subtotal = calculatePosSubtotal(cart);
+        BigDecimal discount = BigDecimal.ZERO;
+        String appliedCode = null;
+
+        if (voucherCode != null && !voucherCode.trim().isEmpty() && subtotal.compareTo(BigDecimal.ZERO) > 0) {
+            Optional<MaGiamGia> voucherOpt = voucherService.validateVoucher(voucherCode.trim(), subtotal);
+            if (voucherOpt.isPresent()) {
+                MaGiamGia voucher = voucherOpt.get();
+                discount = voucherService.calculateDiscount(voucher, subtotal);
+                appliedCode = voucher.getMa();
+            }
+        }
+
+        BigDecimal total = subtotal.subtract(discount).max(BigDecimal.ZERO);
+        BigDecimal given = cashGiven != null ? cashGiven : BigDecimal.ZERO;
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("subtotal", subtotal);
+        summary.put("discount", discount);
+        summary.put("total", total);
+        summary.put("cashGiven", given);
+        summary.put("change", given.subtract(total));
+        summary.put("voucherCode", appliedCode);
+        return summary;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String firstNonBlank(String first, String fallback) {
+        return !isBlank(first) ? first.trim() : fallback;
     }
 }

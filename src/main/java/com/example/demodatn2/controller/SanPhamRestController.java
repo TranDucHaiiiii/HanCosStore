@@ -21,9 +21,16 @@ public class SanPhamRestController {
     private final SanPhamService sanPhamService;
 
     @PutMapping("/{id}")
-    public ResponseEntity<SanPhamResponseDTO> updateSanPham(@PathVariable Integer id, @RequestBody SanPhamRequestDTO requestDTO) {
-        requestDTO.setId(id);
-        return ResponseEntity.ok(sanPhamService.updateSanPham(requestDTO));
+    public ResponseEntity<?> updateSanPham(@PathVariable Integer id, @RequestBody SanPhamRequestDTO requestDTO) {
+        try {
+            requestDTO.setId(id);
+            return ResponseEntity.ok(sanPhamService.updateSanPham(requestDTO));
+        } catch (Exception e) {
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("success", false);
+            body.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(body);
+        }
     }
 
     @DeleteMapping("/{id}")

@@ -8,12 +8,15 @@ import java.util.List;
 public class PosOrderRequestDTO {
 
     private Integer customerId;        // null = khách lẻ
+    private String customerMode;       // guest, existing, new
     private String customerName;       // Bắt buộc
     private String customerPhone;      // Bắt buộc
     private String paymentMethod;      // cash, card, qr, transfer
     private String orderCode;          // Mã đơn hàng đã reserve trước (optional)
     private String voucherCode;        // Mã voucher (optional)
     private String note;               // Ghi chú (optional)
+    private BigDecimal cashGiven;      // Số tiền khách đưa khi thanh toán tiền mặt
+    private Boolean transferConfirmed; // Nhân viên xác nhận đã nhận tiền chuyển khoản
     private List<PosItemDTO> items;    // Danh sách sản phẩm
 
     @Data

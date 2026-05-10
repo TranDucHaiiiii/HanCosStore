@@ -7,7 +7,7 @@ const COLORS = [
 ];
 const PARENT_DANH_MUC_TREE = window.PARENT_DANH_MUC_TREE || [];
 const skuPreviewCache = new Map();
-//
+// Đảm bảo mã sản phẩm có giá trị, tự gọi backend sinh mã nếu người dùng chưa nhập.
 async function ensureMaSanPham() {
     const input = document.getElementById('maSanPham');
     if (!input) return;
@@ -33,10 +33,12 @@ async function ensureMaSanPham() {
     }
 }
 
+// Chuẩn hóa tên danh mục để suy luận loại size.
 function normalizeCategoryName(name) {
     return removeVietnameseTones((name || "").toLowerCase());
 }
 
+// Lấy tên danh mục con hoặc danh mục cha đang chọn.
 function getSelectedCategoryName() {
     const child = document.getElementById('danhMucId');
     const parent = document.getElementById('parentDanhMucId');
@@ -52,6 +54,7 @@ function getSelectedCategoryName() {
     return "";
 }
 
+// Ghi danh mục cuối cùng được chọn vào hidden input gửi lên form.
 function updateSelectedDanhMucId() {
     const child = document.getElementById('danhMucId');
     const parent = document.getElementById('parentDanhMucId');
@@ -67,6 +70,7 @@ function updateSelectedDanhMucId() {
     target.value = parent && parent.value ? parent.value : '';
 }
 
+// Chọn danh sách size phù hợp theo danh mục sản phẩm.
 function getSizeOptions() {
     const name = normalizeCategoryName(getSelectedCategoryName());
 
@@ -81,12 +85,14 @@ function getSizeOptions() {
     return SIZE_LETTERS;
 }
 
+// Tạo HTML option size và đánh dấu size đang chọn nếu có.
 function buildSizeOptionsHtml(selected = '') {
     const options = getSizeOptions();
     const optionHtml = options.map(size => `<option value="${size}" ${selected === size ? 'selected' : ''}>${size}</option>`).join('');
     return `<option value="">-- Chọn size --</option>${optionHtml}`;
 }
 
+// Cập nhật option size cho một select và giữ giá trị cũ nếu còn hợp lệ.
 function updateSizeSelect(selectEl) {
     if (!selectEl) return;
     const current = selectEl.value;
@@ -96,6 +102,7 @@ function updateSizeSelect(selectEl) {
     }
 }
 
+// Cập nhật toàn bộ select size của các biến thể và panel tạo nhanh.
 function updateAllSizeSelects() {
     const variants = document.querySelectorAll('.variant-item');
     variants.forEach((item) => {
@@ -109,6 +116,7 @@ function updateAllSizeSelects() {
     renderQuickSizeCheckboxes();
 }
 
+// Nạp danh mục con từ cây danh mục đã render sẵn theo danh mục cha.
 async function loadChildren() {
     const parentId = document.getElementById('parentDanhMucId').value;
     const select = document.getElementById('danhMucId');
@@ -137,6 +145,7 @@ async function loadChildren() {
     updateSelectedDanhMucId();
 }
 
+// Lấy dữ liệu dòng biến thể cuối để dùng làm mẫu khi thêm dòng mới.
 function getLastVariantData() {
     const lastItem = document.querySelector('#variantsList .variant-item:last-child');
     if (!lastItem) return null;
@@ -150,6 +159,7 @@ function getLastVariantData() {
     };
 }
 
+// Nhân bản biến thể hiện tại thành một dòng biến thể mới.
 function cloneVariant(btn) {
     const item = btn.closest('.variant-item');
     if (!item) return;
@@ -163,6 +173,7 @@ function cloneVariant(btn) {
     });
 }
 
+// Thêm một dòng biến thể mới hoặc render từ dữ liệu truyền vào.
 function addVariant(data = null) {
     const variantsList = document.getElementById('variantsList');
     const index = variantsList.children.length;
@@ -238,10 +249,12 @@ function addVariant(data = null) {
     updateVariantSummary();
 }
 
+// Alias cho nút thêm biến thể trên giao diện.
 function themBienThe(data = null) {
     addVariant(data);
 }
 
+// Tìm dòng biến thể từ input/select vừa đổi và cập nhật SKU của dòng đó.
 function updateSKUFromEl(el) {
     const item = el.closest('.variant-item');
     if (!item) return;
@@ -249,6 +262,7 @@ function updateSKUFromEl(el) {
     if (index !== null) updateSKU(index);
 }
 
+// Gọi backend lấy SKU preview cho biến thể và cập nhật badge hiển thị.
 function updateSKU(index) {
     const item = document.querySelector(`.variant-item[data-index="${index}"]`);
     if (!item) return;
@@ -278,6 +292,7 @@ function updateSKU(index) {
     updateVariantBadge(item);
 }
 
+// Lấy SKU preview từ backend, có cache theo mã sản phẩm, màu và size.
 async function requestSkuPreview(maSanPham, mauSac, kichCo) {
     const cacheKey = `${maSanPham || ''}__${mauSac || ''}__${kichCo || ''}`;
     if (skuPreviewCache.has(cacheKey)) {
@@ -304,6 +319,7 @@ async function requestSkuPreview(maSanPham, mauSac, kichCo) {
     }
 }
 
+// Cập nhật badge màu và size trên dòng biến thể.
 function updateVariantBadge(item) {
     if (!item) return;
 
@@ -323,6 +339,7 @@ function updateVariantBadge(item) {
     if (sizeBadge) sizeBadge.textContent = kichCo || '-';
 }
 
+// Cập nhật thống kê số biến thể, số màu và số size.
 function updateVariantSummary() {
     const summary = document.getElementById('variantSummary');
     if (!summary) return;
@@ -342,6 +359,7 @@ function updateVariantSummary() {
         <span>${colors.size} mau / ${sizes.size} size</span>
     `;
 }
+// Chuyển chuỗi thành token viết hoa dùng trong mã SKU.
 function toSkuToken(s) {
     return removeVietnameseTones(s)
         .trim()
@@ -349,6 +367,7 @@ function toSkuToken(s) {
         .replace(/\s+/g, "_");
 }
 
+// Loại bỏ dấu tiếng Việt để tạo mã/SKU ổn định.
 function removeVietnameseTones(str) {
     if (!str) return "";
     str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ|À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "a");
@@ -361,6 +380,7 @@ function removeVietnameseTones(str) {
     return str;
 }
 
+// Cập nhật lại SKU cho toàn bộ biến thể.
 function updateAllSKUs() {
     const variants = document.querySelectorAll('.variant-item');
     variants.forEach((v) => {
@@ -368,6 +388,7 @@ function updateAllSKUs() {
     });
 }
 
+// Tự thêm ảnh màu theo các màu đã có trong biến thể nếu chưa có ảnh màu nào.
 function syncColors() {
     const variantColors = Array.from(document.querySelectorAll('#variantsList select[name*=".mauSac"]'))
         .map(el => el.value.trim())
@@ -380,27 +401,32 @@ function syncColors() {
     }
 }
 
+// Lấy danh sách màu được chọn trong panel tạo nhanh, có giá trị mặc định.
 function getQuickVariantColors() {
     const checkboxes = Array.from(document.querySelectorAll('.color-checkbox:checked'));
     return checkboxes.length > 0 ? checkboxes.map(cb => cb.value) : ["\u0110en", "Tr\u1eafng", "X\u00e1m"];
 }
 
+// Lấy danh sách size được chọn trong panel tạo nhanh.
 function getQuickVariantSizes() {
     const checkboxes = Array.from(document.querySelectorAll('.size-checkbox:checked'));
     return checkboxes.length > 0 ? checkboxes.map(cb => cb.value) : getSizeOptions().slice();
 }
 
+// Lấy chế độ tạo nhanh: thay toàn bộ hoặc chỉ thêm biến thể còn thiếu.
 function getQuickVariantMode() {
     const mode = document.getElementById('quickVariantMode')?.value || 'replace_all';
     return mode === 'add_missing' ? 'add_missing' : 'replace_all';
 }
 
+// Đọc số từ input theo id, trả fallback nếu giá trị không hợp lệ.
 function getNumberValue(id, fallback) {
     const el = document.getElementById(id);
     const value = Number(el?.value);
     return Number.isFinite(value) ? value : fallback;
 }
 
+// Lấy tập khóa màu-size đang có để tránh tạo trùng biến thể.
 function getExistingVariantKeys() {
     const keys = new Set();
     document.querySelectorAll('#variantsList .variant-item').forEach((item) => {
@@ -413,6 +439,7 @@ function getExistingVariantKeys() {
     return keys;
 }
 
+// Render danh sách checkbox size trong panel tạo nhanh theo danh mục hiện tại.
 function renderQuickSizeCheckboxes() {
     const sizeList = document.getElementById('sizeCheckboxList');
     if (!sizeList) return;
@@ -450,10 +477,12 @@ function renderQuickSizeCheckboxes() {
     });
 }
 
+// Alias cho nút đồng bộ màu trên giao diện.
 function dongBoMau() {
     syncColors();
 }
 
+// Khởi tạo danh sách checkbox màu và size cho panel tạo nhanh biến thể.
 function initQuickVariantDropdowns() {
     const colorList = document.getElementById('colorCheckboxList');
     if (colorList && colorList.children.length === 0) {
@@ -496,6 +525,7 @@ function initQuickVariantDropdowns() {
     renderQuickSizeCheckboxes();
 }
 
+// Đóng hoặc mở panel tạo nhanh biến thể.
 function toggleQuickPanel() {
     const content = document.getElementById('quickPanelContent');
     const toggle = document.getElementById('quickPanelToggle');
@@ -511,10 +541,12 @@ function toggleQuickPanel() {
     }
 }
 
+// Alias cho nút đóng/mở bảng tạo nhanh biến thể.
 function dongMoBangTaoNhanh() {
     toggleQuickPanel();
 }
 
+// Gọi backend sinh nhanh biến thể từ màu, size và giá trị mặc định.
 async function generateQuickVariants() {
     const colors = getQuickVariantColors();
     const sizes = getQuickVariantSizes();
@@ -592,10 +624,12 @@ async function generateQuickVariants() {
     }
 }
 
+// Alias cho thao tác tạo nhanh biến thể.
 async function taoNhanhBienThe() {
     await generateQuickVariants();
 }
 
+// Thêm ảnh màu mới với màu đã biết từ biến thể.
 function addColorImageWithColor(color) {
     const colorImagesList = document.getElementById('colorImagesList');
     const index = colorImagesList.children.length;
@@ -629,6 +663,7 @@ function addColorImageWithColor(color) {
     colorImagesList.insertAdjacentHTML('beforeend', html);
 }
 
+// Xóa một dòng biến thể khỏi giao diện.
 function removeVariant(target) {
     const variant = typeof target === 'number'
         ? document.querySelector(`#variantsList .variant-item[data-index="${target}"]`)
@@ -638,6 +673,7 @@ function removeVariant(target) {
     updateVariantNumbers();
 }
 
+// Đánh lại index, name input và số thứ tự cho danh sách biến thể.
 function updateVariantNumbers() {
     const variants = document.querySelectorAll('#variantsList .variant-item');
     variants.forEach((variant, idx) => {
@@ -661,6 +697,7 @@ function updateVariantNumbers() {
     });
     updateVariantSummary();
 }
+// Validate nhanh các trường cơ bản trước khi gọi API validate backend.
 function validateBaseFields() {
     const maSanPham = (document.getElementById('maSanPham')?.value || '').trim();
     const ten = (document.getElementById('ten')?.value || '').trim();
@@ -682,6 +719,7 @@ function validateBaseFields() {
     return true;
 }
 
+// Validate nhanh danh sách biến thể trước khi gọi API validate backend.
 function validateVariants() {
     const variants = Array.from(document.querySelectorAll('#variantsList .variant-item'));
     if (variants.length === 0) {
@@ -735,6 +773,7 @@ function validateVariants() {
     return true;
 }
 
+// Gom dữ liệu biến thể thành payload gửi lên API validate backend.
 function collectVariantPayload() {
     return Array.from(document.querySelectorAll('#variantsList .variant-item')).map((variant) => ({
         maSKU: (variant.querySelector('input[name*=".maSKU"]')?.value || '').trim(),
@@ -746,6 +785,7 @@ function collectVariantPayload() {
     }));
 }
 
+// Gọi backend kiểm tra danh sách biến thể.
 async function validateVariantsWithServer() {
     const payload = collectVariantPayload();
     try {
@@ -769,6 +809,7 @@ async function validateVariantsWithServer() {
     }
 }
 
+// Gọi backend kiểm tra thông tin cơ bản của sản phẩm.
 async function validateBaseWithServer() {
     const payload = {
         maSanPham: (document.getElementById('maSanPham')?.value || '').trim(),
@@ -797,6 +838,7 @@ async function validateBaseWithServer() {
     }
 }
 
+// Tìm index kế tiếp cho ảnh gallery mới.
 function getNextImageIndex() {
     const images = document.querySelectorAll('#imagesList .image-item');
     if (images.length === 0) return 0;
@@ -811,6 +853,7 @@ function getNextImageIndex() {
     return maxIndex + 1;
 }
 
+// Thêm một dòng ảnh gallery mới vào form.
 function addImage() {
     const imagesList = document.getElementById('imagesList');
     const index = getNextImageIndex();
@@ -847,10 +890,12 @@ function addImage() {
     return index;
 }
 
+// Alias cho nút thêm ảnh gallery.
 function themAnh() {
     addImage();
 }
 
+// Upload file ảnh, cập nhật preview và ghi đường dẫn vào input hidden.
 async function handleFileUpload(fileInput, hiddenInputName, previewId) {
     const file = fileInput.files[0];
     if (!file) return;
@@ -884,6 +929,7 @@ async function handleFileUpload(fileInput, hiddenInputName, previewId) {
     }
 }
 
+// Xóa một ảnh gallery theo index.
 function removeImage(index) {
     const image = document.querySelector(`#imagesList .image-item[data-index="${index}"]`);
     if (image) {
@@ -892,6 +938,7 @@ function removeImage(index) {
     }
 }
 
+// Đánh lại index, name input, preview id và số thứ tự cho gallery ảnh.
 function updateImageNumbers() {
     const images = document.querySelectorAll('#imagesList .image-item');
     images.forEach((image, idx) => {
@@ -932,12 +979,14 @@ function updateImageNumbers() {
     });
 }
 
+// Gán file được tạo từ clipboard vào input file.
 function setFileToInput(fileInput, file) {
     const dt = new DataTransfer();
     dt.items.add(file);
     fileInput.files = dt.files;
 }
 
+// Chuẩn hóa tên file ảnh paste để upload ổn định.
 function normalizePastedFile(file, seq) {
     const ext = (file.type && file.type.includes('/')) ? file.type.split('/')[1] : 'png';
     const safeExt = (ext || 'png').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'png';
@@ -945,6 +994,7 @@ function normalizePastedFile(file, seq) {
     return new File([file], fileName, { type: file.type || 'image/png' });
 }
 
+// Xử lý paste ảnh từ clipboard vào gallery và tự upload.
 function handleImagePaste(event) {
     const items = event.clipboardData?.items || [];
     const imageFiles = [];
@@ -971,6 +1021,7 @@ function handleImagePaste(event) {
     });
 }
 
+// Đảm bảo chỉ một ảnh gallery được đặt làm ảnh chính.
 function handlePrimaryChange(index) {
     const checkboxes = document.querySelectorAll('input[name*="laAnhChinh"]');
     checkboxes.forEach((cb, i) => {
@@ -978,6 +1029,7 @@ function handlePrimaryChange(index) {
     });
 }
 
+// Thêm một dòng ảnh theo màu mới vào form.
 function addColorImage() {
     const colorImagesList = document.getElementById('colorImagesList');
     const index = colorImagesList.children.length;
@@ -1009,10 +1061,12 @@ function addColorImage() {
     colorImagesList.insertAdjacentHTML('beforeend', html);
 }
 
+// Alias cho nút thêm ảnh theo màu.
 function themAnhTheoMau() {
     addColorImage();
 }
 
+// Xóa một ảnh theo màu theo index.
 function removeColorImage(index) {
     const image = document.querySelector(`#colorImagesList .image-item[data-index="${index}"]`);
     if (image) {
@@ -1021,6 +1075,7 @@ function removeColorImage(index) {
     }
 }
 
+// Đánh lại index, name input và preview id cho danh sách ảnh theo màu.
 function updateColorImageNumbers() {
     const colorImages = document.querySelectorAll('#colorImagesList .image-item');
     colorImages.forEach((image, idx) => {
@@ -1051,6 +1106,7 @@ function updateColorImageNumbers() {
     });
 }
 
+// Hiển thị thông báo SweetAlert theo loại và nội dung truyền vào.
 function showAlert(type, message) {
     Swal.fire({
         icon: type,
@@ -1060,6 +1116,7 @@ function showAlert(type, message) {
     });
 }
 
+// Reset toàn bộ form sau khi người dùng xác nhận.
 async function resetForm() {
     const result = await Swal.fire({
         title: 'Bạn có chắc chắn?',
@@ -1085,10 +1142,12 @@ async function resetForm() {
     }
 }
 
+// Alias cho nút đặt lại form.
 async function datLaiForm() {
     await resetForm();
 }
 
+// Validate dữ liệu, gọi backend kiểm tra và bật loading trước khi submit form.
 document.getElementById('productForm').addEventListener('submit', async (e) => {
     updateSelectedDanhMucId();
 
@@ -1121,6 +1180,7 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     document.getElementById('loading').classList.add('show');
 });
 
+// Khởi tạo form thêm sản phẩm, panel tạo nhanh, dòng biến thể và ảnh mặc định.
 window.addEventListener('DOMContentLoaded', async () => {
     await ensureMaSanPham();
     initQuickVariantDropdowns();

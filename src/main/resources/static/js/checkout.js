@@ -1,3 +1,4 @@
+// Đóng/mở danh sách voucher và đổi icon mũi tên.
 function toggleVoucherList() {
         const list = document.getElementById('voucherList');
         const arrow = document.getElementById('voucherArrow');
@@ -6,6 +7,7 @@ function toggleVoucherList() {
         arrow.classList.toggle('fa-chevron-up');
     }
 
+    // Định dạng số tiền theo kiểu VNĐ.
     function formatVND(num) {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '₫';
     }
@@ -15,11 +17,13 @@ function toggleVoucherList() {
     let subtotalValue = 0;
     let discountValue = 0;
 
+    // Parse số nguyên an toàn, trả fallback nếu không hợp lệ.
     function parseIntSafe(value, fallback) {
         const num = parseInt(value, 10);
         return Number.isNaN(num) ? fallback : num;
     }
 
+    // Tính lại tổng cuối cùng gồm tạm tính, giảm giá và phí vận chuyển.
     function updateFinalTotal() {
         const total = Math.max(0, subtotalValue - discountValue + (currentShippingFee || 0));
         const totalEl = document.getElementById('finalTotalDisplay');
@@ -28,6 +32,7 @@ function toggleVoucherList() {
         }
     }
 
+    // Cập nhật giá trị giảm giá đang áp dụng và hidden input tương ứng.
     function setDiscountValue(value) {
         discountValue = parseIntSafe(value, 0);
         const discountInput = document.getElementById('discountValue');
@@ -35,6 +40,7 @@ function toggleVoucherList() {
         updateFinalTotal();
     }
 
+    // Hiển thị phí vận chuyển hoặc trạng thái miễn phí.
     function updateShippingDisplay(fee) {
         const el = document.getElementById('shippingDisplay');
         if (!el) return;
@@ -47,6 +53,7 @@ function toggleVoucherList() {
         }
     }
 
+    // Hiển thị trạng thái tính phí vận chuyển dạng text.
     function setShippingText(text, color) {
         const el = document.getElementById('shippingDisplay');
         if (!el) return;
@@ -54,6 +61,7 @@ function toggleVoucherList() {
         el.style.color = color || '';
     }
 
+    // Lưu phí vận chuyển hiện tại, cập nhật hidden input và tổng tiền.
     function setShippingFee(fee) {
         currentShippingFee = parseIntSafe(fee, 0);
         const shippingInput = document.getElementById('shippingValue');
@@ -62,6 +70,7 @@ function toggleVoucherList() {
         updateFinalTotal();
     }
 
+    // Đồng bộ mã voucher đang chọn vào hidden input gửi cùng form checkout.
     function syncSelectedVoucherCode(code) {
         const voucherInput = document.getElementById('selectedVoucherCode');
         if (voucherInput) {
@@ -69,6 +78,7 @@ function toggleVoucherList() {
         }
     }
 
+    // Gom thông tin địa chỉ hiện tại để gửi API tính phí GHTK.
     function buildFeeParams() {
         const savedSelect = document.getElementById('savedAddressSelect');
         if (savedSelect && savedSelect.value) {
@@ -97,6 +107,7 @@ function toggleVoucherList() {
         };
     }
 
+    // Gọi API GHTK để tính lại phí vận chuyển theo địa chỉ.
     function refreshGhtkFee() {
         const params = buildFeeParams();
         isShippingFeeLoading = true;
@@ -134,6 +145,7 @@ function toggleVoucherList() {
         });
     }
 
+    // Áp dụng hoặc bỏ chọn voucher khi người dùng bấm vào voucher.
     function selectVoucher(el) {
         const code = el.dataset.code;
         // Nếu đang active thì bỏ chọn
@@ -184,6 +196,7 @@ function toggleVoucherList() {
         });
     }
 
+    // Gỡ voucher đang áp dụng và cập nhật lại tổng tiền.
     function removeVoucher() {
         fetch('/order/checkout/remove-voucher', {
             method: 'POST',
@@ -206,6 +219,7 @@ function toggleVoucherList() {
 
 let locationData = [];
 
+    // Khởi tạo dữ liệu địa chỉ, tổng tiền, voucher và các sự kiện checkout.
     document.addEventListener('DOMContentLoaded', function() {
         // Tải dữ liệu hành chính
         fetch('/data/dvhcvn.json')
@@ -242,7 +256,7 @@ let locationData = [];
         syncSelectedVoucherCode((document.getElementById('appliedBadge')?.textContent || '').trim());
         updateFinalTotal();
 
-        // Khi chọn Tỉnh
+        // Khi chọn tỉnh/thành, nạp danh sách quận/huyện tương ứng.
         provinceSelect.addEventListener('change', function() {
             const provinceId = this.value;
             districtSelect.innerHTML = '<option value="">Chọn Quận/Huyện</option>';
@@ -252,25 +266,27 @@ let locationData = [];
             if (provinceId) {
                 const province = locationData.find(p => p.level1_id === provinceId);
                 if (province && province.level2s) {
-                    province.level2s.forEach(d => {document.addEventListener('DOMContentLoaded', function() {
-    const bankCode = 'MB';
-    fetch('https://api.vietqr.io/v2/banks')
-        .then(res => res.json())
-        .then(data => {
-            if (data.code === '00') {
-                const bank = data.data.find(b => b.code === bankCode);
-                if (bank) {
-                    const bankNameEl = document.getElementById('shop-bank-name');
-                    const bankLogoEl = document.getElementById('shop-bank-logo');
+                    province.level2s.forEach(d => {
+                        // Tải thông tin ngân hàng để hiển thị tên và logo trong khu vực chuyển khoản.
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const bankCode = 'MB';
+                            fetch('https://api.vietqr.io/v2/banks')
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.code === '00') {
+                                        const bank = data.data.find(b => b.code === bankCode);
+                                        if (bank) {
+                                            const bankNameEl = document.getElementById('shop-bank-name');
+                                            const bankLogoEl = document.getElementById('shop-bank-logo');
 
-                    bankNameEl.innerText = bank.name + ' (' + bank.shortName + ')';
-                    bankLogoEl.src = bank.logo;
-                    bankLogoEl.style.display = 'inline-block';
-                }
-            }
-        })
-        .catch(err => console.error('Error fetching banks:', err));
-});
+                                            bankNameEl.innerText = bank.name + ' (' + bank.shortName + ')';
+                                            bankLogoEl.src = bank.logo;
+                                            bankLogoEl.style.display = 'inline-block';
+                                        }
+                                    }
+                                })
+                                .catch(err => console.error('Error fetching banks:', err));
+                        });
                         const option = new Option(d.name, d.level2_id);
                         districtSelect.add(option);
                     });
@@ -283,7 +299,7 @@ let locationData = [];
             refreshGhtkFee();
         });
 
-        // Khi chọn Quận
+        // Khi chọn quận/huyện, nạp danh sách phường/xã tương ứng.
         districtSelect.addEventListener('change', function() {
             const provinceId = provinceSelect.value;
             const districtId = this.value;
@@ -307,18 +323,19 @@ let locationData = [];
             refreshGhtkFee();
         });
 
-        // Khi chọn Xã
+        // Khi chọn phường/xã, cập nhật địa chỉ đầy đủ và phí vận chuyển.
         wardSelect.addEventListener('change', function() {
             updateFullAddress();
             refreshGhtkFee();
         });
         
-        // Khi nhập địa chỉ chi tiết
+        // Khi nhập địa chỉ chi tiết, cập nhật địa chỉ đầy đủ và phí vận chuyển.
         detailAddressInput.addEventListener('input', function() {
             updateFullAddress();
             refreshGhtkFee();
         });
 
+        // Ghép địa chỉ chi tiết, phường/xã, quận/huyện và tỉnh/thành vào hidden input.
         function updateFullAddress() {
             const pText = provinceSelect.options[provinceSelect.selectedIndex]?.text || '';
             const dText = districtSelect.options[districtSelect.selectedIndex]?.text || '';
@@ -333,7 +350,7 @@ let locationData = [];
             fullAddressInput.value = full;
         }
 
-        // Trước khi submit, kiểm tra lại địa chỉ
+        // Chặn submit nếu địa chỉ chưa đủ thông tin bắt buộc.
         document.querySelector('form').addEventListener('submit', function(e) {
             updateFullAddress();
             if (!fullAddressInput.value || provinceSelect.value === '' || districtSelect.value === '' || wardSelect.value === '') {
@@ -342,6 +359,7 @@ let locationData = [];
             }
         });
 
+        // Chặn submit khi phí vận chuyển vẫn đang được tính.
         document.querySelector('form').addEventListener('submit', function(e) {
             if (isShippingFeeLoading) {
                 e.preventDefault();
@@ -350,6 +368,7 @@ let locationData = [];
         });
     });
 
+    // Áp dụng địa chỉ đã lưu vào form và tính lại phí vận chuyển.
     function applySavedAddress(selectEl) {
         const opt = selectEl.options[selectEl.selectedIndex];
         const hoTenInput = document.querySelector('input[name="hoTen"]');

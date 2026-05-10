@@ -394,6 +394,8 @@ public class SanPhamService {
         SanPham sanPham = sanPhamRepository.findById(requestDTO.getId())
                 .orElseThrow(() -> new RuntimeException("Khong tim thay san pham voi ID: " + requestDTO.getId()));
 
+        validateSanPhamUpdateRequest(requestDTO, sanPham);
+
         sanPham.setTen(requestDTO.getTen());
         sanPham.setMoTaNgan(requestDTO.getMoTaNgan());
         sanPham.setMoTa(requestDTO.getMoTa());
@@ -462,6 +464,84 @@ public class SanPhamService {
         sanPham.setNgayCapNhat(Instant.now());
         sanPham = sanPhamRepository.save(sanPham);
         return convertToResponseDTO(sanPham);
+    }
+
+    private void validateSanPhamUpdateRequest(SanPhamRequestDTO requestDTO, SanPham currentProduct) {
+        if (requestDTO.getTen() == null || requestDTO.getTen().trim().isEmpty()) {
+            throw new RuntimeException("Ten san pham khong duoc de trong");
+        }
+        if (requestDTO.getDanhMucId() == null) {
+            throw new RuntimeException("Vui long chon danh muc.");
+        }
+        if (requestDTO.getBienThes() == null || requestDTO.getBienThes().isEmpty()) {
+            throw new RuntimeException("San pham phai co it nhat 1 bien the");
+        }
+
+        List<HinhAnhSanPhamDTO> validImages = requestDTO.getHinhAnhSanPhams() == null
+                ? Collections.emptyList()
+                : requestDTO.getHinhAnhSanPhams().stream()
+                    .filter(img -> img != null && img.getDuongDanAnh() != null && !img.getDuongDanAnh().trim().isEmpty())
+                    .collect(Collectors.toList());
+        if (validImages.isEmpty()) {
+            throw new RuntimeException("Vui long tai len it nhat 1 anh gallery truoc khi luu.");
+        }
+
+        long primaryCount = validImages.stream()
+                .filter(img -> Boolean.TRUE.equals(img.getLaAnhChinh()))
+                .count();
+        if (primaryCount > 1) {
+            throw new RuntimeException("Chi duoc co 1 anh chinh");
+        }
+
+        Set<String> skuSet = new HashSet<>();
+        Set<String> comboSet = new HashSet<>();
+        Set<Integer> currentVariantIds = currentProduct.getBienThes().stream()
+                .map(BienTheSanPham::getId)
+                .collect(Collectors.toSet());
+
+        for (BienTheRequestDTO variant : requestDTO.getBienThes()) {
+            if (variant == null) {
+                throw new RuntimeException("Thong tin bien the khong hop le.");
+            }
+            if (variant.getId() != null && !currentVariantIds.contains(variant.getId())) {
+                throw new RuntimeException("Bien the khong thuoc san pham nay: " + variant.getId());
+            }
+
+            String color = variant.getMauSac() != null ? variant.getMauSac().trim() : "";
+            String size = variant.getKichCo() != null ? variant.getKichCo().trim() : "";
+            String sku = variant.getMaSKU() != null ? variant.getMaSKU().trim() : "";
+
+            if (color.isEmpty() || size.isEmpty()) {
+                throw new RuntimeException("Vui long chon day du mau sac va kich co cho bien the.");
+            }
+            if (sku.isEmpty()) {
+                throw new RuntimeException("Vui long dam bao ma SKU duoc tao cho bien the.");
+            }
+            if (variant.getSoLuongTon() == null || variant.getSoLuongTon() < 0) {
+                throw new RuntimeException("So luong ton phai la so >= 0.");
+            }
+            if (variant.getGia() == null || variant.getGia().compareTo(BigDecimal.ZERO) < 0) {
+                throw new RuntimeException("Gia ban phai la so >= 0.");
+            }
+            if (variant.getGiaGoc() != null && variant.getGiaGoc().compareTo(BigDecimal.ZERO) < 0) {
+                throw new RuntimeException("Gia goc phai la so >= 0.");
+            }
+
+            if (!skuSet.add(sku.toLowerCase())) {
+                throw new RuntimeException("Co ma SKU bi trung lap trong danh sach bien the");
+            }
+
+            String comboKey = (color + "__" + size).toLowerCase();
+            if (!comboSet.add(comboKey)) {
+                throw new RuntimeException("Khong duoc trung mau sac + kich co.");
+            }
+
+            bienTheRepository.findByMaSKU(sku).ifPresent(existing -> {
+                if (variant.getId() == null || !existing.getId().equals(variant.getId())) {
+                    throw new RuntimeException("Ma SKU da ton tai: " + sku);
+                }
+            });
+        }
     }
 
     @Transactional

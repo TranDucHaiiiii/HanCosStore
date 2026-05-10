@@ -155,4 +155,15 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     // Tim don theo tong tien va thoi gian tao (su dung khi webhook khong co ma don)
     @org.springframework.data.jpa.repository.Query("SELECT d FROM DonHang d WHERE d.tongTien = :amount AND d.ngayDat >= :fromTime ORDER BY d.ngayDat DESC")
     List<DonHang> findByTongTienAndNgayDatGreaterThan(@Param("amount") BigDecimal amount, @Param("fromTime") Instant fromTime);
+
+    @org.springframework.data.jpa.repository.Query("""
+            select d
+            from DonHang d
+            join fetch d.taiKhoan tk
+            where d.id = :orderId
+              and tk.id = :customerId
+              and d.trangThai in ('HOAN_THANH', 'DELIVERED', 'COMPLETED')
+            """)
+    Optional<DonHang> findOwnedCompletedForReturn(@Param("orderId") Integer orderId,
+                                                  @Param("customerId") Integer customerId);
 }

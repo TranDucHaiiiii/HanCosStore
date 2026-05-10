@@ -37,7 +37,7 @@
                     </div>
                     <div class="form-group">
                         <label>Ten San Pham <span class="required">*</span></label>
-                        <input type="text" id="ten" name="ten" th:value="${product.ten}" required>
+                        <input type="text" id="ten" name="ten" th:value="${product.ten}">
                     </div>
                 </div>
 
@@ -426,7 +426,7 @@
 
                 <div class="form-group variant-field variant-color-field">
                         <label>Mau Sac <span class="required">*</span></label>
-                        <select data-field="mauSac" name="bienThes[${index}].mauSac" required onchange="updateSKUFromEl(this)">
+                        <select data-field="mauSac" name="bienThes[${index}].mauSac" onchange="updateSKUFromEl(this)">
                             <option value="">-- Chon mau --</option>
                             ${renderOptions(COLORS, seed ? seed.mauSac : '')}
                         </select>
@@ -434,7 +434,7 @@
 
                 <div class="form-group variant-field variant-size-field">
                         <label>Kich Co <span class="required">*</span></label>
-                        <select data-field="kichCo" name="bienThes[${index}].kichCo" required onchange="updateSKUFromEl(this)">
+                        <select data-field="kichCo" name="bienThes[${index}].kichCo" onchange="updateSKUFromEl(this)">
                             <option value="">-- Chon size --</option>
                             ${renderOptions(SIZES, seed ? seed.kichCo : '')}
                         </select>
@@ -442,26 +442,26 @@
 
                 <div class="form-group variant-field variant-sku-field">
                         <label>Ma SKU <span class="required">*</span></label>
-                        <input type="text" data-field="maSKU" name="bienThes[${index}].maSKU" required readonly
+                        <input type="text" data-field="maSKU" name="bienThes[${index}].maSKU" readonly
                                value="${seed ? seed.maSKU : ''}"
                                placeholder="AO_PHAO_AKP_DEN_S">
                 </div>
 
                 <div class="form-group variant-field variant-stock-field">
                         <label>So Luong Ton <span class="required">*</span></label>
-                        <input type="number" data-field="soLuongTon" name="bienThes[${index}].soLuongTon" required min="0"
+                        <input type="number" data-field="soLuongTon" name="bienThes[${index}].soLuongTon"
                                value="${seed ? seed.soLuongTon : 0}">
                 </div>
 
                 <div class="form-group variant-field variant-price-field">
                         <label>Gia Ban <span class="required">*</span></label>
-                        <input type="number" data-field="gia" name="bienThes[${index}].gia" required min="0"
+                        <input type="number" data-field="gia" name="bienThes[${index}].gia"
                                value="${seed ? seed.gia : 0}">
                 </div>
 
                 <div class="form-group variant-field variant-weight-field">
                         <label>Khoi Luong <span class="required">*</span></label>
-                        <input type="number" data-field="khoiLuongGram" name="bienThes[${index}].khoiLuongGram" required min="1"
+                        <input type="number" data-field="khoiLuongGram" name="bienThes[${index}].khoiLuongGram"
                                value="${seed && seed.khoiLuongGram != null ? seed.khoiLuongGram : 300}">
                 </div>
 
@@ -691,7 +691,7 @@
                    accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
                    onchange="uploadFile(this, 'hinhAnhSanPhams[${index}].duongDanAnh', '${previewId}')">
 
-            <input type="hidden" name="hinhAnhSanPhams[${index}].duongDanAnh" required value="${data ? (data.duongDanAnh ?? '') : ''}">
+            <input type="hidden" name="hinhAnhSanPhams[${index}].duongDanAnh" value="${data ? (data.duongDanAnh ?? '') : ''}">
 
             <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
                  src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
@@ -835,7 +835,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Mau Sac <span class="required">*</span></label>
-            <select name="hinhAnhMauSacs[${index}].mauSac" required>
+            <select name="hinhAnhMauSacs[${index}].mauSac">
               <option value="">-- Chon mau --</option>
               ${renderOptions(COLORS, data ? data.mauSac : '')}
             </select>
@@ -849,7 +849,7 @@
                    accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
                    onchange="uploadFile(this, 'hinhAnhMauSacs[${index}].duongDanAnh', '${previewId}')">
 
-            <input type="hidden" name="hinhAnhMauSacs[${index}].duongDanAnh" required value="${data ? (data.duongDanAnh ?? '') : ''}">
+            <input type="hidden" name="hinhAnhMauSacs[${index}].duongDanAnh" value="${data ? (data.duongDanAnh ?? '') : ''}">
 
             <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
                  src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
@@ -966,77 +966,6 @@
             if (v) keys.add(normalizeColorKey(v));
         });
         return keys;
-    }
-
-    function validateBaseFields() {
-        const ten = (document.getElementById('ten')?.value || '').trim();
-        if (!ten) {
-            Swal.fire('Thieu du lieu', 'Vui long nhap Ten san pham.', 'warning');
-            return false;
-        }
-
-        const parentDanhMucId = document.getElementById('parentDanhMucId')?.value || '';
-        const childDanhMucId = document.getElementById('danhMucId')?.value || '';
-        if (!parentDanhMucId && !childDanhMucId) {
-            Swal.fire('Thieu du lieu', 'Vui long chon danh muc.', 'warning');
-            return false;
-        }
-
-        return true;
-    }
-
-    function validateVariants() {
-        const items = Array.from(document.querySelectorAll('#variantsList .variant-item'));
-        if (items.length === 0) {
-            Swal.fire('Thieu bien the', 'Vui long them it nhat 1 bien the.', 'warning');
-            return false;
-        }
-
-        const seen = new Set();
-        for (const item of items) {
-            const mau = (item.querySelector('select[data-field="mauSac"]')?.value || '').trim();
-            const size = (item.querySelector('select[data-field="kichCo"]')?.value || '').trim();
-            const sku = (item.querySelector('input[data-field="maSKU"]')?.value || '').trim();
-            const soLuongRaw = item.querySelector('input[data-field="soLuongTon"]')?.value;
-            const khoiLuongRaw = item.querySelector('input[data-field="khoiLuongGram"]')?.value;
-            const giaRaw = item.querySelector('input[data-field="gia"]')?.value;
-
-            if (!mau || !size) {
-                Swal.fire('Thieu du lieu', 'Vui long chon day du mau sac va kich co cho bien the.', 'warning');
-                return false;
-            }
-            if (!sku) {
-                Swal.fire('Thieu du lieu', 'Vui long dam bao ma SKU duoc tao cho bien the.', 'warning');
-                return false;
-            }
-
-            const soLuong = Number(soLuongRaw);
-            if (!Number.isFinite(soLuong) || soLuong < 0) {
-                Swal.fire('Du lieu khong hop le', 'So luong ton phai la so >= 0.', 'warning');
-                return false;
-            }
-
-            const khoiLuong = Number(khoiLuongRaw);
-            if (!Number.isFinite(khoiLuong) || khoiLuong <= 0) {
-                Swal.fire('Du lieu khong hop le', 'Khoi luong phai la so > 0.', 'warning');
-                return false;
-            }
-
-            const gia = Number(giaRaw);
-            if (!Number.isFinite(gia) || gia < 0) {
-                Swal.fire('Du lieu khong hop le', 'Gia ban phai la so >= 0.', 'warning');
-                return false;
-            }
-
-            const key = `${mau}__${size}`.toLowerCase();
-            if (seen.has(key)) {
-                Swal.fire('Trung bien the', 'Khong duoc trung mau sac + kich co.', 'warning');
-                return false;
-            }
-            seen.add(key);
-        }
-
-        return true;
     }
 
     function syncColors() {
@@ -1296,10 +1225,6 @@
     document.getElementById('editForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        if (!validateBaseFields() || !validateVariants()) {
-            return;
-        }
-
         document.getElementById('loading').classList.add('show');
 
         if (pendingUploads.size > 0) {
@@ -1330,13 +1255,6 @@
         reindexVariantsUI();
         reindexImages();
         reindexColorImages();
-
-        const galleryItems = document.querySelectorAll('#imagesList .image-item');
-        if (galleryItems.length === 0) {
-            document.getElementById('loading').classList.remove('show');
-            Swal.fire('Thieu anh', 'Vui long tai len it nhat 1 anh gallery truoc khi luu.', 'warning');
-            return;
-        }
 
         const checkedMain = document.querySelector('#imagesList input[type="checkbox"]:checked');
         if (!checkedMain) {

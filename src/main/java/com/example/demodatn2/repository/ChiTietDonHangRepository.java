@@ -7,9 +7,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
+import java.util.Collection;
 
 public interface ChiTietDonHangRepository extends JpaRepository<ChiTietDonHang, Integer> {
     List<ChiTietDonHang> findByDonHang(DonHang donHang);
+
+    @Query("""
+        select c
+        from ChiTietDonHang c
+        where c.donHang.id = :donHangId
+          and c.id in :ids
+    """)
+    List<ChiTietDonHang> findByDonHangIdAndIdIn(@Param("donHangId") Integer donHangId,
+                                                @Param("ids") Collection<Integer> ids);
 
     @Query("SELECT c FROM ChiTietDonHang c " +
            "LEFT JOIN FETCH c.bienTheSanPham b " +

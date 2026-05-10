@@ -1,3 +1,4 @@
+// Khởi tạo chatbot widget trong một scope riêng để tránh rò rỉ biến global.
 (() => {
     const widget = document.getElementById('chatbot-widget');
     if (!widget) return;
@@ -12,6 +13,7 @@
 
     const chips = Array.from(document.querySelectorAll('.chatbot-chip'));
 
+    // Escape nội dung người dùng để tránh chèn HTML không mong muốn.
     const escapeHtml = (text) => {
         const map = {
             '&': '&amp;',
@@ -23,6 +25,7 @@
         return text.replace(/[&<>"']/g, (m) => map[m]);
     };
 
+    // Chuyển URL hoặc route nội bộ trong câu trả lời thành thẻ link có thể bấm.
     const linkify = (text) => {
         let html = escapeHtml(text).replace(/\n/g, '<br>');
         const patterns = [
@@ -44,6 +47,7 @@
         return html;
     };
 
+    // Thêm một tin nhắn vào khung chat và cuộn xuống cuối.
     const addMessage = (text, sender) => {
         const msg = document.createElement('div');
         msg.className = `chatbot-message ${sender}`;
@@ -53,8 +57,10 @@
         return msg;
     };
 
+    // Hiển thị tin nhắn tạm thời trong lúc chờ phản hồi từ server.
     const setTyping = () => addMessage('Đang trả lời...', 'bot');
 
+    // Gửi nội dung chat lên backend và hiển thị phản hồi.
     const sendMessage = async (text) => {
         const content = text.trim();
         if (!content) return;
@@ -85,6 +91,7 @@
         }
     };
 
+    // Đóng/mở panel chat và gửi lời chào lần đầu khi mở.
     toggle.addEventListener('click', () => {
         panel.classList.toggle('open');
         if (panel.classList.contains('open') && !greeted) {
@@ -93,14 +100,17 @@
         }
     });
 
+    // Gửi tin nhắn khi bấm nút gửi.
     sendBtn.addEventListener('click', () => sendMessage(inputEl.value));
 
+    // Gửi tin nhắn khi nhấn Enter trong ô nhập.
     inputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             sendMessage(inputEl.value);
         }
     });
 
+    // Gửi nhanh nội dung gợi ý khi bấm chip.
     chips.forEach((chip) => {
         chip.addEventListener('click', () => sendMessage(chip.dataset.message || chip.textContent));
     });

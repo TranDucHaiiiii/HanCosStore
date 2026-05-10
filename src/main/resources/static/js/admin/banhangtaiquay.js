@@ -16,10 +16,12 @@ const MAX_PENDING_INVOICES = 5;
 /* ══════════════════════════════════════════
    FORMAT
    ══════════════════════════════════════════ */
+// Định dạng số tiền theo chuẩn tiền Việt Nam.
 function fmt(n) {
     return Number(n || 0).toLocaleString('vi-VN') + '₫';
 }
 
+// Gọi API giỏ hàng POS, đồng bộ lại state giỏ hàng và cập nhật giao diện.
 async function requestPosCart(url, options, silent) {
     try {
         const res = await fetch(url, options);
@@ -42,10 +44,12 @@ async function requestPosCart(url, options, silent) {
     }
 }
 
+// Lấy giỏ hàng hiện tại từ server.
 function syncPosCart(silent) {
     return requestPosCart('/admin/pos/api/cart', {method: 'GET'}, !!silent);
 }
 
+// Thêm một biến thể sản phẩm vào giỏ POS.
 function addPosCartItem(variantId, qty) {
     return requestPosCart('/admin/pos/api/cart/items', {
         method: 'POST',
@@ -54,6 +58,7 @@ function addPosCartItem(variantId, qty) {
     }, false);
 }
 
+// Cập nhật số lượng của một biến thể trong giỏ POS.
 function updatePosCartItem(variantId, qty) {
     return requestPosCart('/admin/pos/api/cart/items/' + variantId, {
         method: 'PUT',
@@ -62,21 +67,22 @@ function updatePosCartItem(variantId, qty) {
     }, false);
 }
 
+// Xóa một biến thể khỏi giỏ POS.
 function removePosCartItem(variantId) {
     return requestPosCart('/admin/pos/api/cart/items/' + variantId, {
         method: 'DELETE'
     }, false);
 }
 
+// Xóa toàn bộ giỏ POS hiện tại.
 function clearPosCart(silent) {
     return requestPosCart('/admin/pos/api/cart', {
         method: 'DELETE'
     }, !!silent);
 }
 
-/* ══════════════════════════════════════════
-   INVOICE TABS (multi-cart)
-   ══════════════════════════════════════════ */
+
+// Render danh sách tab hóa đơn chờ và nút tạo hóa đơn mới.
 function renderInvoiceTabs() {
     const bar = document.getElementById('invoiceBar');
     if (!bar) return;
@@ -89,6 +95,7 @@ function renderInvoiceTabs() {
         </div>
     `).join('') + `<button class="pos-invoice-add${canAddInvoice ? '' : ' disabled'}" onclick="addInvoice()" title="${canAddInvoice ? 'Them hoa don moi' : 'Toi da 5 hoa don cho'}"><i class="fas fa-plus"></i></button>`;
 }
+// Lưu tạm thông tin khách hàng, voucher và thanh toán của hóa đơn đang mở.
 function saveCurrentMeta() {
     if (!activeInvoiceId) return;
     invoiceMetas[activeInvoiceId] = {
@@ -103,6 +110,7 @@ function saveCurrentMeta() {
     };
 }
 
+// Khôi phục thông tin khách hàng, voucher và thanh toán khi chuyển hóa đơn.
 function restoreMeta(invoiceId) {
     const meta = invoiceMetas[invoiceId];
     const mode = meta ? meta.customerMode : 'guest';
@@ -144,6 +152,7 @@ function restoreMeta(invoiceId) {
     document.getElementById('transferConfirm').checked = false;
 }
 
+// Tạo hóa đơn chờ mới nếu chưa vượt quá giới hạn.
 async function addInvoice() {
     if (invoices.length >= MAX_PENDING_INVOICES) {
         showToast('Chi duoc tao toi da 5 hoa don cho', 'error');
@@ -163,6 +172,7 @@ async function addInvoice() {
     }
 }
 
+// Chuyển sang hóa đơn chờ được chọn và tải lại giỏ tương ứng.
 async function activateInvoice(invoiceId) {
     if (invoiceId === activeInvoiceId) return;
     saveCurrentMeta();
@@ -179,6 +189,7 @@ async function activateInvoice(invoiceId) {
     }
 }
 
+// Xóa một hóa đơn chờ và chuyển giao diện sang hóa đơn còn hoạt động.
 async function removeInvoice(invoiceId) {
     const switching = invoiceId === activeInvoiceId;
     delete invoiceMetas[invoiceId];
@@ -198,6 +209,7 @@ async function removeInvoice(invoiceId) {
 /* ══════════════════════════════════════════
    FILTER SẢN PHẨM (show/hide DOM)
    ══════════════════════════════════════════ */
+// Chọn danh mục sản phẩm và kích hoạt lọc danh sách sản phẩm.
 function filterCategory(catId, el) {
     currentCategory = catId;
     document.querySelectorAll('.pos-cat-link, .pos-cat-sub').forEach(b => b.classList.remove('active'));
@@ -210,6 +222,7 @@ function filterCategory(catId, el) {
     filterProducts();
 }
 
+// Lọc sản phẩm theo danh mục hiện tại và từ khóa tìm kiếm.
 function filterProducts() {
     const keyword = document.getElementById('searchProduct').value.trim().toLowerCase();
     const cards = document.querySelectorAll('.pos-product-card');
@@ -236,6 +249,7 @@ function filterProducts() {
 }
 
 let searchTimer = null;
+// Debounce ô tìm kiếm sản phẩm để không lọc lại DOM ở mỗi ký tự quá nhanh.
 document.getElementById('searchProduct').addEventListener('input', function () {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(filterProducts, 300);
@@ -249,6 +263,7 @@ let modalSelectedColor = null;
 let modalSelectedSize = null;
 let modalSelectedVariant = null;
 
+// Đọc danh sách biến thể sản phẩm từ dữ liệu DOM của card sản phẩm.
 function getVariantsFromCard(card) {
     return Array.from(card.querySelectorAll('.vd')).map(el => ({
         id: parseInt(el.dataset.id),
@@ -259,6 +274,7 @@ function getVariantsFromCard(card) {
     }));
 }
 
+// Mở modal chọn màu, size và số lượng cho sản phẩm.
 function openVariantModal(productId) {
     const card = document.querySelector('.pos-product-card[data-id="' + productId + '"]');
     if (!card) return;
@@ -304,6 +320,7 @@ function openVariantModal(productId) {
     new bootstrap.Modal(document.getElementById('variantModal')).show();
 }
 
+// Xử lý chọn màu, đồng thời giới hạn danh sách size còn hợp lệ.
 function selectColor(color, el) {
     document.querySelectorAll('.variant-color-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
@@ -332,6 +349,7 @@ function selectColor(color, el) {
     updateModalVariant();
 }
 
+// Xử lý chọn size trong modal biến thể.
 function selectSize(size, el) {
     document.querySelectorAll('.variant-size-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
@@ -339,6 +357,7 @@ function selectSize(size, el) {
     updateModalVariant();
 }
 
+// Xác định biến thể đang chọn và cập nhật giá, tồn kho trong modal.
 function updateModalVariant() {
     if (modalSelectedColor && modalSelectedSize) {
         const variants = getVariantsFromCard(modalCard);
@@ -355,6 +374,7 @@ function updateModalVariant() {
     }
 }
 
+// Tăng hoặc giảm số lượng trong modal, có kiểm tra tồn kho.
 function modalQtyChange(delta) {
     const qtyEl = document.getElementById('modalQty');
     let val = parseInt(qtyEl.value) + delta;
@@ -366,6 +386,7 @@ function modalQtyChange(delta) {
     qtyEl.value = val;
 }
 
+// Chuẩn hóa số lượng nhập tay trong modal và không cho vượt tồn kho.
 function modalQtyInput(el) {
     let val = parseInt(el.value) || 1;
     if (val < 1) val = 1;
@@ -376,6 +397,7 @@ function modalQtyInput(el) {
     el.value = val;
 }
 
+// Thêm biến thể đã chọn từ modal vào giỏ hàng.
 async function addToCartFromModal() {
     if (!modalSelectedVariant) {
         showToast('Vui lòng chọn màu sắc và kích cỡ', 'error');
@@ -404,6 +426,7 @@ async function addToCartFromModal() {
 /* ══════════════════════════════════════════
    CART
    ══════════════════════════════════════════ */
+// Render các sản phẩm trong giỏ hàng và tổng số dòng sản phẩm.
 function renderCart() {
     const wrap = document.getElementById('cartItems');
     document.getElementById('cartCount').textContent = cart.length;
@@ -432,6 +455,7 @@ function renderCart() {
     `).join('');
 }
 
+// Tăng hoặc giảm số lượng sản phẩm trong giỏ theo nút bấm.
 async function changeQty(idx, delta) {
     const item = cart[idx];
     if (!item) return;
@@ -447,6 +471,7 @@ async function changeQty(idx, delta) {
     await updatePosCartItem(item.variantId, newQty);
 }
 
+// Cập nhật số lượng sản phẩm trong giỏ từ ô nhập trực tiếp.
 async function changeQtyDirect(idx, value) {
     const item = cart[idx];
     if (!item) return;
@@ -459,12 +484,14 @@ async function changeQtyDirect(idx, value) {
     await updatePosCartItem(item.variantId, newQty);
 }
 
+// Xóa một dòng sản phẩm khỏi giỏ hàng.
 async function removeItem(idx) {
     const item = cart[idx];
     if (!item) return;
     await removePosCartItem(item.variantId);
 }
 
+// Xóa toàn bộ sản phẩm trong giỏ hàng hiện tại.
 async function clearCart() {
     await clearPosCart(false);
 }
@@ -472,6 +499,7 @@ async function clearCart() {
 /* ══════════════════════════════════════════
    CUSTOMER MODE
    ══════════════════════════════════════════ */
+// Chuyển chế độ khách hàng: khách lẻ, khách đã có hoặc khách mới.
 function switchCustMode(mode, btn) {
     customerMode = mode;
     // toggle tab buttons
@@ -494,10 +522,12 @@ function switchCustMode(mode, btn) {
    ══════════════════════════════════════════ */
 let custDropdownOpen = false;
 
+// Đóng hoặc mở combobox chọn khách hàng.
 function toggleCustDropdown() {
     custDropdownOpen ? closeCustDropdown() : openCustDropdown();
 }
 
+// Mở dropdown chọn khách hàng và focus vào ô tìm kiếm.
 function openCustDropdown() {
     custDropdownOpen = true;
     document.getElementById('custComboDropdown').classList.add('show');
@@ -506,11 +536,13 @@ function openCustDropdown() {
     setTimeout(() => document.getElementById('custComboSearch').focus(), 50);
 }
 
+// Đóng dropdown chọn khách hàng.
 function closeCustDropdown() {
     custDropdownOpen = false;
     document.getElementById('custComboDropdown').classList.remove('show');
 }
 
+// Lọc danh sách khách hàng theo tên, số điện thoại hoặc email.
 function filterCustList(keyword) {
     const kw = keyword.toLowerCase();
     const items = document.querySelectorAll('#custComboList .cust-combobox-item');
@@ -531,7 +563,7 @@ function filterCustList(keyword) {
     document.getElementById('custNoResult').style.display = visible === 0 ? '' : 'none';
 }
 
-// Search filter inside combobox
+// Gắn sự kiện tìm kiếm trong combobox khách hàng.
 (function() {
     const searchInput = document.getElementById('custComboSearch');
     searchInput.addEventListener('input', function() {
@@ -539,13 +571,14 @@ function filterCustList(keyword) {
     });
 })();
 
-// Close dropdown on outside click
+// Đóng dropdown khách hàng khi click ra ngoài combobox.
 document.addEventListener('click', function(e) {
     if (custDropdownOpen && !document.getElementById('custCombobox').contains(e.target)) {
         closeCustDropdown();
     }
 });
 
+// Chọn một khách hàng từ danh sách và hiển thị lên combobox.
 function pickCustomer(el) {
     selectedCustomer = {
         id: parseInt(el.dataset.id),
@@ -558,6 +591,7 @@ function pickCustomer(el) {
     closeCustDropdown();
 }
 
+// Xóa khách hàng đang chọn và đưa combobox về trạng thái mặc định.
 function clearCustomer() {
     selectedCustomer = null;
     document.getElementById('custComboText').textContent = '-- Chọn khách hàng --';
@@ -568,6 +602,7 @@ function clearCustomer() {
 /* ══════════════════════════════════════════
    VOUCHER
    ══════════════════════════════════════════ */
+// Kiểm tra và áp dụng mã giảm giá cho giỏ hàng hiện tại.
 async function applyVoucher() {
     const code = document.getElementById('voucherCode').value.trim();
     if (!code) { showToast('Vui lòng nhập mã giảm giá', 'error'); return; }
@@ -597,6 +632,7 @@ async function applyVoucher() {
     }
 }
 
+// Gỡ mã giảm giá đang áp dụng và tính lại tổng tiền.
 function removeVoucher() {
     appliedVoucher = null;
     document.getElementById('voucherInputArea').style.display = '';
@@ -605,6 +641,7 @@ function removeVoucher() {
     recalc();
 }
 
+// Hiển thị các mã giảm giá gợi ý phù hợp với giá trị giỏ hàng.
 function renderVoucherSuggestions(list) {
     const wrap = document.getElementById('voucherSuggestList');
     const suggestWrap = document.getElementById('voucherSuggestWrap');
@@ -626,6 +663,7 @@ function renderVoucherSuggestions(list) {
     }).join('');
 }
 
+// Điền mã giảm giá được gợi ý vào ô nhập và áp dụng ngay.
 function applySuggestedVoucher(code) {
     const input = document.getElementById('voucherCode');
     if (!input) return;
@@ -633,6 +671,7 @@ function applySuggestedVoucher(code) {
     applyVoucher();
 }
 
+// Tải danh sách voucher đủ điều kiện từ server theo tổng tiền giỏ hàng.
 async function loadVoucherSuggestions() {
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     try {
@@ -650,6 +689,7 @@ async function loadVoucherSuggestions() {
 /* ══════════════════════════════════════════
    RECALC
    ══════════════════════════════════════════ */
+// Tính lại tạm tính, giảm giá, tổng thanh toán và các trạng thái liên quan.
 function recalc() {
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const discount = appliedVoucher ? appliedVoucher.discount : 0;
@@ -682,6 +722,7 @@ const BANK_OWNER = 'TRAN DUC HAI';
 
 let bankInfo = null;
 
+// Tải thông tin ngân hàng từ VietQR để hiển thị tên và logo khi chuyển khoản.
 (async function loadBankInfo() {
     try {
         const res = await fetch('https://api.vietqr.io/v2/banks');
@@ -697,6 +738,7 @@ let bankInfo = null;
     } catch (e) { /* fallback giữ nguyên text mặc định */ }
 })();
 
+// Chọn phương thức thanh toán và cập nhật vùng nhập tiền hoặc QR chuyển khoản.
 function selectPayment(method, el) {
     paymentMethod = method;
     document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('active'));
@@ -713,11 +755,13 @@ function selectPayment(method, el) {
     }
 }
 
+// Mở modal QR chuyển khoản sau khi cập nhật thông tin thanh toán.
 function openTransferModal() {
     updateTransferQR();
     new bootstrap.Modal(document.getElementById('transferModal')).show();
 }
 
+// Tạo lại QR chuyển khoản theo tổng tiền hiện tại và thông tin ngân hàng.
 function updateTransferQR() {
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const discount = appliedVoucher ? appliedVoucher.discount : 0;
@@ -733,10 +777,12 @@ function updateTransferQR() {
     document.getElementById('transferQR').src = qrUrl;
 }
 
+// Sao chép số tài khoản ngân hàng vào clipboard.
 function copySTK() {
     navigator.clipboard.writeText(BANK_ACC).then(() => showToast('Đã sao chép số tài khoản', 'success'));
 }
 
+// Tính tiền thừa hoặc thiếu khi khách thanh toán bằng tiền mặt.
 function calcChange() {
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const discount = appliedVoucher ? appliedVoucher.discount : 0;
@@ -756,6 +802,7 @@ function calcChange() {
 /* ══════════════════════════════════════════
    CHECKOUT
    ══════════════════════════════════════════ */
+// Xác thực dữ liệu bán hàng, gửi yêu cầu thanh toán và hiển thị kết quả.
 async function checkout() {
     if (cart.length === 0) { showToast('Giỏ hàng trống', 'error'); return; }
 
@@ -880,6 +927,7 @@ async function checkout() {
 /* ══════════════════════════════════════════
    NEW ORDER / RESET
    ══════════════════════════════════════════ */
+// Reset giao diện và giỏ hàng để bắt đầu đơn hàng mới.
 async function newOrder() {
     await clearPosCart(true);
 
@@ -924,6 +972,7 @@ async function newOrder() {
 /* ══════════════════════════════════════════
    TOAST
    ══════════════════════════════════════════ */
+// Hiển thị thông báo nổi ngắn hạn cho thao tác thành công hoặc lỗi.
 function showToast(msg, type) {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
@@ -933,6 +982,7 @@ function showToast(msg, type) {
     setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
+// Khởi tạo màn hình bán hàng tại quầy sau khi DOM đã sẵn sàng.
 document.addEventListener('DOMContentLoaded', async function() {
     renderInvoiceTabs();
     renderCart();

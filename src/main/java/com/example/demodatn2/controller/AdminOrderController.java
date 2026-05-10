@@ -2,7 +2,8 @@ package com.example.demodatn2.controller;
 
 import com.example.demodatn2.entity.DonHang;
 import com.example.demodatn2.service.OrderService;
-import com.example.demodatn2.repository.YeuCauDoiTraRepository;
+import com.example.demodatn2.service.ReturnRequestService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,7 +19,7 @@ import java.util.Map;
 public class AdminOrderController {
 
     private final OrderService orderService;
-    private final YeuCauDoiTraRepository yeuCauDoiTraRepository;
+    private final ReturnRequestService returnRequestService;
 
     @GetMapping
     public String listOrders(@RequestParam(required = false) String status, 
@@ -85,13 +86,12 @@ public class AdminOrderController {
     }
 
     @PostMapping("/return/{requestId}/approve")
-    public String approveReturn(@PathVariable Integer requestId, RedirectAttributes redirectAttributes) {
+    public String approveReturn(@PathVariable Integer requestId, HttpSession session, RedirectAttributes redirectAttributes) {
         try {
-            var yeuCau = yeuCauDoiTraRepository.findById(requestId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu."));
-            orderService.approveReturnRequest(requestId);
+            var request = returnRequestService.updateStatus(requestId, ReturnRequestService.STATUS_DA_DUYET,
+                    "Admin duyệt yêu cầu trả hàng.", currentUserId(session));
             redirectAttributes.addFlashAttribute("successMessage", "Đã duyệt yêu cầu trả hàng.");
-            return "redirect:/admin/orders/" + yeuCau.getDonHang().getId();
+            return "redirect:/admin/returns/" + request.getId();
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
             return "redirect:/admin/orders";
@@ -99,16 +99,23 @@ public class AdminOrderController {
     }
 
     @PostMapping("/return/{requestId}/reject")
-    public String rejectReturn(@PathVariable Integer requestId, @RequestParam String reason, RedirectAttributes redirectAttributes) {
+    public String rejectReturn(@PathVariable Integer requestId, @RequestParam String reason, HttpSession session, RedirectAttributes redirectAttributes) {
         try {
-            var yeuCau = yeuCauDoiTraRepository.findById(requestId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu."));
-            orderService.rejectReturnRequest(requestId, reason);
+            var request = returnRequestService.updateStatus(requestId, ReturnRequestService.STATUS_TU_CHOI,
+                    reason, currentUserId(session));
             redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối yêu cầu trả hàng.");
-            return "redirect:/admin/orders/" + yeuCau.getDonHang().getId();
+            return "redirect:/admin/returns/" + request.getId();
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
             return "redirect:/admin/orders";
         }
+    }
+
+    private Integer currentUserId(HttpSession session) {
+        Object loginUser = session.getAttribute("LOGIN_USER");
+        if (loginUser instanceof com.example.demodatn2.dto.TaiKhoanDTO user) {
+            return user.getId();
+        }
+        return null;
     }
 }

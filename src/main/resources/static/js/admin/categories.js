@@ -26,7 +26,7 @@ function deleteCategory(id) {
         }
     });
 }
-
+// Thêm sự kiện cho các nút xóa
 document.addEventListener('DOMContentLoaded', function() {
     // Page size change
     var pageSizeSelect = document.getElementById('pageSizeSelect');
