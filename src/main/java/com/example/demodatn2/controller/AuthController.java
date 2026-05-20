@@ -53,8 +53,7 @@ public class AuthController {
             }
             return "redirect:/";
         } else {
-            // Nếu đăng nhập thất bại, thêm thông báo lỗi và quay lại trang đăng nhập (giữ nguyên tham số next nếu có)
-            redirectAttributes.addFlashAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
+            // Nếu đăng nhập thất bại, thêm thông báo lỗi và qu redirectAttributes.addFlashAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
             return "redirect:/login" + (next != null ? "?next=" + next : "");
         }
     }
