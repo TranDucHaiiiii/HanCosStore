@@ -215,6 +215,15 @@ body {
     color: #191919;
 }
 
+.product-link {
+    display: inline-block;
+    text-decoration: none;
+}
+
+.product-link:hover {
+    color: #8b4d4d;
+}
+
 .product-meta {
     font-size: 0.76rem;
     color: #8d8d8d;
@@ -242,6 +251,32 @@ body {
     margin-top: 0.1rem;
     font-size: 0.75rem;
     color: #8f8f8f;
+}
+
+.review-action {
+    grid-column: 2 / 4;
+    padding-top: 0.55rem;
+}
+
+.review-form {
+    display: grid;
+    grid-template-columns: 110px minmax(180px, 1fr) auto;
+    gap: 0.5rem;
+    align-items: start;
+}
+
+.review-form textarea {
+    resize: vertical;
+}
+
+.reviewed-note {
+    display: inline-flex;
+    align-items: center;
+    color: #3d8740;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .info-grid {
@@ -363,5 +398,13 @@ footer {
     .product-price {
         text-align: left;
         min-width: auto;
+    }
+
+    .review-action {
+        grid-column: 1;
+    }
+
+    .review-form {
+        grid-template-columns: 1fr;
     }
 }

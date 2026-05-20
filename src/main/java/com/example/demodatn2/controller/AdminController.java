@@ -13,18 +13,32 @@ import com.example.demodatn2.entity.DonHang;
 import com.example.demodatn2.entity.MaGiamGia;
 import com.example.demodatn2.entity.TaiKhoan;
 import com.example.demodatn2.repository.TaiKhoanRepository;
-import com.example.demodatn2.service.*;
+import com.example.demodatn2.service.DanhMucService;
+import com.example.demodatn2.service.KhoHangHoanService;
+import com.example.demodatn2.service.OrderService;
+import com.example.demodatn2.service.PosCartService;
+import com.example.demodatn2.service.SanPhamService;
+import com.example.demodatn2.service.TaiKhoanService;
+import com.example.demodatn2.service.ThongKeService;
+import com.example.demodatn2.service.VoucherService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +47,17 @@ import java.util.Optional;
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 public class AdminController {
+
+    private static final int DEFAULT_INVENTORY_PAGE_SIZE = 12;
+    private static final int MAX_INVENTORY_PAGE_SIZE = 100;
+    private static final String ACTIVE_STATUS = "ACTIVE";
+    private static final String LOGIN_USER = "LOGIN_USER";
+    private static final String REDIRECT_ADMIN_INVENTORY = "redirect:/admin/inventory";
+    private static final String CUSTOMER_MODE_GUEST = "guest";
+    private static final String CUSTOMER_MODE_EXISTING = "existing";
+    private static final String CUSTOMER_MODE_NEW = "new";
+    private static final String PAYMENT_CASH = "cash";
+    private static final String PAYMENT_TRANSFER = "transfer";
 
     private final ThongKeService thongKeService;
     private final SanPhamService sanPhamService;
@@ -56,7 +81,7 @@ public class AdminController {
                                 @RequestParam(defaultValue = "12") int size,
                                 Model model) {
         int safePage = Math.max(page, 1);
-        int safeSize = size <= 0 ? 12 : Math.min(size, 100);
+        int safeSize = size <= 0 ? DEFAULT_INVENTORY_PAGE_SIZE : Math.min(size, MAX_INVENTORY_PAGE_SIZE);
 
         Page<InventoryVariantDTO> variantPage = sanPhamService.getInventoryVariants(q, safePage - 1, safeSize);
         List<InventoryLogDTO> logs = sanPhamService.getRecentInventoryLogs();
@@ -82,7 +107,7 @@ public class AdminController {
                                   HttpSession session,
                                   RedirectAttributes redirectAttributes) {
         try {
-            TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+            TaiKhoanDTO loginUser = getLoginUser(session);
             sanPhamService.adjustStockForVariant(
                     sanPhamId,
                     bienTheId,
@@ -95,7 +120,7 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/admin/inventory";
+        return REDIRECT_ADMIN_INVENTORY;
     }
 
     @PostMapping("/inventory/returns/{id}/import-main")
@@ -104,13 +129,13 @@ public class AdminController {
                                               HttpSession session,
                                               RedirectAttributes redirectAttributes) {
         try {
-            TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+            TaiKhoanDTO loginUser = getLoginUser(session);
             khoHangHoanService.importToMainStock(id, loginUser != null ? loginUser.getId() : null, ghiChu);
             redirectAttributes.addFlashAttribute("successMessage", "Da nhap hang hoan vao kho chinh.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/admin/inventory";
+        return REDIRECT_ADMIN_INVENTORY;
     }
 
     @PostMapping("/inventory/returns/{id}/liquidate")
@@ -123,7 +148,7 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/admin/inventory";
+        return REDIRECT_ADMIN_INVENTORY;
     }
 
     @PostMapping("/inventory/returns/{id}/resell")
@@ -136,7 +161,7 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/admin/inventory";
+        return REDIRECT_ADMIN_INVENTORY;
     }
 
     @GetMapping("/pos")
@@ -146,8 +171,8 @@ public class AdminController {
 
     @GetMapping("/ban-hang-tai-quay")
     public String banHangTaiQuay(Model model, HttpSession session) {
-        model.addAttribute("customers", taiKhoanService.searchTaiKhoans(null, "ACTIVE"));
-        model.addAttribute("products", sanPhamService.searchSanPham(null, null, "ACTIVE"));
+        model.addAttribute("customers", taiKhoanService.searchTaiKhoans(null, ACTIVE_STATUS));
+        model.addAttribute("products", sanPhamService.searchSanPham(null, null, ACTIVE_STATUS));
         model.addAttribute("categories", danhMucService.getAllDTOs());
         model.addAttribute("posInvoices", posCartService.listInvoices(session));
         model.addAttribute("posActiveInvoice", posCartService.getActiveInvoiceId(session));
@@ -158,12 +183,7 @@ public class AdminController {
     @GetMapping("/pos/api/cart")
     @ResponseBody
     public Map<String, Object> posCart(HttpSession session) {
-        List<PosCartItemDTO> cart = posCartService.getCart(session);
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("success", true);
-        response.put("cart", cart);
-        response.put("summary", buildPosSummary(cart, null, null));
-        return response;
+        return buildCartResponse(posCartService.getCart(session));
     }
 
     @GetMapping("/pos/api/cart/summary")
@@ -181,12 +201,7 @@ public class AdminController {
     @ResponseBody
     public Map<String, Object> addPosCartItem(@RequestBody PosCartItemRequestDTO req, HttpSession session) {
         try {
-            List<PosCartItemDTO> cart = posCartService.addItem(session, req.getVariantId(), req.getQty());
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("success", true);
-            response.put("cart", cart);
-            response.put("summary", buildPosSummary(cart, null, null));
-            return response;
+            return buildCartResponse(posCartService.addItem(session, req.getVariantId(), req.getQty()));
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
@@ -198,12 +213,7 @@ public class AdminController {
                                                  @RequestBody PosCartItemRequestDTO req,
                                                  HttpSession session) {
         try {
-            List<PosCartItemDTO> cart = posCartService.updateQty(session, variantId, req.getQty());
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("success", true);
-            response.put("cart", cart);
-            response.put("summary", buildPosSummary(cart, null, null));
-            return response;
+            return buildCartResponse(posCartService.updateQty(session, variantId, req.getQty()));
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
@@ -212,23 +222,14 @@ public class AdminController {
     @DeleteMapping("/pos/api/cart/items/{variantId}")
     @ResponseBody
     public Map<String, Object> removePosCartItem(@PathVariable Integer variantId, HttpSession session) {
-        List<PosCartItemDTO> cart = posCartService.removeItem(session, variantId);
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("success", true);
-        response.put("cart", cart);
-        response.put("summary", buildPosSummary(cart, null, null));
-        return response;
+        return buildCartResponse(posCartService.removeItem(session, variantId));
     }
 
     @DeleteMapping("/pos/api/cart")
     @ResponseBody
     public Map<String, Object> clearPosCart(HttpSession session) {
         posCartService.clear(session);
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("success", true);
-        response.put("cart", List.of());
-        response.put("summary", buildPosSummary(List.of(), null, null));
-        return response;
+        return buildCartResponse(List.of());
     }
 
     @GetMapping("/orders/pending-count")
@@ -240,7 +241,7 @@ public class AdminController {
     @GetMapping("/pos/api/products")
     @ResponseBody
     public List<SanPhamResponseDTO> posProducts() {
-        return sanPhamService.searchSanPham(null, null, "ACTIVE");
+        return sanPhamService.searchSanPham(null, null, ACTIVE_STATUS);
     }
 
     @GetMapping("/pos/api/categories")
@@ -252,7 +253,7 @@ public class AdminController {
     @GetMapping("/pos/api/customers")
     @ResponseBody
     public List<TaiKhoanDTO> searchCustomers(@RequestParam(required = false) String q) {
-        return taiKhoanService.searchTaiKhoans(q, "ACTIVE");
+        return taiKhoanService.searchTaiKhoans(q, ACTIVE_STATUS);
     }
 
     @PostMapping("/pos/api/voucher/validate")
@@ -308,20 +309,12 @@ public class AdminController {
                 return Map.of("success", false, "message", "Gio hang POS trong");
             }
 
-            List<PosOrderRequestDTO.PosItemDTO> items = new ArrayList<>();
-            for (PosCartItemDTO cartItem : cart) {
-                PosOrderRequestDTO.PosItemDTO item = new PosOrderRequestDTO.PosItemDTO();
-                item.setVariantId(cartItem.getVariantId());
-                item.setQty(cartItem.getQty());
-                item.setPrice(cartItem.getPrice());
-                items.add(item);
-            }
-            req.setItems(items);
+            req.setItems(toPosOrderItems(cart));
             if (req.getOrderCode() == null || req.getOrderCode().trim().isEmpty()) {
                 req.setOrderCode(posCartService.ensureTransferReference(session));
             }
-            req.setPaymentMethod("transfer");
-            TaiKhoanDTO staff = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+            req.setPaymentMethod(PAYMENT_TRANSFER);
+            TaiKhoanDTO staff = getLoginUser(session);
             DonHang donHang = orderService.createPendingPosTransferOrder(req, staff);
             return Map.of("success", true, "orderCode", donHang.getMaDonHang(), "total", donHang.getTongTien());
         } catch (Exception e) {
@@ -385,20 +378,12 @@ public class AdminController {
                 return Map.of("success", false, "message", "Giỏ hàng POS trống");
             }
 
-            List<PosOrderRequestDTO.PosItemDTO> items = new ArrayList<>();
-            for (PosCartItemDTO cartItem : cart) {
-                PosOrderRequestDTO.PosItemDTO item = new PosOrderRequestDTO.PosItemDTO();
-                item.setVariantId(cartItem.getVariantId());
-                item.setQty(cartItem.getQty());
-                item.setPrice(cartItem.getPrice());
-                items.add(item);
-            }
-            req.setItems(items);
+            req.setItems(toPosOrderItems(cart));
 
             validateAndNormalizePosCustomer(req);
             validatePosPayment(req, cart);
 
-            TaiKhoanDTO staff = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+            TaiKhoanDTO staff = getLoginUser(session);
             DonHang donHang = orderService.createPosOrder(req, staff);
             posCartService.clear(session);
             return Map.of("success", true, "orderId", donHang.getId(), "orderCode", donHang.getMaDonHang(),
@@ -406,6 +391,32 @@ public class AdminController {
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
+    }
+
+    private TaiKhoanDTO getLoginUser(HttpSession session) {
+        return (TaiKhoanDTO) session.getAttribute(LOGIN_USER);
+    }
+
+    private Map<String, Object> buildCartResponse(List<PosCartItemDTO> cart) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("cart", cart);
+        response.put("summary", buildPosSummary(cart, null, null));
+        return response;
+    }
+
+    private List<PosOrderRequestDTO.PosItemDTO> toPosOrderItems(List<PosCartItemDTO> cart) {
+        return cart.stream()
+                .map(this::toPosOrderItem)
+                .toList();
+    }
+
+    private PosOrderRequestDTO.PosItemDTO toPosOrderItem(PosCartItemDTO cartItem) {
+        PosOrderRequestDTO.PosItemDTO item = new PosOrderRequestDTO.PosItemDTO();
+        item.setVariantId(cartItem.getVariantId());
+        item.setQty(cartItem.getQty());
+        item.setPrice(cartItem.getPrice());
+        return item;
     }
 
     private void validateAndNormalizePosCustomer(PosOrderRequestDTO req) {

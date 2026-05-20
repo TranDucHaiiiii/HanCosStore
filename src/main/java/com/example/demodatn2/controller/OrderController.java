@@ -3,7 +3,6 @@ package com.example.demodatn2.controller;
 import com.example.demodatn2.dto.CartItemDTO;
 import com.example.demodatn2.dto.TaiKhoanDTO;
 import com.example.demodatn2.entity.ChiTietDonHang;
-import com.example.demodatn2.entity.DiaChiGiaoHang;
 import com.example.demodatn2.entity.DonHang;
 import com.example.demodatn2.entity.HinhAnhSanPham;
 import com.example.demodatn2.entity.TaiKhoan;
@@ -12,27 +11,43 @@ import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.service.CartService;
 import com.example.demodatn2.service.DanhMucService;
 import com.example.demodatn2.service.OrderService;
+import com.example.demodatn2.service.ProductReviewService;
 import com.example.demodatn2.service.VoucherService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-
-import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/order")
 @RequiredArgsConstructor
 public class OrderController {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
+
+    private static final String LOGIN_USER = "LOGIN_USER";
+    private static final String APPLIED_VOUCHER_CODE = "APPLIED_VOUCHER_CODE";
+    private static final String DISCOUNT_AMOUNT = "DISCOUNT_AMOUNT";
+    private static final String CURRENT_SHIPPING_FEE = "CURRENT_SHIPPING_FEE";
 
     private final OrderService orderService;
     private final CartService cartService;
@@ -40,6 +55,7 @@ public class OrderController {
     private final TaiKhoanRepository taiKhoanRepository;
     private final VoucherService voucherService;
     private final DiaChiGiaoHangRepository diaChiGiaoHangRepository;
+    private final ProductReviewService productReviewService;
 
     @GetMapping("/checkout")
     public String checkout(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
@@ -47,33 +63,32 @@ public class OrderController {
         if (items.isEmpty()) {
             return "redirect:/cart";
         }
-        
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để tiếp tục mua hàng.");
             return "redirect:/login?next=/order/checkout";
         }
 
         BigDecimal total = cartService.getTotalAmount(items);
-        
+
         // Luôn tính toán lại voucher khi vào trang thanh toán để đảm bảo chính xác nhất
-        String voucherCode = (String) session.getAttribute("APPLIED_VOUCHER_CODE");
+        String voucherCode = (String) session.getAttribute(APPLIED_VOUCHER_CODE);
         BigDecimal discount = BigDecimal.ZERO;
-        
+
         if (voucherCode != null) {
-            var voucherOpt = orderService.getVoucherService().validateVoucher(voucherCode, total);
+            var voucherOpt = voucherService.validateVoucher(voucherCode, total);
             if (voucherOpt.isPresent()) {
-                discount = orderService.getVoucherService().calculateDiscount(voucherOpt.get(), total);
-                session.setAttribute("DISCOUNT_AMOUNT", discount);
+                discount = voucherService.calculateDiscount(voucherOpt.get(), total);
+                session.setAttribute(DISCOUNT_AMOUNT, discount);
             } else {
-                session.removeAttribute("APPLIED_VOUCHER_CODE");
-                session.removeAttribute("DISCOUNT_AMOUNT");
+                clearVoucher(session);
                 model.addAttribute("voucherWarning", "Mã giảm giá đã bị gỡ do không còn đủ điều kiện.");
             }
         }
-        
+
         BigDecimal shippingFee = CartService.calculateShippingFee(total);
-        
+
         model.addAttribute("items", items);
         model.addAttribute("total", total);
         model.addAttribute("discount", discount);
@@ -84,11 +99,9 @@ public class OrderController {
         model.addAttribute("eligibleVouchers", voucherService.getEligibleVouchers(total));
         model.addAttribute("appliedVoucherCode", voucherCode);
 
-        if (loginUser != null) {
-            model.addAttribute("savedAddresses",
-                    diaChiGiaoHangRepository.findByTaiKhoanIdOrderByLaMacDinhDescNgayTaoDesc(loginUser.getId()));
-        }
-        
+        model.addAttribute("savedAddresses",
+                diaChiGiaoHangRepository.findByTaiKhoanIdOrderByLaMacDinhDescNgayTaoDesc(loginUser.getId()));
+
         return "checkout";
     }
 
@@ -102,10 +115,16 @@ public class OrderController {
         if (voucherOpt.isPresent()) {
             var voucher = voucherOpt.get();
             BigDecimal discount = voucherService.calculateDiscount(voucher, total);
-            session.setAttribute("APPLIED_VOUCHER_CODE", voucher.getMa());
-            session.setAttribute("DISCOUNT_AMOUNT", discount);
+            session.setAttribute(APPLIED_VOUCHER_CODE, voucher.getMa());
+            session.setAttribute(DISCOUNT_AMOUNT, discount);
             BigDecimal shippingFee = CartService.calculateShippingFee(total);
-            return Map.of("success", true, "discount", discount, "shippingFee", shippingFee, "finalTotal", total.subtract(discount).add(shippingFee), "code", voucher.getMa());
+            return Map.of(
+                    "success", true,
+                    "discount", discount,
+                    "shippingFee", shippingFee,
+                    "finalTotal", total.subtract(discount).add(shippingFee),
+                    "code", voucher.getMa()
+            );
         }
         return Map.of("success", false, "message", "Mã giảm giá không hợp lệ hoặc không đủ điều kiện");
     }
@@ -113,12 +132,15 @@ public class OrderController {
     @PostMapping("/checkout/remove-voucher")
     @ResponseBody
     public Map<String, Object> removeVoucherAtCheckout(HttpSession session) {
-        session.removeAttribute("APPLIED_VOUCHER_CODE");
-        session.removeAttribute("DISCOUNT_AMOUNT");
+        clearVoucher(session);
         List<CartItemDTO> items = cartService.getCartItems(session);
         BigDecimal total = cartService.getTotalAmount(items);
         BigDecimal shippingFee = CartService.calculateShippingFee(total);
-        return Map.of("success", true, "shippingFee", shippingFee, "finalTotal", total.add(shippingFee));
+        return Map.of(
+                "success", true,
+                "shippingFee", shippingFee,
+                "finalTotal", total.add(shippingFee)
+        );
     }
 
     @PostMapping("/checkout")
@@ -132,7 +154,7 @@ public class OrderController {
                              HttpSession session,
                              Model model,
                              RedirectAttributes redirectAttributes) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để tiếp tục mua hàng.");
             return "redirect:/login?next=/order/checkout";
@@ -140,30 +162,17 @@ public class OrderController {
 
         try {
             BigDecimal resolvedShippingFee = resolveShippingFee(session, shippingFee);
-            session.setAttribute("CURRENT_SHIPPING_FEE", resolvedShippingFee);
+            session.setAttribute(CURRENT_SHIPPING_FEE, resolvedShippingFee);
 
             DonHang donHang = orderService.createOrder(hoTen, soDienThoai, email, diaChi, ghiChu, payment, resolvedShippingFee, session);
             session.setAttribute("CART_COUNT", 0);
             return "redirect:/order/success?id=" + donHang.getId();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Failed to place order", e);
             model.addAttribute("errorMessage", e.getMessage());
             return checkout(session, model, redirectAttributes);
         }
     }
-
-
-
-
-//        try {
-//            DonHang donHang = orderService.createOrder(hoTen, soDienThoai, email, diaChi, ghiChu, payment, session);
-//            session.setAttribute("CART_COUNT", 0);
-//            return "redirect:/order/success?id=" + donHang.getId();
-//        } catch (Exception e) {
-//            model.addAttribute("errorMessage", e.getMessage());
-//            return checkout(session, model, redirectAttributes);
-//        }
-
 
     @GetMapping("/success")
     public String success(@RequestParam Integer id, Model model) {
@@ -175,41 +184,41 @@ public class OrderController {
 
     @GetMapping("/my-orders")
     public String myOrders(@RequestParam(defaultValue = "ALL") String status, HttpSession session, Model model) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             return "redirect:/login";
         }
-        
+
         TaiKhoan taiKhoan = taiKhoanRepository.findById(loginUser.getId()).orElseThrow();
         List<DonHang> orders = orderService.getOrdersByAccount(taiKhoan);
         String normalizedStatus = normalizeOrderStatus(status);
 
         List<DonHang> filteredOrders = switch (normalizedStatus) {
             case "CHO_XAC_NHAN" -> orders.stream()
-                .filter(o -> "CHO_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai()))
-                    || "DA_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai())))
+                    .filter(o -> "CHO_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai()))
+                            || "DA_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai())))
                     .toList();
             case "HOAN_THANH" -> orders.stream()
-                .filter(o -> "HOAN_THANH".equals(normalizeOrderStatus(o.getTrangThai())))
+                    .filter(o -> "HOAN_THANH".equals(normalizeOrderStatus(o.getTrangThai())))
                     .toList();
             case "DA_HUY" -> orders.stream()
-                .filter(o -> "DA_HUY".equals(normalizeOrderStatus(o.getTrangThai())))
-                .toList();
+                    .filter(o -> "DA_HUY".equals(normalizeOrderStatus(o.getTrangThai())))
+                    .toList();
             case "TRA_HANG" -> orders.stream()
-                .filter(o -> "TRA_HANG".equals(normalizeOrderStatus(o.getTrangThai())))
+                    .filter(o -> "TRA_HANG".equals(normalizeOrderStatus(o.getTrangThai())))
                     .toList();
             default -> orders;
         };
 
-            Instant now = Instant.now();
-            Set<Integer> returnableOrderIds = orders.stream()
+        Instant now = Instant.now();
+        Set<Integer> returnableOrderIds = orders.stream()
                 .filter(o -> canRequestReturn(o, now))
                 .map(DonHang::getId)
-                .collect(java.util.stream.Collectors.toCollection(HashSet::new));
-        
+                .collect(Collectors.toSet());
+
         model.addAttribute("orders", orders);
         model.addAttribute("filteredOrders", filteredOrders);
-            model.addAttribute("returnableOrderIds", returnableOrderIds);
+        model.addAttribute("returnableOrderIds", returnableOrderIds);
         model.addAttribute("activeFilter", normalizedStatus);
         model.addAttribute("categories", danhMucService.getActive());
         return "my-orders";
@@ -217,44 +226,69 @@ public class OrderController {
 
     @GetMapping("/my-orders/{id}")
     public String myOrderDetail(@PathVariable Integer id, HttpSession session, Model model) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             return "redirect:/login";
         }
 
         DonHang order = orderService.getOrderById(id);
         // Bảo mật: chỉ cho xem đơn hàng của chính mình
-        if (!order.getTaiKhoan().getId().equals(loginUser.getId())) {
+        if (!isOwner(order, loginUser)) {
             return "redirect:/order/my-orders";
         }
 
         boolean canRequestReturn = canRequestReturn(order, Instant.now());
         List<ChiTietDonHang> orderItems = orderService.getOrderItems(id);
         Map<Integer, String> itemImages = new HashMap<>();
+        Map<Integer, Boolean> reviewedProductMap = productReviewService.getReviewedProductMap(orderItems, loginUser.getId());
 
         for (ChiTietDonHang item : orderItems) {
-            String imagePath = "/images/no-image.png";
-            if (item.getBienTheSanPham() != null && item.getBienTheSanPham().getSanPham() != null
-                    && item.getBienTheSanPham().getSanPham().getHinhAnhSanPhams() != null
-                    && !item.getBienTheSanPham().getSanPham().getHinhAnhSanPhams().isEmpty()) {
-                imagePath = item.getBienTheSanPham().getSanPham().getHinhAnhSanPhams().stream()
-                        .filter(HinhAnhSanPham::getLaAnhChinh)
-                        .map(HinhAnhSanPham::getDuongDanAnh)
-                        .findFirst()
-                        .orElse(item.getBienTheSanPham().getSanPham().getHinhAnhSanPhams().get(0).getDuongDanAnh());
-            }
-            itemImages.put(item.getId(), imagePath);
+            itemImages.put(item.getId(), getItemImagePath(item));
         }
 
         model.addAttribute("order", order);
         model.addAttribute("items", orderItems);
         model.addAttribute("itemImages", itemImages);
+        model.addAttribute("reviewedProductMap", reviewedProductMap);
         model.addAttribute("canRequestReturn", canRequestReturn);
         model.addAttribute("categories", danhMucService.getActive());
         orderService.getReturnRequest(id).ifPresent(r -> model.addAttribute("returnRequest", r));
         return "my-order-detail";
     }
 
+    private TaiKhoanDTO getLoginUser(HttpSession session) {
+        return (TaiKhoanDTO) session.getAttribute(LOGIN_USER);
+    }
+
+    private void clearVoucher(HttpSession session) {
+        session.removeAttribute(APPLIED_VOUCHER_CODE);
+        session.removeAttribute(DISCOUNT_AMOUNT);
+    }
+
+    private boolean isOwner(DonHang order, TaiKhoanDTO loginUser) {
+        return order != null
+                && order.getTaiKhoan() != null
+                && loginUser != null
+                && order.getTaiKhoan().getId().equals(loginUser.getId());
+    }
+
+    private String getItemImagePath(ChiTietDonHang item) {
+        if (item == null || item.getBienTheSanPham() == null) {
+            return "/images/no-image.png";
+        }
+
+        var product = item.getBienTheSanPham().getSanPham();
+        if (product == null || product.getHinhAnhSanPhams() == null || product.getHinhAnhSanPhams().isEmpty()) {
+            return "/images/no-image.png";
+        }
+
+        List<HinhAnhSanPham> images = product.getHinhAnhSanPhams();
+        return images.stream()
+                .filter(image -> Boolean.TRUE.equals(image.getLaAnhChinh()))
+                .map(HinhAnhSanPham::getDuongDanAnh)
+                .findFirst()
+                .orElse(images.get(0).getDuongDanAnh());
+    }
 
     private boolean canRequestReturn(DonHang order, Instant now) {
         if (order == null || order.getTrangThai() == null || order.getNgayDat() == null) {
@@ -288,7 +322,7 @@ public class OrderController {
     }
 
     private BigDecimal resolveShippingFee(HttpSession session, BigDecimal shippingFeeFromForm) {
-        Object sessionShippingFee = session.getAttribute("CURRENT_SHIPPING_FEE");
+        Object sessionShippingFee = session.getAttribute(CURRENT_SHIPPING_FEE);
         if (sessionShippingFee instanceof BigDecimal fee && fee.compareTo(BigDecimal.ZERO) > 0) {
             return fee;
         }
@@ -316,7 +350,7 @@ public class OrderController {
     @PostMapping("/cancel/{id}")
     @ResponseBody
     public String cancelOrder(@PathVariable Integer id, @RequestParam String reason, HttpSession session) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             return "Bạn cần đăng nhập để thực hiện thao tác này.";
         }
@@ -324,7 +358,7 @@ public class OrderController {
         try {
             DonHang order = orderService.getOrderById(id);
             // Bảo mật: chỉ cho hủy đơn hàng của chính mình
-            if (!order.getTaiKhoan().getId().equals(loginUser.getId())) {
+            if (!isOwner(order, loginUser)) {
                 return "Bạn không có quyền hủy đơn hàng này.";
             }
 
@@ -342,7 +376,7 @@ public class OrderController {
                                 @RequestParam String soDienThoai,
                                 @RequestParam String diaChi,
                                 HttpSession session) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             return "Bạn cần đăng nhập để thực hiện thao tác này.";
         }
@@ -350,7 +384,7 @@ public class OrderController {
         try {
             DonHang order = orderService.getOrderById(id);
             // Bảo mật: chỉ cho sửa đơn hàng của chính mình
-            if (order.getTaiKhoan() == null || !order.getTaiKhoan().getId().equals(loginUser.getId())) {
+            if (!isOwner(order, loginUser)) {
                 return "Bạn không có quyền chỉnh sửa đơn hàng này.";
             }
 
@@ -366,14 +400,14 @@ public class OrderController {
                                         @RequestParam String reason,
                                         HttpSession session,
                                         RedirectAttributes redirectAttributes) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             return "redirect:/login";
         }
 
         try {
             DonHang order = orderService.getOrderById(id);
-            if (order.getTaiKhoan() == null || !order.getTaiKhoan().getId().equals(loginUser.getId())) {
+            if (!isOwner(order, loginUser)) {
                 redirectAttributes.addFlashAttribute("actionError", "Bạn không có quyền hủy đơn hàng này.");
                 return "redirect:/order/my-orders";
             }
@@ -393,7 +427,7 @@ public class OrderController {
                                           @RequestParam(value = "image", required = false) MultipartFile image,
                                           HttpSession session,
                                           RedirectAttributes redirectAttributes) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             return "redirect:/login";
         }
@@ -414,14 +448,14 @@ public class OrderController {
                                           @RequestParam String diaChi,
                                           HttpSession session,
                                           RedirectAttributes redirectAttributes) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             return "redirect:/login";
         }
 
         try {
             DonHang order = orderService.getOrderById(id);
-            if (order.getTaiKhoan() == null || !order.getTaiKhoan().getId().equals(loginUser.getId())) {
+            if (!isOwner(order, loginUser)) {
                 redirectAttributes.addFlashAttribute("actionError", "Bạn không có quyền chỉnh sửa đơn hàng này.");
                 return "redirect:/order/my-orders";
             }
@@ -440,20 +474,48 @@ public class OrderController {
                                                 @RequestParam String paymentMethod,
                                                 HttpSession session,
                                                 RedirectAttributes redirectAttributes) {
-        TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
             return "redirect:/login";
         }
 
         try {
             DonHang order = orderService.getOrderById(id);
-            if (order.getTaiKhoan() == null || !order.getTaiKhoan().getId().equals(loginUser.getId())) {
+            if (!isOwner(order, loginUser)) {
                 redirectAttributes.addFlashAttribute("actionError", "Bạn không có quyền chỉnh sửa đơn hàng này.");
                 return "redirect:/order/my-orders";
             }
 
             orderService.updateOrderPaymentMethod(id, paymentMethod);
             redirectAttributes.addFlashAttribute("actionSuccess", "Phương thức thanh toán đã được cập nhật.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("actionError", e.getMessage());
+        }
+
+        return "redirect:/order/my-orders/" + id;
+    }
+
+    @PostMapping("/my-orders/{id}/review")
+    public String reviewProductFromOrder(@PathVariable Integer id,
+                                         @RequestParam Integer orderItemId,
+                                         @RequestParam Integer soSao,
+                                         @RequestParam(required = false) String noiDung,
+                                         HttpSession session,
+                                         RedirectAttributes redirectAttributes) {
+        TaiKhoanDTO loginUser = getLoginUser(session);
+        if (loginUser == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            DonHang order = orderService.getOrderById(id);
+            if (!isOwner(order, loginUser)) {
+                redirectAttributes.addFlashAttribute("actionError", "Ban khong co quyen danh gia don hang nay.");
+                return "redirect:/order/my-orders";
+            }
+
+            productReviewService.submitReview(orderItemId, loginUser.getId(), soSao, noiDung);
+            redirectAttributes.addFlashAttribute("actionSuccess", "Cam on ban da danh gia san pham.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("actionError", e.getMessage());
         }

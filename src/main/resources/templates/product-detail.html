@@ -163,6 +163,17 @@
                     <span id="displayOldPrice" class="old-price"></span>
                 </div>
 
+                <div class="rating-summary" th:if="${reviewCount > 0}">
+                    <span class="rating-stars">
+                        <i class="fa-solid fa-star" th:each="i : ${#numbers.sequence(1, 5)}"
+                           th:classappend="${i <= T(java.lang.Math).round(averageRating) ? ' active' : ''}"></i>
+                    </span>
+                    <span th:text="${#numbers.formatDecimal(averageRating, 1, 1) + '/5 (' + reviewCount + ' danh gia)'}">5.0/5</span>
+                </div>
+                <div class="rating-summary text-muted" th:if="${reviewCount == 0}">
+                    Chua co danh gia
+                </div>
+
                 <p class="mb-4 text-muted" th:text="${p.moTaNgan}">Mô tả ngắn về sản phẩm...</p>
 
                 <!-- COLORS -->
@@ -223,6 +234,10 @@
                     <button class="nav-link" id="spec-tab" data-bs-toggle="tab" data-bs-target="#spec-pane"
                         type="button" role="tab">Thông số</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-pane"
+                        type="button" role="tab">Danh gia</button>
+                </li>
             </ul>
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="desc-pane" role="tabpanel" th:utext="${p.moTa}">
@@ -239,6 +254,33 @@
                             <td th:text="${p.gioiTinh}">-</td>
                         </tr>
                     </table>
+                </div>
+                <div class="tab-pane fade" id="reviews-pane" role="tabpanel">
+                    <div class="reviews-header">
+                        <div>
+                            <h3>Danh gia san pham</h3>
+                            <p th:if="${reviewCount > 0}">
+                                Diem trung binh <strong th:text="${#numbers.formatDecimal(averageRating, 1, 1) + '/5'}">5.0/5</strong>
+                                tu <strong th:text="${reviewCount}">0</strong> danh gia
+                            </p>
+                            <p th:if="${reviewCount == 0}">San pham nay chua co danh gia.</p>
+                        </div>
+                    </div>
+
+                    <div class="review-list" th:if="${reviewCount > 0}">
+                        <div class="review-item" th:each="review : ${reviews}">
+                            <div class="review-top">
+                                <strong th:text="${review.tenKhachHang}">Khach hang</strong>
+                                <span th:text="${#temporals.format(review.ngayTao, 'dd/MM/yyyy HH:mm')}">01/01/2026</span>
+                            </div>
+                            <div class="rating-stars">
+                                <i class="fa-solid fa-star" th:each="i : ${#numbers.sequence(1, 5)}"
+                                   th:classappend="${i <= review.soSao ? ' active' : ''}"></i>
+                            </div>
+                            <p th:if="${review.noiDung != null and !#strings.isEmpty(review.noiDung)}"
+                               th:text="${review.noiDung}">Noi dung danh gia</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

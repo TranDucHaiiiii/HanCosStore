@@ -20,6 +20,7 @@ class OrderControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -38,6 +39,7 @@ class OrderControllerTest {
     @Test
     void resolveShippingFee_fallsBackToFormValueWhenSessionMissing() throws Exception {
         OrderController controller = new OrderController(
+                null,
                 null,
                 null,
                 null,

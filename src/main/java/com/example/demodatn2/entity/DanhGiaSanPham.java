@@ -37,5 +37,10 @@ public class DanhGiaSanPham {
     @Column(name = "NgayTao", nullable = false)
     private Instant ngayTao;
 
-
+    @PrePersist
+    protected void onCreate() {
+        if (ngayTao == null) {
+            ngayTao = Instant.now();
+        }
+    }
 }

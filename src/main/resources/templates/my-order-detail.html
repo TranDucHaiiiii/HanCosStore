@@ -151,18 +151,40 @@
                     <span th:text="${#lists.size(items)} + ' sản phẩm'">0 sản phẩm</span>
                 </div>
                 <div class="section-body">
-                    <div th:each="item : ${items}" class="product-item">
+                    <div th:each="item : ${items}" class="product-item"
+                         th:with="productId=${item.bienTheSanPham.sanPham.id},
+                                  reviewed=${reviewedProductMap[item.bienTheSanPham.sanPham.id] == true},
+                                  completed=${order.trangThai == 'HOAN_THANH' or order.trangThai == 'DELIVERED' or order.trangThai == 'COMPLETED'}">
                         <div class="product-thumb">
                             <img th:src="${itemImages[item.id]}" alt="Ảnh sản phẩm">
                         </div>
                         <div>
-                            <p class="product-name" th:text="${item.tenSanPham}">Tên sản phẩm</p>
+                            <a class="product-name product-link" th:href="@{/products/{id}(id=${productId})}" th:text="${item.tenSanPham}">Tên sản phẩm</a>
                             <div class="product-meta" th:text="${item.mauSac} + ' - Size ' + ${item.kichCo}">Màu/Size</div>
                             <div class="qty" th:text="'x ' + ${item.soLuong}">x1</div>
                         </div>
                         <div class="product-price">
                             <div class="unit-price" th:text="${#numbers.formatDecimal(item.donGia, 0, 'COMMA', 0, 'POINT')} + '₫ / cái'">0₫ / cái</div>
                             <div class="line-total" th:text="${#numbers.formatDecimal(item.thanhTien, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</div>
+                        </div>
+                        <div class="review-action" th:if="${completed}">
+                            <div class="reviewed-note" th:if="${reviewed}">
+                                <i class="fa-solid fa-check me-1"></i>Đã đánh giá
+                            </div>
+                            <form th:if="${!reviewed}" method="post" class="review-form"
+                                  th:action="@{/order/my-orders/{id}/review(id=${order.id})}">
+                                <input type="hidden" name="orderItemId" th:value="${item.id}">
+                                <select name="soSao" class="form-select form-select-sm rounded-0" required>
+                                    <option value="5">5 sao</option>
+                                    <option value="4">4 sao</option>
+                                    <option value="3">3 sao</option>
+                                    <option value="2">2 sao</option>
+                                    <option value="1">1 sao</option>
+                                </select>
+                                <textarea name="noiDung" rows="2" maxlength="1000" class="form-control form-control-sm rounded-0"
+                                          placeholder="Nội dung đánh giá"></textarea>
+                                <button type="submit" class="btn-flat">Gửi đánh giá</button>
+                            </form>
                         </div>
                     </div>
                 </div>

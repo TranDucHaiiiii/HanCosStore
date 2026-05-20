@@ -6,6 +6,7 @@ import com.example.demodatn2.entity.DanhMuc;
 import com.example.demodatn2.service.CartService;
 import com.example.demodatn2.service.DanhMucService;
 import com.example.demodatn2.service.HomeService;
+import com.example.demodatn2.service.ProductReviewService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,109 +25,99 @@ import java.util.stream.Collectors;
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
+
+    private static final int HOME_PAGE_SIZE = 12;
+    private static final int CATEGORY_PREVIEW_LIMIT = 3;
+    private static final String CART_COUNT = "CART_COUNT";
+
     private final HomeService homeService;
     private final DanhMucService danhMucService;
     private final CartService cartService;
-    /**
-     * Xử lý hiển thị trang chủ (index.html).
-     * @param danhMucId ID của danh mục lọc sản phẩm (nếu có).
-     * @param q Từ khóa tìm kiếm (nếu có).
-     * @param page Số thứ tự trang hiện tại (mặc định là 0).
-     */
+    private final ProductReviewService productReviewService;
+
     @GetMapping({"/", "/index"})
-    public String home(Model model, 
-                       @RequestParam(required = false) Integer danhMucId, 
+    public String home(Model model,
+                       @RequestParam(required = false) Integer danhMucId,
                        @RequestParam(required = false) String q,
                        @RequestParam(defaultValue = "0") int page,
                        HttpSession session) {
-        // Đảm bảo Session được tạo để lưu trữ ID giỏ hàng/thông tin người dùng
-        session.getId(); // Force session creation
-        // Cập nhật số lượng sản phẩm trong giỏ hàng hiển thị ở Badge trên Header
-        if (session.getAttribute("CART_COUNT") == null) {
-            session.setAttribute("CART_COUNT", cartService.getItemCount(session));
-        }
+        ensureCartCount(session);
 
-        // 1. Lấy danh sách sản phẩm (phân trang)
-        int pageSize = 12;
-        PageRequest pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        PageRequest pageable = PageRequest.of(page, HOME_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "ngayTao"));
         Page<HomeProductVM> productPage = homeService.getHomeProductsPage(danhMucId, q, pageable);
+
         model.addAttribute("products", productPage.getContent());
         model.addAttribute("productPage", productPage);
         model.addAttribute("currentPage", page);
         model.addAttribute("selectedDanhMucId", danhMucId);
         model.addAttribute("query", q);
+        addCategoryMenu(model, true);
 
-        // 2. Lấy TẤT CẢ danh mục ACTIVE - QUAN TRỌNG: phải khai báo biến này
-        List<DanhMuc> allCategories = danhMucService.getActive();
-        model.addAttribute("categories", allCategories);
-
-        // 3. Lọc ra danh mục CHA (không có parent)
-        List<DanhMuc> parentCategories = allCategories.stream()
-                .filter(dm -> dm.getDanhMucCha() == null)
-                .collect(Collectors.toList());
-        model.addAttribute("parentCategories", parentCategories);
-
-        Map<Integer, List<HomeProductVM>> categoryPreviews = parentCategories.stream()
-            .collect(Collectors.toMap(
-                DanhMuc::getId,
-                parent -> homeService.getHomeProducts(parent.getId(), null)
-                    .stream()
-                    .limit(3)
-                    .collect(Collectors.toList())
-            ));
-        model.addAttribute("categoryPreviews", categoryPreviews);
-
-        // 4. Tạo Map: key = ID danh mục cha, value = List danh mục con
-        Map<Integer, List<DanhMuc>> childrenMap = allCategories.stream()
-                .filter(dm -> dm.getDanhMucCha() != null)
-                .collect(Collectors.groupingBy(dm -> dm.getDanhMucCha().getId()));
-        model.addAttribute("childrenMap", childrenMap);
-
-        return "index"; // templates/index.html
+        return "index";
     }
 
     @GetMapping("/chinh-sach-doi-tra")
     public String returnPolicy(Model model, HttpSession session) {
-        session.getId(); // Force session creation
-        if (session.getAttribute("CART_COUNT") == null) {
-            session.setAttribute("CART_COUNT", cartService.getItemCount(session));
-        }
-
-        List<DanhMuc> allCategories = danhMucService.getActive();
-        model.addAttribute("categories", allCategories);
-
-        List<DanhMuc> parentCategories = allCategories.stream()
-                .filter(dm -> dm.getDanhMucCha() == null)
-                .collect(Collectors.toList());
-
-        Map<Integer, List<HomeProductVM>> categoryPreviews = parentCategories.stream()
-                .collect(Collectors.toMap(
-                        DanhMuc::getId,
-                        parent -> homeService.getHomeProducts(parent.getId(), null)
-                                .stream()
-                                .limit(3)
-                                .collect(Collectors.toList())
-                ));
-        model.addAttribute("categoryPreviews", categoryPreviews);
+        ensureCartCount(session);
+        addCategoryMenu(model, true);
 
         return "Chinhsachdoitra";
     }
 
     @GetMapping("/products/{id}")
     public String productDetail(@PathVariable Integer id, Model model, HttpSession session) {
-        session.getId(); // Force session creation
-        // Cập nhật số lượng giỏ hàng nếu chưa có
-        if (session.getAttribute("CART_COUNT") == null) {
-            session.setAttribute("CART_COUNT", cartService.getItemCount(session));
-        }
+        ensureCartCount(session);
 
         ProductDetailVM product = homeService.getProductDetail(id);
         model.addAttribute("p", product);
-
-        // Vẫn cần danh mục cho menu
-        List<DanhMuc> allCategories = danhMucService.getActive();
-        model.addAttribute("categories", allCategories);
+        model.addAttribute("reviews", productReviewService.getReviews(id));
+        model.addAttribute("reviewCount", productReviewService.getReviewCount(id));
+        model.addAttribute("averageRating", productReviewService.getAverageRating(id));
+        addCategoryMenu(model, false);
 
         return "product-detail";
+    }
+
+    private void ensureCartCount(HttpSession session) {
+        session.getId();
+        if (session.getAttribute(CART_COUNT) == null) {
+            session.setAttribute(CART_COUNT, cartService.getItemCount(session));
+        }
+    }
+
+    private void addCategoryMenu(Model model, boolean includePreviews) {
+        List<DanhMuc> categories = danhMucService.getActive();
+        List<DanhMuc> parentCategories = getParentCategories(categories);
+
+        model.addAttribute("categories", categories);
+        model.addAttribute("parentCategories", parentCategories);
+        model.addAttribute("childrenMap", getChildrenMap(categories));
+
+        if (includePreviews) {
+            model.addAttribute("categoryPreviews", getCategoryPreviews(parentCategories));
+        }
+    }
+
+    private List<DanhMuc> getParentCategories(List<DanhMuc> categories) {
+        return categories.stream()
+                .filter(category -> category.getDanhMucCha() == null)
+                .toList();
+    }
+
+    private Map<Integer, List<DanhMuc>> getChildrenMap(List<DanhMuc> categories) {
+        return categories.stream()
+                .filter(category -> category.getDanhMucCha() != null)
+                .collect(Collectors.groupingBy(category -> category.getDanhMucCha().getId()));
+    }
+
+    private Map<Integer, List<HomeProductVM>> getCategoryPreviews(List<DanhMuc> parentCategories) {
+        return parentCategories.stream()
+                .collect(Collectors.toMap(
+                        DanhMuc::getId,
+                        parent -> homeService.getHomeProducts(parent.getId(), null)
+                                .stream()
+                                .limit(CATEGORY_PREVIEW_LIMIT)
+                                .toList()
+                ));
     }
 }
