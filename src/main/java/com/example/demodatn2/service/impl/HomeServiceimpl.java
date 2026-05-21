@@ -124,7 +124,8 @@ public class HomeServiceimpl implements HomeService {
                 .ten(sp.getTen())
                 .moTaNgan(sp.getMoTaNgan())
                 .moTa(sp.getMoTa())
-                .chatLieu(sp.getChatLieu())
+                .chatLieu(sp.getChatLieu() != null ? sp.getChatLieu().getTenChatLieu() : null)
+            .thuongHieu(sp.getThuongHieu() != null ? sp.getThuongHieu().getTen() : null)
                 .gioiTinh(sp.getGioiTinh())
                 .danhMucId(danhMucId)
                 .danhMucTen(danhMucTen)
@@ -139,7 +140,8 @@ public class HomeServiceimpl implements HomeService {
     private HomeProductVM toHomeProductVM(SanPham sp) {
         String anhChinh = hinhAnhSanPhamRepository
                 .findFirstBySanPham_IdOrderByLaAnhChinhDescThuTuAscIdAsc(sp.getId())
-                .map(HinhAnhSanPham::getDuongDanAnh)
+            .map(HinhAnhSanPham::getDuongDanAnh)
+            .map(this::normalizeImagePath)
                 .orElse(null);
         BienTheSanPhamRepository.PriceRange range = bienTheSanPhamRepository.findPriceRange(sp.getId());
         List<String> mauSac = bienTheSanPhamRepository.findDistinctMauSac(sp.getId());
@@ -147,7 +149,7 @@ public class HomeServiceimpl implements HomeService {
         Map<String, String> hinhAnhTheoMau = hinhAnhMauSacRepository.findBySanPham_Id(sp.getId()).stream()
                 .collect(Collectors.toMap(
                         h -> normalizeColorKey(h.getMauSac()),
-                        HinhAnhMauSac::getDuongDanAnh,
+                h -> normalizeImagePath(h.getDuongDanAnh()),
                         (existing, replacement) -> existing
                 ));
         List<HomeProductVM.BienTheNhanhVM> bienThes = sp.getBienThes().stream()
@@ -168,6 +170,7 @@ public class HomeServiceimpl implements HomeService {
                 .anhChinh(anhChinh)
                 .giaMin(range != null ? range.getMinGia() : null)
                 .giaMax(range != null ? range.getMaxGia() : null)
+            .thuongHieu(sp.getThuongHieu() != null ? sp.getThuongHieu().getTen() : null)
                 .mauSacs(mauSac)
                 .kichCos(kichCos)
                 .maDanhMuc(sp.getDanhMuc() != null ? sp.getDanhMuc().getMa() : null)
@@ -262,5 +265,42 @@ public class HomeServiceimpl implements HomeService {
                 .trim()
                 .toLowerCase()
                 .replaceAll("\\s+", " ");
+    }
+
+    private String normalizeImagePath(String rawPath) {
+        if (rawPath == null) {
+            return null;
+        }
+        String value = rawPath.trim();
+        if (value.isEmpty() || !value.startsWith("{")) {
+            return value;
+        }
+
+        String extracted = extractJsonStringValue(value, "\"url\"");
+        if (!extracted.isEmpty()) {
+            return extracted;
+        }
+        extracted = extractJsonStringValue(value, "\"path\"");
+        return extracted.isEmpty() ? value : extracted;
+    }
+
+    private String extractJsonStringValue(String json, String key) {
+        int keyIndex = json.indexOf(key);
+        if (keyIndex < 0) {
+            return "";
+        }
+        int colonIndex = json.indexOf(':', keyIndex + key.length());
+        if (colonIndex < 0) {
+            return "";
+        }
+        int startQuote = json.indexOf('"', colonIndex + 1);
+        if (startQuote < 0) {
+            return "";
+        }
+        int endQuote = json.indexOf('"', startQuote + 1);
+        if (endQuote <= startQuote) {
+            return "";
+        }
+        return json.substring(startQuote + 1, endQuote).trim();
     }
 }

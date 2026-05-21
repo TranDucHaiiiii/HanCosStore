@@ -36,69 +36,158 @@
 
     <div class="card">
         <div class="card-body p-4">
-            <form th:action="@{/admin/vouchers/save}" th:object="${voucher}" method="post" class="row g-3">
+            <form th:action="@{/admin/vouchers/save}" th:object="${voucher}" method="post" class="voucher-editor-layout">
                 <input type="hidden" th:field="*{id}">
 
-                <div class="col-md-6">
-                    <label class="form-label fw-700">Mã voucher <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" th:field="*{ma}" required
-                           minlength="5" maxlength="20" pattern="[A-Za-z0-9]+"
-                           title="5–20 ký tự, không chứa khoảng trắng hoặc ký tự đặc biệt"
-                           placeholder="VD: VOUCHER10">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-700">Loại giảm giá <span class="text-danger">*</span></label>
-                    <select class="form-select" th:field="*{loai}" id="loaiGiam" onchange="toggleGiaTriToiDa()">
-                        <option value="PERCENT">Phần trăm (%)</option>
-                        <option value="FIXED">Tiền mặt (₫)</option>
-                    </select>
+                <div class="voucher-form-fields">
+                    <section class="voucher-form-section">
+                        <div class="section-heading">
+                            <i class="fas fa-circle-info"></i>
+                            <span>Thông tin cơ bản</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-700">Mã voucher <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" th:field="*{ma}" required
+                                       minlength="5" maxlength="20" pattern="[A-Za-z0-9]+"
+                                       title="5–20 ký tự, không chứa khoảng trắng hoặc ký tự đặc biệt"
+                                       placeholder="VD: VOUCHER10">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-700">Loại giảm giá <span class="text-danger">*</span></label>
+                                <select class="form-select" th:field="*{loai}" id="loaiGiam" onchange="toggleGiaTriToiDa()">
+                                    <option value="PERCENT">Phần trăm (%)</option>
+                                    <option value="FIXED">Tiền mặt (₫)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="voucher-form-section">
+                        <div class="section-heading">
+                            <i class="fas fa-tags"></i>
+                            <span>Giá trị & điều kiện</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4" id="giaTriGroup">
+                                <label class="form-label fw-700" id="giaTriLabel">Giá trị giảm (%) <span class="text-danger">*</span></label>
+                                <div class="input-group voucher-value-input">
+                                    <input type="number" class="form-control" name="giaTri" id="giaTri"
+                                           th:value="${voucher.giaTri != null ? voucher.giaTri.intValue() : ''}" required min="1" step="1"
+                                           placeholder="VD: 10">
+                                    <span class="input-group-text" id="giaTriUnit">%</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="giaTriToiDaGroup">
+                                <label class="form-label fw-700">Giá trị giảm tối đa <span id="giaTriToiDaStar" class="text-danger">*</span></label>
+                                <div class="input-group voucher-value-input">
+                                    <input type="number" class="form-control" name="giaTriToiDa" id="giaTriToiDa"
+                                           th:value="${voucher.giaTriToiDa != null ? voucher.giaTriToiDa.intValue() : ''}" min="1" step="1"
+                                           placeholder="VD: 30000">
+                                    <span class="input-group-text">₫</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="donToiThieuGroup">
+                                <label class="form-label fw-700">Đơn tối thiểu <span class="text-danger">*</span></label>
+                                <div class="input-group voucher-value-input">
+                                    <input type="number" class="form-control" name="donToiThieu" id="donToiThieu"
+                                           th:value="${voucher.donToiThieu != null ? voucher.donToiThieu.intValue() : ''}" required min="1" step="1"
+                                           placeholder="VD: 100000">
+                                    <span class="input-group-text">₫</span>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div id="voucherFormError" class="voucher-form-error d-none" role="alert"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="voucher-form-section">
+                        <div class="section-heading">
+                            <i class="fas fa-boxes-stacked"></i>
+                            <span>Phân phối & trạng thái</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-700">Số lượng mã <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" th:field="*{soLuongToiDa}" required min="1" step="1">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-700">Trạng thái</label>
+                                <select class="form-select" th:field="*{trangThai}">
+                                    <option value="ACTIVE">Hoạt động</option>
+                                    <option value="INACTIVE">Ngưng hoạt động</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="voucher-form-section">
+                        <div class="section-heading">
+                            <i class="fas fa-calendar-days"></i>
+                            <span>Thời gian hiệu lực</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-700">Bắt đầu từ</label>
+                                <input type="datetime-local" class="form-control" name="batDauStr"
+                                       th:value="${batDauStr != null ? batDauStr : (voucher.batDauLuc != null ? #temporals.format(voucher.batDauLuc, 'yyyy-MM-dd''T''HH:mm', 'UTC+7') : '')}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-700">Kết thúc lúc</label>
+                                <input type="datetime-local" class="form-control" name="ketThucStr"
+                                       th:value="${ketThucStr != null ? ketThucStr : (voucher.ketThucLuc != null ? #temporals.format(voucher.ketThucLuc, 'yyyy-MM-dd''T''HH:mm', 'UTC+7') : '')}" required>
+                            </div>
+                            <div class="col-12">
+                                <div id="remainingNotice" class="remaining-notice">Chọn thời gian hiệu lực để tính số ngày còn lại.</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary px-4 fw-700">
+                            <i class="fas fa-save me-2"></i> Lưu voucher
+                        </button>
+                        <a th:href="@{/admin/vouchers}" class="btn btn-outline-secondary px-4 ms-2">Hủy</a>
+                    </div>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label fw-700">Giá trị giảm <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" name="giaTri"
-                           th:value="${voucher.giaTri != null ? voucher.giaTri.intValue() : ''}" required min="1" step="1">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-700">Giá trị giảm tối đa <span id="giaTriToiDaStar" class="text-danger">*</span></label>
-                    <input type="number" class="form-control" name="giaTriToiDa" id="giaTriToiDa"
-                           th:value="${voucher.giaTriToiDa != null ? voucher.giaTriToiDa.intValue() : ''}" min="1" step="1">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-700">Đơn tối thiểu <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" name="donToiThieu" id="donToiThieu"
-                           th:value="${voucher.donToiThieu != null ? voucher.donToiThieu.intValue() : ''}" required min="1" step="1">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-700">Số lượng mã <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" th:field="*{soLuongToiDa}" required min="1" step="1">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-700">Trạng thái</label>
-                    <select class="form-select" th:field="*{trangThai}">
-                        <option value="ACTIVE">Hoạt động</option>
-                        <option value="INACTIVE">Ngưng hoạt động</option>
-                    </select>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-700">Bắt đầu từ</label>
-                    <input type="datetime-local" class="form-control" name="batDauStr"
-                           th:value="${batDauStr != null ? batDauStr : (voucher.batDauLuc != null ? #temporals.format(voucher.batDauLuc, 'yyyy-MM-dd''T''HH:mm', 'UTC+7') : '')}" required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-700">Kết thúc lúc</label>
-                    <input type="datetime-local" class="form-control" name="ketThucStr"
-                           th:value="${ketThucStr != null ? ketThucStr : (voucher.ketThucLuc != null ? #temporals.format(voucher.ketThucLuc, 'yyyy-MM-dd''T''HH:mm', 'UTC+7') : '')}" required>
-                </div>
-
-                <div class="col-12 mt-3 pt-3 border-top">
-                    <button type="submit" class="btn btn-primary px-4 fw-700">
-                        <i class="fas fa-save me-2"></i> Lưu voucher
-                    </button>
-                    <a th:href="@{/admin/vouchers}" class="btn btn-outline-secondary px-4 ms-2">Hủy</a>
-                </div>
+                <aside class="voucher-preview-panel" aria-label="Xem trước voucher">
+                    <div class="preview-heading">
+                        <span>Xem trước voucher</span>
+                        <span id="previewStatusBadge" class="preview-status status-active">Hoạt động</span>
+                    </div>
+                    <div class="voucher-ticket">
+                        <div class="ticket-main">
+                            <span class="ticket-label">Mã voucher</span>
+                            <strong id="previewCode" class="ticket-code">VOUCHER10</strong>
+                            <span id="previewDiscount" class="ticket-discount">Giảm 10%</span>
+                        </div>
+                        <div class="ticket-dots" aria-hidden="true"></div>
+                    </div>
+                    <dl class="preview-details">
+                        <div>
+                            <dt>Điều kiện đơn tối thiểu</dt>
+                            <dd id="previewMinOrder">Đơn từ 0₫</dd>
+                        </div>
+                        <div>
+                            <dt>Số lượng</dt>
+                            <dd id="previewQuantity">0 mã</dd>
+                        </div>
+                        <div>
+                            <dt>Thời hạn</dt>
+                            <dd id="previewDates">Chưa chọn thời hạn</dd>
+                        </div>
+                        <div>
+                            <dt>Còn lại</dt>
+                            <dd id="previewRemaining">Chưa chọn thời hạn</dd>
+                        </div>
+                        <div>
+                            <dt>Trạng thái</dt>
+                            <dd id="previewStatusText">Hoạt động</dd>
+                        </div>
+                    </dl>
+                </aside>
             </form>
         </div>
     </div>

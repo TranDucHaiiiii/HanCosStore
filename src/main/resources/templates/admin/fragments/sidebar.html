@@ -9,36 +9,58 @@
     </a>
 
     <nav class="nav flex-column">
-
         <a class="nav-link"
            th:classappend="${active == 'dashboard'} ? ' active'"
            th:href="@{/admin/dashboard}">
             <i class="fas fa-th-large"></i><span class="nav-link-label">Dashboard</span>
         </a>
 
-        <a class="nav-link"
-           th:classappend="${active == 'products'} ? ' active'"
-           th:href="@{/san-pham}">
-            <i class="fas fa-box"></i><span class="nav-link-label">Sản phẩm</span>
-        </a>
+        <details class="nav-group"
+                 th:attr="open=${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu'} ? 'open' : null"
+                 th:classappend="${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu'} ? ' active'">
+            <summary class="nav-link nav-link-parent"
+                     th:classappend="${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu'} ? ' active'">
+                <i class="fas fa-box-open"></i>
+                <span class="nav-link-label">Quản lý sản phẩm</span>
+                <span class="nav-toggle" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+            </summary>
+            <div class="nav-sub">
+                <a class="nav-link nav-sub-link"
+                   th:classappend="${active == 'products'} ? ' active'"
+                   th:href="@{/san-pham}">
+                    <i class="fas fa-circle"></i><span class="nav-link-label">Sản phẩm</span>
+                </a>
+                <a class="nav-link nav-sub-link"
+                   th:if="${session.ROLES != null and #lists.contains(session.ROLES,'ADMIN')}"
+                   th:classappend="${active == 'categories'} ? ' active'"
+                   th:href="@{/admin/categories}">
+                    <i class="fas fa-circle"></i><span class="nav-link-label">Danh mục</span>
+                </a>
+                <a class="nav-link nav-sub-link"
+                   th:if="${session.ROLES != null and #lists.contains(session.ROLES,'ADMIN')}"
+                   th:classappend="${active == 'thuong-hieu'} ? ' active'"
+                   th:href="@{/admin/thuong-hieu}">
+                    <i class="fas fa-circle"></i><span class="nav-link-label">Thương hiệu</span>
+                </a>
+                <a class="nav-link nav-sub-link"
+                   th:if="${session.ROLES != null and #lists.contains(session.ROLES,'ADMIN')}"
+                   th:classappend="${active == 'chat-lieu'} ? ' active'"
+                   th:href="@{/admin/chat-lieu}">
+                    <i class="fas fa-circle"></i><span class="nav-link-label">Chất liệu</span>
+                </a>
+            </div>
+        </details>
 
         <a class="nav-link"
            th:classappend="${active == 'inventory'} ? ' active'"
            th:href="@{/admin/inventory}">
-            <i class="fas fa-warehouse"></i><span class="nav-link-label">Quản lí kho</span>
+            <i class="fas fa-warehouse"></i><span class="nav-link-label">Quản lý kho</span>
         </a>
 
         <a class="nav-link"
            th:classappend="${active == 'pos'} ? ' active'"
            th:href="@{/admin/ban-hang-tai-quay}">
             <i class="fas fa-cash-register"></i><span class="nav-link-label">Bán hàng tại quầy</span>
-        </a>
-
-        <a class="nav-link"
-           th:if="${session.ROLES != null and #lists.contains(session.ROLES,'ADMIN')}"
-           th:classappend="${active == 'categories'} ? ' active'"
-           th:href="@{/admin/categories}">
-            <i class="fas fa-list"></i><span class="nav-link-label">Danh mục</span>
         </a>
 
         <a class="nav-link"
@@ -55,23 +77,34 @@
             <i class="fas fa-chart-line"></i><span class="nav-link-label">Thống kê</span>
         </a>
 
-        <a class="nav-link"
-              data-orders-link="true"
-              th:attr="data-pending-url=@{/admin/orders/pending-count}"
-           th:classappend="${active == 'orders'} ? ' active'"
-           th:href="@{/admin/orders}">
-            <i class="fas fa-shopping-cart"></i>
-            <span class="nav-link-label">Đơn hàng</span>
-            <span class="sidebar-badge"
-                  th:if="${adminPendingOrderCount > 0}"
-                  th:text="${adminPendingOrderCount}">0</span>
-        </a>
-
-        <a class="nav-link"
-           th:classappend="${active == 'returns'} ? ' active'"
-           th:href="@{/admin/returns}">
-            <i class="fas fa-undo-alt"></i><span class="nav-link-label">Trả hàng</span>
-        </a>
+        <details class="nav-group"
+                 th:attr="open=${active == 'orders' or active == 'returns'} ? 'open' : null"
+                 th:classappend="${active == 'orders' or active == 'returns'} ? ' active'">
+            <summary class="nav-link nav-link-parent"
+                     th:classappend="${active == 'orders' or active == 'returns'} ? ' active'">
+                <i class="fas fa-receipt"></i>
+                <span class="nav-link-label">Quản lý đơn hàng</span>
+                <span class="nav-toggle" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+            </summary>
+            <div class="nav-sub">
+                <a class="nav-link nav-sub-link"
+                   data-orders-link="true"
+                   th:attr="data-pending-url=@{/admin/orders/pending-count}"
+                   th:classappend="${active == 'orders'} ? ' active'"
+                   th:href="@{/admin/orders}">
+                    <i class="fas fa-circle"></i>
+                    <span class="nav-link-label">Đơn hàng</span>
+                    <span class="sidebar-badge"
+                          th:if="${adminPendingOrderCount > 0}"
+                          th:text="${adminPendingOrderCount}">0</span>
+                </a>
+                <a class="nav-link nav-sub-link"
+                   th:classappend="${active == 'returns'} ? ' active'"
+                   th:href="@{/admin/returns}">
+                    <i class="fas fa-circle"></i><span class="nav-link-label">Trả hàng</span>
+                </a>
+            </div>
+        </details>
 
         <a class="nav-link"
            th:if="${session.ROLES != null and #lists.contains(session.ROLES,'ADMIN')}"
@@ -91,19 +124,23 @@
 </div>
 
 <script>
-    (() => {
-        const ordersLink = document.querySelector('.sidebar [data-orders-link="true"]');
+    (function () {
+        var ordersLink = document.querySelector('.sidebar [data-orders-link="true"]');
         if (!ordersLink) {
             return;
         }
 
-        const pendingUrl = ordersLink.getAttribute('data-pending-url');
+        var pendingUrl = ordersLink.getAttribute('data-pending-url');
         if (!pendingUrl) {
             return;
         }
 
-        const renderBadge = (count) => {
-            let badge = ordersLink.querySelector('.sidebar-badge');
+        if (!window.fetch) {
+            return;
+        }
+
+        var renderBadge = function (count) {
+            var badge = ordersLink.querySelector('.sidebar-badge');
             if (count > 0) {
                 if (!badge) {
                     badge = document.createElement('span');
@@ -116,26 +153,94 @@
             }
         };
 
-        const fetchPendingCount = async () => {
-            try {
-                const response = await fetch(pendingUrl, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                if (!response.ok) {
-                    return;
+        var fetchPendingCount = function () {
+            fetch(pendingUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
-                const data = await response.json();
-                const count = Number(data?.count ?? 0);
-                renderBadge(Number.isFinite(count) ? count : 0);
-            } catch (_) {
-                // Ignore transient network errors for sidebar polling.
-            }
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        return null;
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (!data) {
+                        return;
+                    }
+                    var count = Number(data && data.count != null ? data.count : 0);
+                    renderBadge(isFinite(count) ? count : 0);
+                })
+                .catch(function () {
+                    // Ignore transient network errors for sidebar polling.
+                });
         };
 
         fetchPendingCount();
         setInterval(fetchPendingCount, 30000);
+    })();
+
+    (function () {
+        var sidebar = document.querySelector('.sidebar');
+        if (!sidebar) {
+            return;
+        }
+
+        var groups = Array.prototype.slice.call(sidebar.querySelectorAll('.nav-group'));
+        if (!groups.length) {
+            return;
+        }
+
+        var getParentToggle = function (group) {
+            var children = Array.prototype.slice.call(group.children);
+            for (var index = 0; index < children.length; index += 1) {
+                var child = children[index];
+                if (child.classList && child.classList.contains('nav-link-parent')) {
+                    return child;
+                }
+            }
+            return null;
+        };
+
+        var updateSidebarWidthState = function () {
+            sidebar.classList.toggle('sidebar-expanded', Boolean(sidebar.querySelector('.nav-group[open], .nav-group.open')));
+        };
+
+        var setExpanded = function (group, isOpen) {
+            var toggle = getParentToggle(group);
+            group.classList.toggle('open', isOpen);
+            if (group.tagName && group.tagName.toLowerCase() === 'details') {
+                group.open = isOpen;
+            }
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
+        };
+
+        groups.forEach(function (group) {
+            setExpanded(group, group.hasAttribute('open') || group.classList.contains('open'));
+        });
+        updateSidebarWidthState();
+
+        groups.forEach(function (group) {
+            var toggle = getParentToggle(group);
+            if (!toggle) {
+                return;
+            }
+
+            toggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                var shouldOpen = !(group.hasAttribute('open') || group.classList.contains('open'));
+                groups.forEach(function (otherGroup) {
+                    if (otherGroup !== group) {
+                        setExpanded(otherGroup, false);
+                    }
+                });
+                setExpanded(group, shouldOpen);
+                updateSidebarWidthState();
+            });
+        });
     })();
 </script>
 

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thêm Sản Phẩm - HANCOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
@@ -13,12 +16,20 @@
 <div th:replace="~{admin/fragments/sidebar :: sidebar('products')}"></div>
 
 <div class="main-content">
-
-<!-- Banner -->
-<div class="banner">
-    <h1>THÊM SẢN PHẨM MỚI</h1>
-    <p>Quản lý sản phẩm - Tạo mới và cập nhật thông tin</p>
-</div>
+    <header class="top-header">
+        <div class="d-flex align-items-center">
+            <a th:href="@{/san-pham}" class="btn-action me-3" aria-label="Quay lại">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4 class="page-title">Thêm sản phẩm</h4>
+                <p class="page-subtitle">Tạo sản phẩm, biến thể và hình ảnh bán hàng</p>
+            </div>
+        </div>
+        <div class="header-icon">
+            <i class="fas fa-shirt"></i>
+        </div>
+    </header>
 
 <!-- Container -->
 <div class="container">
@@ -33,13 +44,18 @@
             <input type="hidden" name="danhMucId" id="selectedDanhMucId">
             <!-- Thông tin cơ bản -->
             <div class="section">
-                <h2 class="section-title">Thông Tin Cơ Bản</h2>
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title"><i class="fas fa-circle-info"></i> Thông tin cơ bản</h2>
+                        <p class="section-subtitle">Thông tin nhận diện và phân loại sản phẩm</p>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Mã Sản Phẩm</label>
                         <input type="text" name="maSanPham" id="maSanPham" oninput="capNhatTatCaSku()">
-                        <small id="maSanPhamStatus" style="display:block; margin-top:6px; font-size:12px; color:#7a7a7a;"></small>
+                        <small id="maSanPhamStatus" class="field-hint"></small>
                     </div>
                     <div class="form-group">
                         <label>Tên Sản Phẩm <span class="required">*</span></label>
@@ -49,8 +65,26 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Chất Liệu</label>
-                        <input type="text" name="chatLieu" id="chatLieu" placeholder="100% Polyester">
+                        <label>Chất Liệu <span class="required">*</span></label>
+                        <select name="chatLieu" id="chatLieu" required>
+                            <option value="">-- Chọn chất liệu --</option>
+                            <option th:each="cl : ${chatLieus}"
+                                    th:value="${cl.tenChatLieu}"
+                                    th:text="${cl.tenChatLieu}">
+                                Chất liệu
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Thương Hiệu <span class="required">*</span></label>
+                        <select name="thuongHieuId" id="thuongHieuId" required>
+                            <option value="">-- Chọn thương hiệu --</option>
+                            <option th:each="th : ${thuongHieus}"
+                                    th:value="${th.id}"
+                                    th:text="${th.ten}">
+                                Thương hiệu
+                            </option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Giới Tính</label>
@@ -65,7 +99,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Danh Mục Cha</label>
-                        <select id="parentDanhMucId" onchange="taiDanhMucCon()">
+                        <select id="parentDanhMucId">
                             <option value="">-- Chọn danh mục cha --</option>
                             <option th:each="dm : ${parentDanhMuc}"
                                     th:value="${dm.id}"
@@ -74,7 +108,7 @@
                     </div>
                     <div class="form-group">
                         <label>Danh Mục Con</label>
-                        <select name="danhMucId" id="danhMucId" disabled>
+                        <select id="danhMucId" disabled>
                             <option value="">-- Chọn danh mục con --</option>
                         </select>
                     </div>
@@ -97,72 +131,75 @@
 
             <!-- Biến thể -->
             <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                    <h2 class="section-title" style="margin-bottom: 0;">Biến Thể Sản Phẩm</h2>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <button type="button" class="btn btn-secondary" onclick="themBienThe()" style="margin-top: 0;">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title"><i class="fas fa-layer-group"></i> Biến thể sản phẩm</h2>
+                        <p class="section-subtitle">Quản lý tổ hợp màu, size, tồn kho và giá bán</p>
+                    </div>
+                    <div class="section-actions">
+                        <button type="button" class="btn btn-secondary" onclick="themBienThe()">
                             <i class="fas fa-plus"></i> Thêm Biến Thể
                         </button>
-                        <button type="button" class="btn btn-add" onclick="taoNhanhBienThe()" style="margin-top: 0;">
+                        <button type="button" class="btn btn-add" onclick="taoNhanhBienThe()">
                             <i class="fas fa-wand-magic-sparkles"></i> Sinh Nhiều
                         </button>
                     </div>
                 </div>
-                <div class="quick-variant-panel" style="margin-bottom:18px; border:1px solid rgba(139,77,77,0.14); border-radius:16px; background:linear-gradient(180deg,#fff8f4 0%,#ffffff 100%);">
+                <div class="quick-variant-panel">
                     <!-- Header (Collapsible) -->
-                    <div onclick="dongMoBangTaoNhanh()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:16px; gap:12px;">
+                    <div class="quick-panel-header" onclick="dongMoBangTaoNhanh()">
                         <div>
-                            <h3 style="margin:0; font-size:17px; font-weight:800; color:#2d2d2d;">
+                            <h3>
                                 <i class="fas fa-wand-magic-sparkles"></i> Sinh nhiều biến thể cùng lúc
                             </h3>
-                            <p style="margin:4px 0 0; color:#666; font-size:13px;">Chọn màu, size và tham số mặc định</p>
+                            <p>Chọn màu, size và tham số mặc định</p>
                         </div>
-                        <i class="fas fa-chevron-down" id="quickPanelToggle" style="font-size:18px; color:#8b4d4d; transition:transform 0.2s;"></i>
+                        <i class="fas fa-chevron-down" id="quickPanelToggle"></i>
                     </div>
                     
                     <!-- Content (Collapsible) -->
-                    <div id="quickPanelContent" style="display:none; padding:0 16px 16px 16px; border-top:1px solid rgba(139,77,77,0.1);">
-                        <div style="margin-bottom:16px;">
-                            <label style="display:block; margin-bottom:8px; font-weight:600; color:#2d2d2d;">Chế độ sinh</label>
-                            <select id="quickVariantMode" style="width:100%; max-width:400px; border:1px solid #ddd; border-radius:12px; padding:10px 12px; background:#fff;">
+                    <div id="quickPanelContent" class="quick-panel-content">
+                        <div class="quick-mode">
+                            <label>Chế độ sinh</label>
+                            <select id="quickVariantMode">
                                 <option value="replace_all">Thay thế toàn bộ</option>
                                 <option value="add_missing">Chỉ thêm các biến thể còn thiếu</option>
                             </select>
                         </div>
                         
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:16px;">
+                        <div class="quick-choice-grid">
                             <!-- Màu sắc -->
                             <div>
-                                <label style="display:block; margin-bottom:10px; font-weight:600; color:#2d2d2d;">Màu sắc</label>
-                                <div id="colorCheckboxList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; max-height:200px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:12px; background:#fafafa;">
+                                <label>Màu sắc</label>
+                                <div id="colorCheckboxList" class="quick-checkbox-list">
                                 </div>
                             </div>
                             
                             <!-- Kích cỡ -->
                             <div>
-                                <label style="display:block; margin-bottom:10px; font-weight:600; color:#2d2d2d;">Kích cỡ</label>
-                                <div id="sizeCheckboxList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:8px; max-height:200px; overflow-y:auto; padding:8px; border:1px solid #ddd; border-radius:12px; background:#fafafa;">
+                                <label>Kích cỡ</label>
+                                <div id="sizeCheckboxList" class="quick-checkbox-list size-list">
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Input fields grid -->
-                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;">
+                        <div class="quick-default-grid">
                             <div>
-                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Tồn kho mặc định</label>
-                                <input type="number" id="quickVariantStock" min="0" value="0" style="width:100%; border:1px solid #ddd; border-radius:12px; padding:10px 12px;">
+                                <label>Tồn kho mặc định</label>
+                                <input type="number" id="quickVariantStock" min="0" value="0">
                             </div>
                             <div>
-                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Giá bán mặc định</label>
-                                <input type="number" id="quickVariantPrice" min="0" value="0" style="width:100%; border:1px solid #ddd; border-radius:12px; padding:10px 12px;">
+                                <label>Giá bán mặc định</label>
+                                <input type="number" id="quickVariantPrice" min="0" value="0">
                             </div>
                             <div>
-                                <label style="display:block; margin-bottom:6px; font-weight:600; color:#2d2d2d; font-size:13px;">Khối lượng mặc định (gram)</label>
-                                <input type="number" id="quickVariantWeight" min="1" value="300" style="width:100%; border:1px solid #ddd; border-radius:12px; padding:10px 12px;">
+                                <label>Khối lượng mặc định (gram)</label>
+                                <input type="number" id="quickVariantWeight" min="1" value="300">
                             </div>
                         </div>
                         
-                        <div style="display:flex; justify-content:flex-end;">
+                        <div class="quick-panel-actions">
                             <button type="button" class="btn btn-add" onclick="taoNhanhBienThe()">
                                 <i class="fas fa-wand-magic-sparkles"></i> Tạo bộ biến thể
                             </button>
@@ -178,15 +215,18 @@
 
             <!-- Hình ảnh sản phẩm -->
             <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                    <h2 class="section-title" style="margin-bottom: 0;">Hình Ảnh Sản Phẩm</h2>
-                    <button type="button" class="btn btn-add" onclick="themAnh()" style="margin-top: 0;">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title"><i class="fas fa-images"></i> Hình ảnh sản phẩm</h2>
+                        <p class="section-subtitle">Ảnh gallery và ảnh chính của sản phẩm</p>
+                    </div>
+                    <button type="button" class="btn btn-add" onclick="themAnh()">
                         <i class="fas fa-image"></i> Thêm Hình Ảnh
                     </button>
                 </div>
                 <div id="imagePasteArea"
                      tabindex="0"
-                     style="margin-bottom: 16px; padding: 12px; border: 1px dashed #b8b8b8; border-radius: 6px; background: #fafafa; color: #666; font-size: 13px;">
+                     class="paste-area">
                     Bam vao day roi nhan Ctrl + V de dan anh tu clipboard (ho tro dan nhieu anh).
                 </div>
                 <div id="imagesList"></div>
@@ -194,9 +234,12 @@
 
             <!-- Hình ảnh theo màu -->
             <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                    <h2 class="section-title" style="margin-bottom: 0;">Hình Ảnh Theo Màu Sắc</h2>
-                    <button type="button" class="btn btn-add" onclick="themAnhTheoMau()" style="margin-top: 0;">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title"><i class="fas fa-palette"></i> Hình ảnh theo màu sắc</h2>
+                        <p class="section-subtitle">Gắn ảnh đại diện riêng cho từng màu</p>
+                    </div>
+                    <button type="button" class="btn btn-add" onclick="themAnhTheoMau()">
                         <i class="fas fa-palette"></i> Thêm Hình Màu
                     </button>
                 </div>
@@ -205,7 +248,7 @@
 
             <!-- Actions -->
             <div class="form-actions">
-                <button type="button" class="btn btn-info" onclick="dongBoMau()" style="background: #5dade2; color: white; border: none;">
+                <button type="button" class="btn btn-info" onclick="dongBoMau()">
                     <i class="fas fa-sync"></i> Đồng Bộ Màu
                 </button>
                 <button type="button" class="btn btn-secondary" onclick="datLaiForm()">
@@ -227,6 +270,5 @@
 </div>
 </body>
 </html>
-
 
 

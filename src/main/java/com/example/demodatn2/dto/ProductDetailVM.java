@@ -18,6 +18,7 @@ public class ProductDetailVM {
     private String moTaNgan;
     private String moTa;
     private String chatLieu;
+    private String thuongHieu;
     private String gioiTinh;
     // Flat DanhMuc fields (avoid passing lazy entity outside transaction)
     private Integer danhMucId;

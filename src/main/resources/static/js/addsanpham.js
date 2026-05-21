@@ -54,6 +54,30 @@ function getSelectedCategoryName() {
     return "";
 }
 
+function getSelectedParentName() {
+    const parent = document.getElementById('parentDanhMucId');
+    if (parent && parent.value && parent.selectedIndex >= 0) {
+        return parent.options[parent.selectedIndex]?.text || "";
+    }
+    return "";
+}
+
+function getSelectedChildName() {
+    const child = document.getElementById('danhMucId');
+    if (child && child.value && child.selectedIndex >= 0) {
+        return child.options[child.selectedIndex]?.text || "";
+    }
+    return "";
+}
+
+function isPantsCategoryName(name) {
+    const normalized = normalizeCategoryName(name);
+    return normalized.includes('quan')
+        || normalized.includes('jean')
+        || normalized.includes('short')
+        || normalized.includes('pants');
+}
+
 // Ghi danh mục cuối cùng được chọn vào hidden input gửi lên form.
 function updateSelectedDanhMucId() {
     const child = document.getElementById('danhMucId');
@@ -72,13 +96,14 @@ function updateSelectedDanhMucId() {
 
 // Chọn danh sách size phù hợp theo danh mục sản phẩm.
 function getSizeOptions() {
-    const name = normalizeCategoryName(getSelectedCategoryName());
-
-    if (name.includes('quan')) {
+    const parentName = getSelectedParentName();
+    const childName = getSelectedChildName();
+    if (isPantsCategoryName(parentName) || isPantsCategoryName(childName)) {
         return SIZE_PANTS;
     }
 
-    if (name.includes('ao')) {
+    const mergedName = normalizeCategoryName(childName || parentName || getSelectedCategoryName());
+    if (mergedName.includes('ao')) {
         return SIZE_LETTERS;
     }
 
@@ -145,6 +170,11 @@ async function loadChildren() {
     updateSelectedDanhMucId();
 }
 
+// Backward-compatible alias for older inline handlers/cached pages.
+function taiDanhMucCon() {
+    return loadChildren();
+}
+
 // Lấy dữ liệu dòng biến thể cuối để dùng làm mẫu khi thêm dòng mới.
 function getLastVariantData() {
     const lastItem = document.querySelector('#variantsList .variant-item:last-child');
@@ -177,7 +207,7 @@ function cloneVariant(btn) {
 function addVariant(data = null) {
     const variantsList = document.getElementById('variantsList');
     const index = variantsList.children.length;
-    const seed = data || getLastVariantData();
+    const seed = data || null;
 
     const html = `
         <div class="variant-item variant-row" data-index="${index}">
@@ -226,7 +256,7 @@ function addVariant(data = null) {
             </div>
             <div class="form-group variant-field variant-weight-field">
                 <label>Khoi Luong (gram) <span class="required">*</span></label>
-                <input type="number" name="bienThes[${index}].khoiLuongGram" required min="1" value="${seed ? seed.khoiLuongGram : 300}" placeholder="500">
+                <input type="number" name="bienThes[${index}].khoiLuongGram" required min="1" value="${seed ? seed.khoiLuongGram : ''}" placeholder="500">
             </div>
             <div class="variant-row-actions">
                 <button type="button" class="btn btn-secondary btn-icon-text" onclick="cloneVariant(this)">
@@ -250,8 +280,8 @@ function addVariant(data = null) {
 }
 
 // Alias cho nút thêm biến thể trên giao diện.
-function themBienThe(data = null) {
-    addVariant(data);
+function themBienThe() {
+    addVariant();
 }
 
 // Tìm dòng biến thể từ input/select vừa đổi và cập nhật SKU của dòng đó.
@@ -388,29 +418,66 @@ function updateAllSKUs() {
     });
 }
 
-// Tự thêm ảnh màu theo các màu đã có trong biến thể nếu chưa có ảnh màu nào.
+// Lấy tên màu đang khai báo trên một dòng ảnh theo màu.
+function getColorImageValue(item) {
+    return (item?.querySelector('input[name*=".mauSac"]')?.value || '').trim();
+}
+
+// Tự thêm ảnh màu theo các màu đã có trong biến thể, chỉ bổ sung màu còn thiếu.
 function syncColors() {
     const variantColors = Array.from(document.querySelectorAll('#variantsList select[name*=".mauSac"]'))
         .map(el => el.value.trim())
         .filter((value, index, self) => value !== "" && self.indexOf(value) === index);
 
-    const colorImageSections = document.querySelectorAll('#colorImagesList .image-item');
+    if (variantColors.length === 0) {
+        showAlert('error', 'Vui lòng chọn màu cho biến thể trước khi đồng bộ.');
+        return;
+    }
 
-    if (variantColors.length > 0 && colorImageSections.length === 0) {
-        variantColors.forEach(color => addColorImageWithColor(color));
+    const colorImageItems = Array.from(document.querySelectorAll('#colorImagesList .image-item'));
+    const existingColors = new Set(
+        colorImageItems
+            .map(getColorImageValue)
+            .filter(Boolean)
+            .map(color => color.toLowerCase())
+    );
+    const emptyItems = colorImageItems.filter(item => !getColorImageValue(item));
+
+    let added = 0;
+    variantColors.forEach(color => {
+        const key = color.toLowerCase();
+        if (existingColors.has(key)) return;
+
+        const reusableItem = emptyItems.shift();
+        if (reusableItem) {
+            const input = reusableItem.querySelector('input[name*=".mauSac"]');
+            if (input) input.value = color;
+        } else {
+            addColorImageWithColor(color);
+        }
+
+        existingColors.add(key);
+        added++;
+    });
+
+    updateColorImageNumbers();
+    if (added > 0) {
+        showAlert('success', `Đã đồng bộ ${added} màu.`);
+    } else {
+        showAlert('success', 'Danh sách màu đã được đồng bộ.');
     }
 }
 
 // Lấy danh sách màu được chọn trong panel tạo nhanh, có giá trị mặc định.
 function getQuickVariantColors() {
     const checkboxes = Array.from(document.querySelectorAll('.color-checkbox:checked'));
-    return checkboxes.length > 0 ? checkboxes.map(cb => cb.value) : ["\u0110en", "Tr\u1eafng", "X\u00e1m"];
+    return checkboxes.length > 0 ? checkboxes.map(cb => cb.value) : [];
 }
 
 // Lấy danh sách size được chọn trong panel tạo nhanh.
 function getQuickVariantSizes() {
     const checkboxes = Array.from(document.querySelectorAll('.size-checkbox:checked'));
-    return checkboxes.length > 0 ? checkboxes.map(cb => cb.value) : getSizeOptions().slice();
+    return checkboxes.length > 0 ? checkboxes.map(cb => cb.value) : [];
 }
 
 // Lấy chế độ tạo nhanh: thay toàn bộ hoặc chỉ thêm biến thể còn thiếu.
@@ -551,6 +618,11 @@ async function generateQuickVariants() {
     const colors = getQuickVariantColors();
     const sizes = getQuickVariantSizes();
     const mode = getQuickVariantMode();
+
+    if (colors.length === 0 || sizes.length === 0) {
+        showAlert('error', 'Vui long chon mau va size truoc khi sinh bien the.');
+        return;
+    }
 
     const result = await Swal.fire({
         title: 'Sinh nhiều biến thể?',
@@ -698,22 +770,59 @@ function updateVariantNumbers() {
     updateVariantSummary();
 }
 // Validate nhanh các trường cơ bản trước khi gọi API validate backend.
+function focusInvalidField(field) {
+    if (!field) return;
+    field.focus({ preventScroll: true });
+    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function validateBaseFields() {
     const maSanPham = (document.getElementById('maSanPham')?.value || '').trim();
     const ten = (document.getElementById('ten')?.value || '').trim();
     const parentDanhMucId = document.getElementById('parentDanhMucId')?.value || '';
     const childDanhMucId = document.getElementById('danhMucId')?.value || '';
+    const chatLieu = (document.getElementById('chatLieu')?.value || '').trim();
+    const thuongHieuId = (document.getElementById('thuongHieuId')?.value || '').trim();
+    const tenEl = document.getElementById('ten');
+    const maSanPhamEl = document.getElementById('maSanPham');
+    const chatLieuEl = document.getElementById('chatLieu');
+    const thuongHieuEl = document.getElementById('thuongHieuId');
+    const parentDanhMucEl = document.getElementById('parentDanhMucId');
+    const danhMucEl = document.getElementById('danhMucId');
 
     if (!maSanPham) {
         showAlert('error', 'Vui lòng nhập Mã sản phẩm.');
+        focusInvalidField(maSanPhamEl);
+        return false;
+    }
+    if (!/^[A-Za-z0-9_-]{2,50}$/.test(maSanPham)) {
+        showAlert('error', 'Mã sản phẩm chỉ gồm chữ, số, dấu gạch dưới hoặc gạch ngang, dài 2-50 ký tự.');
+        focusInvalidField(maSanPhamEl);
         return false;
     }
     if (!ten) {
         showAlert('error', 'Vui lòng nhập Tên sản phẩm.');
+        focusInvalidField(tenEl);
+        return false;
+    }
+    if (ten.length < 3 || ten.length > 200) {
+        showAlert('error', 'Tên sản phẩm phải dài từ 3 đến 200 ký tự.');
+        focusInvalidField(tenEl);
+        return false;
+    }
+    if (!chatLieu) {
+        showAlert('error', 'Vui lòng chọn chất liệu.');
+        focusInvalidField(chatLieuEl);
+        return false;
+    }
+    if (!thuongHieuId) {
+        showAlert('error', 'Vui lòng chọn thương hiệu.');
+        focusInvalidField(thuongHieuEl);
         return false;
     }
     if (!parentDanhMucId && !childDanhMucId) {
         showAlert('error', 'Vui lòng chọn danh mục.');
+        focusInvalidField(parentDanhMucEl || danhMucEl);
         return false;
     }
     return true;
@@ -738,37 +847,116 @@ function validateVariants() {
 
         if (!mau || !size) {
             showAlert('error', 'Vui lòng chọn đầy đủ màu sắc và kích cỡ cho biến thể.');
+            focusInvalidField(variant.querySelector(!mau ? 'select[name*=".mauSac"]' : 'select[name*=".kichCo"]'));
             return false;
         }
         if (!sku) {
             showAlert('error', 'Vui lòng đảm bảo mã SKU được tạo cho biến thể.');
+            focusInvalidField(variant.querySelector('input[name*=".maSKU"]'));
             return false;
         }
 
         const soLuong = Number(soLuongRaw);
-        if (!Number.isFinite(soLuong) || soLuong < 0) {
-            showAlert('error', 'Số lượng tồn phải là số >= 0.');
+        if (!Number.isInteger(soLuong) || soLuong < 0) {
+            showAlert('error', 'Số lượng tồn phải là số nguyên >= 0.');
+            focusInvalidField(variant.querySelector('input[name*=".soLuongTon"]'));
             return false;
         }
 
         const gia = Number(giaRaw);
-        if (!Number.isFinite(gia) || gia < 0) {
-            showAlert('error', 'Giá bán phải là số >= 0.');
+        if (!Number.isFinite(gia) || gia <= 0) {
+            showAlert('error', 'Giá bán phải là số > 0.');
+            focusInvalidField(variant.querySelector('input[name*=".gia"]'));
+            return false;
+        }
+        if (gia % 1000 !== 0) {
+            showAlert('error', 'Giá bán nên là bội số của 1.000đ.');
+            focusInvalidField(variant.querySelector('input[name*=".gia"]'));
             return false;
         }
 
         const khoiLuong = Number(khoiLuongRaw);
-        if (!Number.isFinite(khoiLuong) || khoiLuong <= 0) {
-            showAlert('error', 'Khối lượng phải là số > 0.');
+        if (!Number.isInteger(khoiLuong) || khoiLuong <= 0) {
+            showAlert('error', 'Khối lượng phải là số nguyên > 0.');
+            focusInvalidField(variant.querySelector('input[name*=".khoiLuongGram"]'));
             return false;
         }
 
         const key = `${mau}__${size}`.toLowerCase();
         if (seen.has(key)) {
             showAlert('error', 'Không được trùng màu sắc + kích cỡ.');
+            focusInvalidField(variant.querySelector('select[name*=".mauSac"]'));
             return false;
         }
         seen.add(key);
+    }
+    return true;
+}
+
+function validateProductImages() {
+    const images = Array.from(document.querySelectorAll('#imagesList .image-item'));
+    if (images.length === 0) {
+        showAlert('error', 'Vui lòng thêm ít nhất 1 hình ảnh sản phẩm.');
+        return false;
+    }
+
+    let primaryCount = 0;
+    for (const image of images) {
+        const hiddenInput = image.querySelector('input[type="hidden"][name*=".duongDanAnh"]');
+        const orderInput = image.querySelector('input[name*=".thuTu"]');
+        const primaryInput = image.querySelector('input[type="checkbox"][name*=".laAnhChinh"]');
+        if (!hiddenInput || !hiddenInput.value.trim()) {
+            showAlert('error', 'Vui lòng upload đầy đủ hình ảnh sản phẩm.');
+            focusInvalidField(image.querySelector('input.file-upload'));
+            return false;
+        }
+        const order = Number(orderInput?.value || 0);
+        if (!Number.isInteger(order) || order <= 0) {
+            showAlert('error', 'Thứ tự hình ảnh phải là số nguyên > 0.');
+            focusInvalidField(orderInput);
+            return false;
+        }
+        if (primaryInput && primaryInput.checked) {
+            primaryCount += 1;
+        }
+    }
+
+    if (primaryCount !== 1) {
+        showAlert('error', 'Vui lòng chọn đúng 1 ảnh chính.');
+        return false;
+    }
+    return true;
+}
+
+function validateColorImages() {
+    const colorImages = Array.from(document.querySelectorAll('#colorImagesList .image-item'));
+    const seenColors = new Set();
+    for (const item of colorImages) {
+        const colorInput = item.querySelector('input[name*=".mauSac"]');
+        const hiddenInput = item.querySelector('input[type="hidden"][name*=".duongDanAnh"]');
+        const color = (colorInput?.value || '').trim();
+        const imagePath = (hiddenInput?.value || '').trim();
+
+        if (!color && !imagePath) {
+            continue;
+        }
+        if (!color) {
+            showAlert('error', 'Vui lòng nhập màu sắc cho hình ảnh theo màu.');
+            focusInvalidField(colorInput);
+            return false;
+        }
+        if (!imagePath) {
+            showAlert('error', `Vui lòng upload ảnh cho màu ${color}.`);
+            focusInvalidField(item.querySelector('input.file-upload'));
+            return false;
+        }
+        const key = color.toLowerCase();
+        if (seenColors.has(key)) {
+            showAlert('error', 'Không được trùng màu trong danh sách hình ảnh theo màu.');
+            focusInvalidField(colorInput);
+            return false;
+        }
+        seenColors.add(key);
     }
     return true;
 }
@@ -915,7 +1103,12 @@ async function handleFileUpload(fileInput, hiddenInputName, previewId) {
         });
 
         if (response.ok) {
-            const relativePath = await response.text();
+            const uploadResult = await response.json();
+            const relativePath = uploadResult.url || uploadResult.path || '';
+            if (!uploadResult.success || !relativePath) {
+                showAlert('error', uploadResult.message || 'Upload ảnh thất bại.');
+                return;
+            }
             const hiddenInput = document.querySelector(`input[name="${hiddenInputName}"]`);
             if (hiddenInput) {
                 hiddenInput.value = relativePath;
@@ -1149,35 +1342,41 @@ async function datLaiForm() {
 
 // Validate dữ liệu, gọi backend kiểm tra và bật loading trước khi submit form.
 document.getElementById('productForm').addEventListener('submit', async (e) => {
-    updateSelectedDanhMucId();
+    e.preventDefault();
 
-    const variants = document.querySelectorAll('#variantsList .variant-item');
-    const images = document.querySelectorAll('#imagesList .image-item');
-
-    if (!validateBaseFields() || !validateVariants()) {
-        e.preventDefault();
+    const form = e.currentTarget;
+    if (form.dataset.submitting === 'true') {
         return;
     }
 
+    await ensureMaSanPham();
+    updateSelectedDanhMucId();
+
+    if (!validateBaseFields() || !validateVariants()) {
+        return;
+    }
+
+    if (!validateProductImages() || !validateColorImages()) {
+        return;
+    }
+
+    const loading = document.getElementById('loading');
+    loading?.classList.add('show');
+
     const baseValid = await validateBaseWithServer();
     if (!baseValid) {
-        e.preventDefault();
+        loading?.classList.remove('show');
         return;
     }
 
     const serverValid = await validateVariantsWithServer();
     if (!serverValid) {
-        e.preventDefault();
+        loading?.classList.remove('show');
         return;
     }
 
-    if (images.length === 0) {
-        e.preventDefault();
-        showAlert('error', 'Vui lòng thêm ít nhất 1 hình ảnh!');
-        return;
-    }
-
-    document.getElementById('loading').classList.add('show');
+    form.dataset.submitting = 'true';
+    form.submit();
 });
 
 // Khởi tạo form thêm sản phẩm, panel tạo nhanh, dòng biến thể và ảnh mặc định.
@@ -1191,9 +1390,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     const danhMucEl = document.getElementById('danhMucId');
 
     if (parentDanhMucEl) {
-        parentDanhMucEl.addEventListener('change', () => {
-            setTimeout(updateAllSizeSelects, 0);
-            updateSelectedDanhMucId();
+        parentDanhMucEl.addEventListener('change', async () => {
+            await loadChildren();
         });
     }
 

@@ -137,9 +137,9 @@ public class OrderService {
     public List<String> getNextValidStatuses(String currentStatus) {
         String normalized = normalizeStatus(currentStatus);
         return switch (normalized) {
-            case "CHO_XAC_NHAN" -> List.of("DA_XAC_NHAN", "DA_HUY", "LOI_VAN_CHUYEN");
-            case "DA_XAC_NHAN" -> List.of("DANG_GIAO", "DA_HUY", "LOI_VAN_CHUYEN");
-            case "DANG_GIAO" -> List.of("HOAN_THANH", "LOI_VAN_CHUYEN", "TRA_HANG");
+            case "CHO_XAC_NHAN" -> List.of("DA_XAC_NHAN", "DA_HUY");
+            case "DA_XAC_NHAN" -> List.of("DANG_GIAO", "DA_HUY");
+            case "DANG_GIAO" -> List.of("HOAN_THANH", "LOI_VAN_CHUYEN");
             case "LOI_VAN_CHUYEN" -> List.of();  // Locked - no transitions
             case "HOAN_THANH" -> List.of();      // Locked - no transitions
             case "DA_HUY" -> List.of();          // Locked - no transitions

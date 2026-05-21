@@ -177,6 +177,12 @@
                     </select>
                 </div>
                 <div class="filter-group">
+                    <label class="filter-title" for="brandFilterSelect">Thương hiệu</label>
+                    <select id="brandFilterSelect" class="form-select">
+                        <option value="">Tất cả</option>
+                    </select>
+                </div>
+                <div class="filter-group">
                     <label class="filter-title" for="sizeFilterSelect">Kích cỡ</label>
                     <select id="sizeFilterSelect" class="form-select">
                         <option value="">Tất cả</option>
@@ -220,7 +226,8 @@
         <div class="product-grid" id="productGrid">
             <th:block th:each="p : ${products}">
                 <div class="product-card" th:attr="data-colors=${p.mauSacs != null ? #strings.listJoin(p.mauSacs, ',') : ''},
-                        data-sizes=${p.kichCos != null ? #strings.listJoin(p.kichCos, ',') : ''},
+                    data-brands=${p.thuongHieu != null ? p.thuongHieu : ''},
+                    data-sizes=${p.kichCos != null ? #strings.listJoin(p.kichCos, ',') : ''},
                         data-min-price=${p.giaMin != null ? p.giaMin : 0},
                         data-max-price=${p.giaMax != null ? p.giaMax : 0}">
                     <a class="product-main-link" th:href="@{/products/{id}(id=${p.id})}">

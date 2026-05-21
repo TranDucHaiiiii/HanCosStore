@@ -149,15 +149,40 @@ function getSelectedCategoryName() {
     return "";
 }
 
+function getSelectedParentName() {
+    const parent = document.getElementById('parentDanhMucId');
+    if (parent && parent.value && parent.selectedIndex >= 0) {
+        return parent.options[parent.selectedIndex]?.text || "";
+    }
+    return "";
+}
+
+function getSelectedChildName() {
+    const child = document.getElementById('danhMucId');
+    if (child && child.value && child.selectedIndex >= 0) {
+        return child.options[child.selectedIndex]?.text || "";
+    }
+    return "";
+}
+
+function isPantsCategoryName(name) {
+    const normalized = normalizeCategoryName(name);
+    return normalized.includes('quan')
+        || normalized.includes('jean')
+        || normalized.includes('short')
+        || normalized.includes('pants');
+}
+
 // Chọn danh sách size phù hợp theo danh mục sản phẩm.
 function getSizeOptions() {
-    const name = normalizeCategoryName(getSelectedCategoryName());
-
-    if (name.includes('quan')) {
+    const parentName = getSelectedParentName();
+    const childName = getSelectedChildName();
+    if (isPantsCategoryName(parentName) || isPantsCategoryName(childName)) {
         return SIZE_PANTS;
     }
 
-    if (name.includes('ao')) {
+    const mergedName = normalizeCategoryName(childName || parentName || getSelectedCategoryName());
+    if (mergedName.includes('ao')) {
         return SIZE_LETTERS;
     }
 
@@ -214,6 +239,34 @@ function updateSKUItem(item) {
 // Render danh sách option HTML với giá trị được chọn sẵn.
 function renderOptions(arr, selected) {
     return arr.map(v => `<option value="${v}" ${selected === v ? 'selected' : ''}>${v}</option>`).join('');
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function normalizeImagePath(value) {
+    const raw = (value || '').trim();
+    if (!raw) return '';
+    if (!raw.startsWith('{')) return raw;
+    try {
+        const parsed = JSON.parse(raw);
+        return (parsed.url || parsed.path || '').trim();
+    } catch (_) {
+        return '';
+    }
+}
+
+function previewImageHtml(id, path) {
+    const src = normalizeImagePath(path);
+    if (!src) {
+        return `<img id="${id}" class="preview-img" src="" alt="Preview" style="display:none;">`;
+    }
+    return `<img id="${id}" class="preview-img show" src="${escapeHtml(src)}" alt="Preview" onerror="this.classList.remove('show'); this.style.display='none';">`;
 }
 
 // Đánh lại số thứ tự hiển thị cho danh sách biến thể.
@@ -344,7 +397,7 @@ function addVariant(data = null) {
           <div class="form-group">
             <label>Số Lượng Tồn <span class="required">*</span></label>
             <input type="number" name="soLuongTon"
-                   value="${data ? (data.soLuongTon ?? 0) : 0}">
+                                     value="${data ? (data.soLuongTon ?? 0) : ''}">
           </div>
         </div>
 
@@ -352,7 +405,7 @@ function addVariant(data = null) {
           <div class="form-group">
             <label>Giá Bán <span class="required">*</span></label>
             <input type="number" name="gia"
-                   value="${data ? (data.gia ?? 0) : 0}">
+                                     value="${data ? (data.gia ?? 0) : ''}">
           </div>
 
           <div class="form-group">
@@ -410,7 +463,11 @@ async function uploadFile(input, hiddenInputName, previewId) {
             });
 
             if (res.ok) {
-                const path = await res.text();
+                const uploadResult = await res.json();
+                const path = uploadResult.url || uploadResult.path || '';
+                if (!uploadResult.success || !path) {
+                    throw new Error(uploadResult.message || 'Upload ảnh thất bại.');
+                }
                 const item = input.closest('.image-item');
                 const hidden = item
                     ? item.querySelector('input[type="hidden"]')
@@ -434,6 +491,7 @@ function addImage(data = null) {
     const list = document.getElementById('imagesList');
     const index = list.children.length;
     const previewId = `preview_img_${index}`;
+    const imagePath = normalizeImagePath(data ? data.duongDanAnh : '');
 
     const html = `
       <div class="image-item" data-index="${index}">
@@ -453,10 +511,9 @@ function addImage(data = null) {
                    accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
                    onchange="uploadFile(this, 'images[${index}].duongDanAnh', '${previewId}')">
 
-            <input type="hidden" name="images[${index}].duongDanAnh" value="${data ? (data.duongDanAnh ?? '') : ''}">
+            <input type="hidden" name="images[${index}].duongDanAnh" value="${escapeHtml(imagePath)}">
 
-            <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
-                 src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
+            ${previewImageHtml(previewId, imagePath)}
           </div>
 
           <div class="form-group">
@@ -570,6 +627,7 @@ function addColorImage(data = null) {
     const list = document.getElementById('colorImagesList');
     const index = list.children.length;
     const previewId = `preview_color_img_${index}`;
+    const imagePath = normalizeImagePath(data ? data.duongDanAnh : '');
 
     const html = `
       <div class="image-item" data-index="${index}">
@@ -597,10 +655,9 @@ function addColorImage(data = null) {
                    accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*"
                    onchange="uploadFile(this, 'colorImages[${index}].duongDanAnh', '${previewId}')">
 
-            <input type="hidden" name="colorImages[${index}].duongDanAnh" value="${data ? (data.duongDanAnh ?? '') : ''}">
+            <input type="hidden" name="colorImages[${index}].duongDanAnh" value="${escapeHtml(imagePath)}">
 
-            <img id="${previewId}" class="preview-img ${data && data.duongDanAnh ? 'show' : ''}"
-                 src="${data && data.duongDanAnh ? data.duongDanAnh : ''}" alt="Preview">
+            ${previewImageHtml(previewId, imagePath)}
           </div>
         </div>
       </div>
@@ -736,77 +793,3 @@ function syncColors() {
     }
 }
 
-// ===== Submit =====
-// Gom dữ liệu form, chờ upload hoàn tất và gửi request cập nhật sản phẩm.
-document.getElementById('editForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    document.getElementById('loading').classList.add('show');
-
-    if (pendingUploads.size > 0) {
-        await Promise.allSettled(Array.from(pendingUploads));
-    }
-
-    // Ensure latest SKU update for all variants before submit
-    document.querySelectorAll('#variantsList .variant-item').forEach(item => updateSKUItem(item));
-
-    const dto = {
-        id: parseInt(document.getElementById('productId').value),
-        ten: document.getElementById('ten').value.trim(),
-        chatLieu: document.getElementById('chatLieu').value.trim(),
-        gioiTinh: document.getElementById('gioiTinh').value,
-        danhMucId: document.getElementById('danhMucId').value
-            ? parseInt(document.getElementById('danhMucId').value)
-            : (document.getElementById('parentDanhMucId').value ? parseInt(document.getElementById('parentDanhMucId').value) : null),
-        moTaNgan: document.getElementById('moTaNgan').value.trim(),
-        moTa: document.getElementById('moTa').value.trim(),
-
-        bienThes: Array.from(document.querySelectorAll('#variantsList .variant-item')).map(el => ({
-            id: el.querySelector('input[name="id"]').value ? parseInt(el.querySelector('input[name="id"]').value) : null,
-            mauSac: el.querySelector('select[name="mauSac"]').value,
-            kichCo: el.querySelector('select[name="kichCo"]').value,
-            maSKU: el.querySelector('input[name="maSKU"]').value,
-            soLuongTon: parseInt(el.querySelector('input[name="soLuongTon"]').value) || 0,
-            gia: parseFloat(el.querySelector('input[name="gia"]').value) || 0,
-            giaGoc: el.querySelector('input[name="giaGoc"]').value ? parseFloat(el.querySelector('input[name="giaGoc"]').value) : null,
-            trangThai: 'ACTIVE'
-        })),
-
-        hinhAnhSanPhams: Array.from(document.querySelectorAll('#imagesList .image-item')).map((el, i) => ({
-            duongDanAnh: el.querySelector('input[type="hidden"]').value,
-            thuTu: parseInt(el.querySelector('input[name*=".thuTu"]').value) || (i + 1),
-            laAnhChinh: !!el.querySelector('input[type="checkbox"]')?.checked
-        })).filter(img => img.duongDanAnh && img.duongDanAnh.trim() !== ''),
-
-        hinhAnhMauSacs: Array.from(document.querySelectorAll('#colorImagesList .image-item')).map(el => ({
-            mauSac: el.querySelector('select[name*=".mauSac"]').value,
-            duongDanAnh: el.querySelector('input[type="hidden"]').value
-        })).filter(img => img.mauSac && img.mauSac.trim() !== '' && img.duongDanAnh && img.duongDanAnh.trim() !== '')
-    };
-
-    try {
-        const res = await fetch(`${API_URL}/san-pham/${dto.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify(dto)
-        });
-
-        document.getElementById('loading').classList.remove('show');
-
-        if (res.ok) {
-            Swal.fire('Thành công!', 'Đã cập nhật sản phẩm.', 'success')
-                .then(() => window.location.href = '/san-pham');
-        } else {
-            const contentType = res.headers.get('content-type') || '';
-            const msg = contentType.includes('application/json')
-                ? ((await res.json()).message || 'Cập nhật sản phẩm thất bại.')
-                : await res.text();
-            Swal.fire('Lỗi!', msg, 'error');
-        }
-    } catch (e2) {
-        document.getElementById('loading').classList.remove('show');
-        Swal.fire('Lỗi!', e2.message, 'error');
-    }
-});

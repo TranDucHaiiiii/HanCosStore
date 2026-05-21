@@ -53,6 +53,9 @@ public class VoucherService {
     public List<MaGiamGia> getEligibleVouchers(BigDecimal orderAmount) {
         return voucherRepository.findAvailableVouchers().stream()
                 .filter(v -> v.getDonToiThieu() == null || orderAmount.compareTo(v.getDonToiThieu()) >= 0)
+                .filter(v -> !"FIXED".equals(v.getLoai())
+                        || v.getGiaTri() == null
+                        || v.getGiaTri().compareTo(orderAmount) <= 0)
                 .toList();
     }
 
@@ -85,6 +88,11 @@ public class VoucherService {
         }
 
         if (voucher.getGiaTri() == null || voucher.getGiaTri().compareTo(BigDecimal.ZERO) <= 0) {
+            return Optional.empty();
+        }
+
+        // Không cho giảm vượt quá tổng tiền đơn.
+        if ("FIXED".equals(voucher.getLoai()) && voucher.getGiaTri().compareTo(orderAmount) > 0) {
             return Optional.empty();
         }
 
@@ -172,6 +180,8 @@ public class VoucherService {
             if (voucher.getGiaTriToiDa() == null || voucher.getGiaTriToiDa().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Voucher giảm theo phần trăm phải có giá trị giảm tối đa lớn hơn 0.");
             }
+        } else if (voucher.getGiaTriToiDa() != null) {
+            voucher.setGiaTriToiDa(null);
         }
         if (voucher.getGiaTriToiDa() != null && voucher.getGiaTriToiDa().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Giá trị giảm tối đa không hợp lệ.");
@@ -180,6 +190,10 @@ public class VoucherService {
         // 4. Đơn tối thiểu — bắt buộc
         if (voucher.getDonToiThieu() == null || voucher.getDonToiThieu().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Đơn tối thiểu phải lớn hơn 0.");
+        }
+
+        if ("FIXED".equals(voucher.getLoai()) && voucher.getGiaTri().compareTo(voucher.getDonToiThieu()) > 0) {
+            throw new IllegalArgumentException("Voucher giảm tiền mặt không được lớn hơn đơn tối thiểu.");
         }
 
         // Giá trị giảm tối đa ≤ 30% đơn tối thiểu

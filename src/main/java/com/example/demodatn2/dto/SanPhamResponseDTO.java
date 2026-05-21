@@ -21,6 +21,8 @@ public class SanPhamResponseDTO {
     private Integer parentDanhMucId;
     private String tenParentDanhMuc;
     private String tenDanhMuc;
+    private Integer thuongHieuId;
+    private String tenThuongHieu;
     private Integer khoiLuongGram;
     private Integer tongSoLuongTon;
     private List<BienTheResponseDTO> bienThes;

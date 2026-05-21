@@ -1,152 +1,217 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi Tiết Sản Phẩm - HANCOS ADMIN</title>
+    <title>Chi tiết sản phẩm - HANCOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
     <link rel="stylesheet" th:href="@{/css/admin/product-detail-page.css}">
 </head>
 <body>
+<div th:replace="~{admin/fragments/sidebar :: sidebar('products')}"></div>
 
-<div class="header">
-    <div class="header-content">
-        <a th:href="@{/}" class="logo">HANCOS ADMIN</a>
-        <div class="nav-links">
-            <a th:href="@{/san-pham}">Danh sách sản phẩm</a>
+<main class="main-content">
+    <header class="top-header">
+        <div class="d-flex align-items-center min-w-0">
+            <a th:href="@{/san-pham}" class="btn-action me-3" aria-label="Quay lại danh sách">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="min-w-0">
+                <h4 class="page-title">Chi tiết sản phẩm</h4>
+                <p class="page-subtitle text-truncate" th:text="${product.maSanPham + ' - ' + product.ten}">SP - Tên sản phẩm</p>
+            </div>
         </div>
-    </div>
-</div>
+        <div class="header-actions">
+            <a th:href="@{/admin/san-pham/edit/{id}(id=${product.id})}"
+               th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}"
+               class="btn btn-dark">
+                <i class="fas fa-pen"></i>
+                Chỉnh sửa
+            </a>
+        </div>
+    </header>
 
-<div class="banner">
-    <h1>CHI TIẾT SẢN PHẨM</h1>
-    <p th:text="${product.maSanPham + ' - ' + product.ten}"></p>
-</div>
-
-<div class="container">
-    <div class="detail-container">
-        <!-- Thông tin cơ bản -->
-        <div class="section">
-            <h2 class="section-title">Thông Tin Cơ Bản</h2>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Mã Sản Phẩm</div>
-                    <div class="info-value" th:text="${product.maSanPham}"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Tên Sản Phẩm</div>
-                    <div class="info-value" th:text="${product.ten}"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Chất Liệu</div>
-                    <div class="info-value" th:text="${product.chatLieu ?: 'N/A'}"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Giới Tính</div>
-                    <div class="info-value" th:text="${product.gioiTinh}"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Danh Mục</div>
-                    <div class="info-value">
-                        <span th:text="${product.tenParentDanhMuc ?: ''}"></span>
-                        <span th:if="${product.tenParentDanhMuc != null and product.tenDanhMuc != null}"> / </span>
-                        <span th:text="${product.tenDanhMuc ?: ''}"></span>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Trạng Thái</div>
-                    <div class="info-value">
-                        <span th:text="${product.trangThai}" th:class="${product.trangThai == 'ACTIVE' ? 'text-success fw-bold' : 'text-danger fw-bold'}"></span>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-3">
-                <div class="info-label">Mô Tả Ngắn</div>
-                <div class="info-value" style="min-height: 60px;" th:text="${product.moTaNgan ?: 'Không có mô tả ngắn'}"></div>
-            </div>
-            <div class="mt-3">
-                <div class="info-label">Mô Tả Chi Tiết</div>
-                <div class="info-value" style="min-height: 100px; white-space: pre-wrap;" th:utext="${product.moTa ?: 'Không có mô tả chi tiết'}"></div>
+    <section class="product-overview">
+        <div class="product-media">
+            <img th:if="${product.hinhAnhSanPhams != null and !#lists.isEmpty(product.hinhAnhSanPhams)}"
+                 th:src="${product.hinhAnhSanPhams[0].duongDanAnh}"
+                 th:alt="${product.ten}">
+            <div th:unless="${product.hinhAnhSanPhams != null and !#lists.isEmpty(product.hinhAnhSanPhams)}"
+                 class="empty-media">
+                <i class="fas fa-image"></i>
             </div>
         </div>
 
-        <!-- Biến thể -->
-        <div class="section">
-            <h2 class="section-title">Danh Sách Biến Thể</h2>
-            <div class="table-responsive">
-                <table class="variant-table">
-                    <thead>
+        <div class="product-summary">
+            <div class="summary-top">
+                <div class="min-w-0">
+                    <div class="product-code" th:text="${product.maSanPham}">SP001</div>
+                    <h1 th:text="${product.ten}">Tên sản phẩm</h1>
+                </div>
+                <span class="status-badge"
+                      th:classappend="${product.trangThai == 'ACTIVE'} ? ' active' : ' inactive'"
+                      th:text="${product.trangThai == 'ACTIVE'} ? 'Đang bán' : 'Ngừng bán'">Đang bán</span>
+            </div>
+
+            <p class="summary-description" th:text="${product.moTaNgan ?: 'Chưa có mô tả ngắn cho sản phẩm này.'}">
+                Mô tả ngắn
+            </p>
+
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <span class="metric-label">Biến thể</span>
+                    <strong th:text="${product.bienThes != null ? #lists.size(product.bienThes) : 0}">0</strong>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Tồn kho</span>
+                    <strong th:text="${product.tongSoLuongTon != null ? product.tongSoLuongTon : 0}">0</strong>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Gallery</span>
+                    <strong th:text="${product.hinhAnhSanPhams != null ? #lists.size(product.hinhAnhSanPhams) : 0}">0</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content-grid">
+        <div class="content-main">
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h2><i class="fas fa-layer-group"></i> Biến thể sản phẩm</h2>
+                </div>
+                <div class="table-responsive">
+                    <table class="variant-table">
+                        <thead>
                         <tr>
-                            <th>Mã SKU</th>
-                            <th>Màu Sắc</th>
-                            <th>Kích Cỡ</th>
-                            <th>Số Lượng Tồn</th>
-                            <th>Giá Bán</th>
-                            <th>Giá Gốc</th>
-                            <th>Hành Động</th>
+                            <th>SKU</th>
+                            <th>Màu</th>
+                            <th>Size</th>
+                            <th class="text-end">Tồn</th>
+                            <th class="text-end">Giá bán</th>
+                            <th class="text-end">Giá gốc</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
                         </tr>
-                    </thead>
-                    <tbody>
+                        </thead>
+                        <tbody>
                         <tr th:each="bt : ${product.bienThes}">
-                            <td><strong th:text="${bt.maSKU}"></strong></td>
-                            <td th:text="${bt.mauSac}"></td>
-                            <td th:text="${bt.kichCo}"></td>
-                            <td th:text="${bt.soLuongTon}"></td>
-                            <td class="text-danger fw-bold" th:text="${#numbers.formatDecimal(bt.gia, 0, 'COMMA', 0, 'POINT')} + '₫'"></td>
-                            <td class="text-muted" th:text="${bt.giaGoc != null ? #numbers.formatDecimal(bt.giaGoc, 0, 'COMMA', 0, 'POINT') + '₫' : '-'}"></td>
+                            <td><span class="sku-chip" th:text="${bt.maSKU}">SKU</span></td>
                             <td>
-                                <a class="btn btn-sm btn-outline-dark"
+                                <span class="color-chip">
+                                    <span class="color-dot"></span>
+                                    <span th:text="${bt.mauSac}">Đen</span>
+                                </span>
+                            </td>
+                            <td><span class="size-chip" th:text="${bt.kichCo}">M</span></td>
+                            <td class="text-end fw-800" th:text="${bt.soLuongTon}">0</td>
+                            <td class="text-end price" th:text="${#numbers.formatDecimal(bt.gia, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</td>
+                            <td class="text-end old-price" th:text="${bt.giaGoc != null ? #numbers.formatDecimal(bt.giaGoc, 0, 'COMMA', 0, 'POINT') + 'đ' : '-'}">-</td>
+                            <td>
+                                <span class="mini-status"
+                                      th:classappend="${bt.trangThai == 'ACTIVE'} ? ' active' : ' inactive'"
+                                      th:text="${bt.trangThai == 'ACTIVE'} ? 'Active' : 'Inactive'">Active</span>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn-row-action"
                                    th:href="@{/admin/san-pham/nhap-kho/{id}(id=${product.id},bienTheId=${bt.id})}">
+                                    <i class="fas fa-boxes-stacked"></i>
                                     Nhập kho
                                 </a>
                             </td>
                         </tr>
-                    </tbody>
-                </table>
+                        <tr th:if="${product.bienThes == null or #lists.isEmpty(product.bienThes)}">
+                            <td colspan="8" class="empty-row">Chưa có biến thể.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
 
-        <!-- Hình ảnh Gallery -->
-        <div class="section">
-            <h2 class="section-title">Hình Ảnh Gallery</h2>
-            <div class="img-gallery">
-                <div class="img-item" th:each="img : ${product.hinhAnhSanPhams}">
-                    <img th:src="${img.duongDanAnh}" alt="Gallery Image">
-                    <div class="img-badge" th:if="${img.laAnhChinh}">ẢNH CHÍNH</div>
-                    <div class="mt-1 text-center small text-muted" th:text="'Thứ tự: ' + ${img.thuTu}"></div>
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h2><i class="fas fa-align-left"></i> Mô tả chi tiết</h2>
+                </div>
+                <div class="description-content" th:utext="${product.moTa ?: 'Chưa có mô tả chi tiết.'}">Mô tả</div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h2><i class="fas fa-images"></i> Gallery sản phẩm</h2>
+                </div>
+                <div class="image-grid" th:if="${product.hinhAnhSanPhams != null and !#lists.isEmpty(product.hinhAnhSanPhams)}">
+                    <a class="gallery-item" th:each="img : ${product.hinhAnhSanPhams}" th:href="${img.duongDanAnh}" target="_blank">
+                        <img th:src="${img.duongDanAnh}" alt="Ảnh sản phẩm">
+                        <span class="primary-badge" th:if="${img.laAnhChinh}">Ảnh chính</span>
+                        <span class="image-order" th:text="'#' + ${img.thuTu ?: 1}">#1</span>
+                    </a>
+                </div>
+                <div class="empty-state" th:unless="${product.hinhAnhSanPhams != null and !#lists.isEmpty(product.hinhAnhSanPhams)}">
+                    Chưa có ảnh gallery.
                 </div>
             </div>
         </div>
 
-        <!-- Hình ảnh theo màu -->
-        <div class="section">
-            <h2 class="section-title">Hình Ảnh Theo Màu</h2>
-            <div class="row">
-                <div class="col-md-6" th:each="cimg : ${product.hinhAnhMauSacs}">
-                    <div class="color-img-item">
-                        <img th:src="${cimg.duongDanAnh}" alt="Color Image">
-                        <div>
-                            <div class="info-label">Màu Sắc</div>
-                            <div class="color-name" th:text="${cimg.mauSac}"></div>
-                        </div>
+        <aside class="content-side">
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h2><i class="fas fa-circle-info"></i> Thông tin</h2>
+                </div>
+                <dl class="info-list">
+                    <div>
+                        <dt>Danh mục</dt>
+                        <dd>
+                            <span th:text="${product.tenParentDanhMuc ?: 'Chưa phân loại'}"></span>
+                            <span th:if="${product.tenParentDanhMuc != null and product.tenDanhMuc != null}"> / </span>
+                            <span th:text="${product.tenDanhMuc ?: ''}"></span>
+                        </dd>
                     </div>
+                    <div>
+                        <dt>Thương hiệu</dt>
+                        <dd th:text="${product.tenThuongHieu ?: 'Chưa chọn'}">HANCOS</dd>
+                    </div>
+                    <div>
+                        <dt>Chất liệu</dt>
+                        <dd th:text="${product.chatLieu ?: 'Chưa chọn'}">Cotton</dd>
+                    </div>
+                    <div>
+                        <dt>Giới tính</dt>
+                        <dd th:text="${product.gioiTinh ?: 'UNISEX'}">UNISEX</dd>
+                    </div>
+                    <div>
+                        <dt>Ngày tạo</dt>
+                        <dd th:text="${product.ngayTao != null ? #temporals.format(product.ngayTao, 'dd/MM/yyyy HH:mm') : '-'}">-</dd>
+                    </div>
+                    <div>
+                        <dt>Cập nhật</dt>
+                        <dd th:text="${product.ngayCapNhat != null ? #temporals.format(product.ngayCapNhat, 'dd/MM/yyyy HH:mm') : '-'}">-</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h2><i class="fas fa-palette"></i> Ảnh theo màu</h2>
+                </div>
+                <div class="color-image-list" th:if="${product.hinhAnhMauSacs != null and !#lists.isEmpty(product.hinhAnhMauSacs)}">
+                    <a class="color-image-item" th:each="cimg : ${product.hinhAnhMauSacs}" th:href="${cimg.duongDanAnh}" target="_blank">
+                        <img th:src="${cimg.duongDanAnh}" alt="Ảnh màu">
+                        <span th:text="${cimg.mauSac}">Đen</span>
+                    </a>
+                </div>
+                <div class="empty-state" th:unless="${product.hinhAnhMauSacs != null and !#lists.isEmpty(product.hinhAnhMauSacs)}">
+                    Chưa có ảnh theo màu.
                 </div>
             </div>
-        </div>
-
-        <div class="d-flex justify-content-center gap-3 mt-4">
-            <a th:href="@{/san-pham}" class="btn-back">Quay lại danh sách</a>
-            <a th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}" 
-               th:href="@{/admin/san-pham/edit/{id}(id=${product.id})}" class="btn-edit">
-               <i class="fas fa-edit me-2"></i>Chỉnh sửa sản phẩm
-            </a>
-        </div>
-    </div>
-</div>
+        </aside>
+    </section>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-

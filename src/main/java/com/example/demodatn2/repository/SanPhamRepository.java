@@ -30,7 +30,7 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     @Query("select sp from SanPham sp where sp.id=?1")
     Optional<SanPham> findDetailWithHinhAnhSanPhamById(Integer id);
     //load list sanpham kem anh
-    @EntityGraph(attributePaths = {"hinhAnhSanPhams"})
+    @EntityGraph(attributePaths = {"hinhAnhSanPhams", "chatLieu"})
     @Query("SELECT sp FROM SanPham sp where sp.trangThai='ACTIVE' AND (sp.daXoa= false or sp.daXoa is null)")
     List<SanPham> findActiveForListing();
 
@@ -43,22 +43,22 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     List<SanPham> findActiveByDanhMucIds(@Param("danhMucIds") List<Integer> danhMucIds);
 
     // Tìm kiếm và lọc sản phẩm cho admin
-    @Query("SELECT sp FROM SanPham sp WHERE (sp.daXoa = false OR sp.daXoa IS NULL) " +
+    @Query("SELECT sp FROM SanPham sp LEFT JOIN sp.chatLieu cl WHERE (sp.daXoa = false OR sp.daXoa IS NULL) " +
            "AND (:keyword IS NULL OR :keyword = '' OR " +
            "     LOWER(sp.ten) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(sp.maSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "     LOWER(sp.chatLieu) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "     LOWER(cl.tenChatLieu) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:danhMucId IS NULL OR sp.danhMuc.id = :danhMucId OR sp.danhMuc.danhMucCha.id = :danhMucId) " +
            "AND (:trangThai IS NULL OR :trangThai = '' OR sp.trangThai = :trangThai)")
     List<SanPham> searchAdmin(@Param("keyword") String keyword, 
                               @Param("danhMucId") Integer danhMucId, 
                               @Param("trangThai") String trangThai);
 
-    @Query("SELECT sp FROM SanPham sp WHERE (sp.daXoa = false OR sp.daXoa IS NULL) " +
+    @Query("SELECT sp FROM SanPham sp LEFT JOIN sp.chatLieu cl WHERE (sp.daXoa = false OR sp.daXoa IS NULL) " +
            "AND (:keyword IS NULL OR :keyword = '' OR " +
            "     LOWER(sp.ten) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(sp.maSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "     LOWER(sp.chatLieu) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "     LOWER(cl.tenChatLieu) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:danhMucId IS NULL OR sp.danhMuc.id = :danhMucId OR sp.danhMuc.danhMucCha.id = :danhMucId) " +
            "AND (:trangThai IS NULL OR :trangThai = '' OR sp.trangThai = :trangThai)")
     Page<SanPham> searchAdminPage(@Param("keyword") String keyword,
@@ -67,7 +67,7 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
                                   Pageable pageable);
 
     // Tìm kiếm sản phẩm cho khách hàng (chỉ lấy ACTIVE và chưa xóa)
-    @EntityGraph(attributePaths = {"hinhAnhSanPhams"})
+    @EntityGraph(attributePaths = {"hinhAnhSanPhams", "chatLieu"})
     @Query("SELECT sp FROM SanPham sp WHERE sp.trangThai='ACTIVE' AND (sp.daXoa = false OR sp.daXoa IS NULL) " +
            "AND (LOWER(sp.ten) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(sp.maSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')))")

@@ -74,6 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const productCards = Array.from(document.querySelectorAll(".product-card"));
     const colorSelectEl = document.getElementById("colorFilterSelect");
+    const brandSelectEl = document.getElementById("brandFilterSelect");
     const sizeSelectEl = document.getElementById("sizeFilterSelect");
     const priceSelectEl = document.getElementById("priceFilterSelect");
     const resetBtn = document.getElementById("resetFilters");
@@ -201,15 +202,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (resetPage) currentPage = 1;
 
         const selectedColor = normalize(colorSelectEl?.value || "");
+        const selectedBrand = normalize(brandSelectEl?.value || "");
         const selectedSize = normalize(sizeSelectEl?.value || "");
         const { min: minPrice, max: maxPrice } = parsePriceRange(priceSelectEl?.value || "");
         const visibleCards = productCards.filter((card) => {
             const colors = splitValues(card.getAttribute("data-colors")).map(normalize);
+            const brands = splitValues(card.getAttribute("data-brands")).map(normalize);
             const sizes = splitValues(card.getAttribute("data-sizes")).map(normalize);
             const cardMin = toNumber(card.getAttribute("data-min-price")) ?? 0;
             const cardMax = toNumber(card.getAttribute("data-max-price")) ?? cardMin;
 
             const matchColor = !selectedColor || colors.includes(selectedColor);
+            const matchBrand = !selectedBrand || brands.includes(selectedBrand);
             const matchSize = !selectedSize || sizes.includes(selectedSize);
 
             let matchPrice = true;
@@ -218,7 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const max = maxPrice ?? Number.MAX_SAFE_INTEGER;
                 matchPrice = cardMax >= min && cardMin <= max;
             }
-            return matchColor && matchSize && matchPrice;
+            return matchColor && matchBrand && matchSize && matchPrice;
         });
 
         if (filterEmptyState) {
@@ -229,6 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const resetFilters = () => {
         if (colorSelectEl) colorSelectEl.value = "";
+        if (brandSelectEl) brandSelectEl.value = "";
         if (sizeSelectEl) sizeSelectEl.value = "";
         if (priceSelectEl) priceSelectEl.value = "";
         applyFilters();
@@ -236,11 +241,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const initFilters = () => {
         const colors = uniqueFromProducts("data-colors").sort((a, b) => a.localeCompare(b, "vi"));
+        const brands = uniqueFromProducts("data-brands").sort((a, b) => a.localeCompare(b, "vi"));
         const sizes = uniqueFromProducts("data-sizes").sort((a, b) => a.localeCompare(b, "vi"));
         renderSelectOptions(colorSelectEl, colors);
+        renderSelectOptions(brandSelectEl, brands);
         renderSelectOptions(sizeSelectEl, sizes);
 
         colorSelectEl?.addEventListener("change", applyFilters);
+        brandSelectEl?.addEventListener("change", applyFilters);
         sizeSelectEl?.addEventListener("change", applyFilters);
         priceSelectEl?.addEventListener("change", applyFilters);
         resetBtn?.addEventListener("click", resetFilters);

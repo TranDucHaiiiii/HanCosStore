@@ -14,6 +14,7 @@ public class SanPhamRequestDTO {
     private String chatLieu;
     private String gioiTinh;
     private Integer danhMucId;
+    private Integer thuongHieuId;
 
     private List<BienTheRequestDTO> bienThes;
     private List<HinhAnhSanPhamDTO> hinhAnhSanPhams;

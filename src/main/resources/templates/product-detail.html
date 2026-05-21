@@ -216,6 +216,7 @@
 
                 <div class="product-meta">
                     <p><strong>Mã sản phẩm:</strong> <span th:text="${p != null ? p.maSanPham : ''}">SKU</span></p>
+                    <p><strong>Thương hiệu:</strong> <span th:text="${p != null ? p.thuongHieu : ''}">-</span></p>
                     <p><strong>Chất liệu:</strong> <span th:text="${p != null ? p.chatLieu : ''}">Vải</span></p>
                     <p><strong>Giới tính:</strong> <span th:text="${p != null ? p.gioiTinh : ''}">Unisex</span></p>
                     <p><strong>Tình trạng:</strong> <span id="stockStatus">Chọn biến thể</span></p>
@@ -245,6 +246,10 @@
                 </div>
                 <div class="tab-pane fade" id="spec-pane" role="tabpanel">
                     <table class="table table-bordered w-50">
+                        <tr>
+                            <th>Thương hiệu</th>
+                            <td th:text="${p.thuongHieu}">-</td>
+                        </tr>
                         <tr>
                             <th>Chất liệu</th>
                             <td th:text="${p.chatLieu}">-</td>

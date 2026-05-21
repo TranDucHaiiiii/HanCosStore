@@ -19,6 +19,7 @@ public class HomeProductVM {
     private String anhChinh;
     private BigDecimal giaMin;
     private BigDecimal giaMax;
+    private String thuongHieu;
     private List<String> mauSacs;
     private List<String> kichCos;
     private String maDanhMuc;

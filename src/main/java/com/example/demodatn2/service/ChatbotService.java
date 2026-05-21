@@ -283,7 +283,7 @@ public class ChatbotService {
                 + " | Giá: " + formatPriceRange(range, currency)
                 + " | Màu: " + colors
                 + " | Size: " + sizes
-                + " | Chất liệu: " + valueOrDefault(sp.getChatLieu(), "chưa cập nhật")
+                + " | Chất liệu: " + valueOrDefault(sp.getChatLieu() != null ? sp.getChatLieu().getTenChatLieu() : null, "chưa cập nhật")
                 + " | Dành cho: " + valueOrDefault(sp.getGioiTinh(), "unisex")
                 + " | Link: /products/" + sp.getId();
     }

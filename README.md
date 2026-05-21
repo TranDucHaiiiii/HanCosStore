@@ -65,12 +65,7 @@ Dat cac bien moi truong sau truoc khi chay app:
 
 Vi du PowerShell:
 
-```powershell
-setx GEMINI_API_KEY "AIzaSyCOLrFHMtTkdFveTyuxI1ONBgBNAMk5xEk"
-$env:GHTK_TOKEN="3QEjuuFP1N9Ph17zUBiIZFgytdvSabdl1oFEjqg"
-$env:GHTK_PARTNER_CODE="HanCosStore"
 
-```
 
 ## 5. Chay Ung Dung
 

@@ -40,9 +40,13 @@ public class SanPham {
     @Column(name = "MoTa")
     private String moTa;
 
-    @Nationalized
-    @Column(name = "ChatLieu", length = 100)
-    private String chatLieu;
+    @ManyToOne
+    @JoinColumn(name = "ChatLieuId")
+    private ChatLieu chatLieu;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ThuongHieuId")
+    private ThuongHieu thuongHieu;
 
     @Nationalized
     @Column(name = "GioiTinh", length = 30)

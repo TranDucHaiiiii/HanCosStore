@@ -3,6 +3,10 @@ package com.example.demodatn2.controller;
 import com.example.demodatn2.dto.SanPhamRequestDTO;
 import com.example.demodatn2.dto.SanPhamResponseDTO;
 import com.example.demodatn2.dto.TaiKhoanDTO;
+import com.example.demodatn2.entity.ChatLieu;
+import com.example.demodatn2.entity.ThuongHieu;
+import com.example.demodatn2.repository.ChatLieuRepository;
+import com.example.demodatn2.repository.ThuongHieuRepository;
 import com.example.demodatn2.service.DanhMucService;
 import com.example.demodatn2.service.SanPhamService;
 import jakarta.servlet.http.HttpSession;
@@ -18,17 +22,25 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Controller
 @RequiredArgsConstructor
 public class SanPhamController {
 
     private final SanPhamService sanPhamService;
     private final DanhMucService danhMucService;
+    private final ChatLieuRepository chatLieuRepository;
+    private final ThuongHieuRepository thuongHieuRepository;
 
     @GetMapping("/them-san-pham")
     public String showAddProductPage(Model model) {
         model.addAttribute("parentDanhMuc", danhMucService.getParents());
         model.addAttribute("parentDanhMucTree", danhMucService.getAllDTOs());
+        model.addAttribute("chatLieus", getActiveChatLieus());
+        model.addAttribute("thuongHieus", getThuongHieus());
         return "addsanpham";
     }
 
@@ -98,8 +110,24 @@ public class SanPhamController {
     public String showEditProductPage(@PathVariable Integer id, Model model) {
         model.addAttribute("product", sanPhamService.getSanPhamById(id));
         model.addAttribute("parentDanhMuc", danhMucService.getParents());
+        model.addAttribute("chatLieus", getActiveChatLieus());
+        model.addAttribute("thuongHieus", getThuongHieus());
         return "editsanpham";
     }
+
+    private List<ChatLieu> getActiveChatLieus() {
+        return chatLieuRepository.findAll().stream()
+                .filter(chatLieu -> chatLieu.getTrangThai() == null
+                        || "ACTIVE".equalsIgnoreCase(chatLieu.getTrangThai()))
+                .sorted(Comparator.comparing(ChatLieu::getTenChatLieu, String.CASE_INSENSITIVE_ORDER))
+                .collect(Collectors.toList());
+    }
+
+        private List<ThuongHieu> getThuongHieus() {
+        return thuongHieuRepository.findAll().stream()
+            .sorted(Comparator.comparing(ThuongHieu::getTen, String.CASE_INSENSITIVE_ORDER))
+            .collect(Collectors.toList());
+        }
 
     @PostMapping("/admin/san-pham/edit/{id}")
     public String updateProductFromForm(@PathVariable Integer id,

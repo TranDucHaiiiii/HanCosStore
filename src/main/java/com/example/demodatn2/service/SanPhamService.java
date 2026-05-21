@@ -11,18 +11,22 @@ import com.example.demodatn2.dto.NhapKhoHistoryDTO;
 import com.example.demodatn2.dto.SanPhamRequestDTO;
 import com.example.demodatn2.dto.SanPhamResponseDTO;
 import com.example.demodatn2.entity.BienTheSanPham;
+import com.example.demodatn2.entity.ChatLieu;
 import com.example.demodatn2.entity.DanhMuc;
 import com.example.demodatn2.entity.GiaoDichTonKho;
 import com.example.demodatn2.entity.HinhAnhMauSac;
 import com.example.demodatn2.entity.HinhAnhSanPham;
 import com.example.demodatn2.entity.SanPham;
+import com.example.demodatn2.entity.ThuongHieu;
 import com.example.demodatn2.repository.BienTheSanPhamRepository;
+import com.example.demodatn2.repository.ChatLieuRepository;
 import com.example.demodatn2.repository.DanhMucRepository;
 import com.example.demodatn2.repository.GiaoDichTonKhoRepository;
 import com.example.demodatn2.repository.HinhAnhMauSacRepository;
 import com.example.demodatn2.repository.HinhAnhSanPhamRepository;
 import com.example.demodatn2.repository.SanPhamRepository;
 import com.example.demodatn2.repository.TaiKhoanRepository;
+import com.example.demodatn2.repository.ThuongHieuRepository;
 import com.example.demodatn2.util.ProductScopeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +62,8 @@ public class SanPhamService {
     private final HinhAnhMauSacRepository hinhAnhMauSacRepository;
     private final DanhMucRepository danhMucRepository;
     private final TaiKhoanRepository taiKhoanRepository;
+    private final ChatLieuRepository chatLieuRepository;
+    private final ThuongHieuRepository thuongHieuRepository;
 
     @Transactional
     public SanPhamResponseDTO createSanPham(SanPhamRequestDTO requestDTO) {
@@ -75,8 +81,10 @@ public class SanPhamService {
         sanPham.setTen(requestDTO.getTen());
         sanPham.setMoTaNgan(requestDTO.getMoTaNgan());
         sanPham.setMoTa(requestDTO.getMoTa());
-        sanPham.setChatLieu(requestDTO.getChatLieu());
+        sanPham.setChatLieu(resolveChatLieu(requestDTO.getChatLieu()));
+        sanPham.setThuongHieu(resolveThuongHieu(requestDTO.getThuongHieuId()));
         sanPham.setGioiTinh(requestDTO.getGioiTinh());
+        sanPham.setThuongHieu(resolveThuongHieu(requestDTO.getThuongHieuId()));
         sanPham.setTrangThai("ACTIVE");
         sanPham.setDaXoa(false);
         sanPham.setNgayTao(Instant.now());
@@ -137,30 +145,20 @@ public class SanPhamService {
     }
 
     private void validateSanPhamRequest(SanPhamRequestDTO requestDTO) {
-        if (sanPhamRepository.findByMaSanPham(requestDTO.getMaSanPham()).isPresent()) {
-            throw new RuntimeException("Ma san pham da ton tai: " + requestDTO.getMaSanPham());
+        if (requestDTO == null) {
+            throw new RuntimeException("Du lieu san pham khong hop le.");
         }
 
-        if (requestDTO.getTen() == null || requestDTO.getTen().trim().isEmpty()) {
-            throw new RuntimeException("Ten san pham khong duoc de trong");
-        }
+        validateBaseInfoForCreate(requestDTO.getMaSanPham(), requestDTO.getTen(), requestDTO.getDanhMucId());
+        validateMaterialAndBrand(requestDTO.getChatLieu(), requestDTO.getThuongHieuId());
+        validateVariantRequests(requestDTO.getBienThes());
+        validateProductImagesForCreate(requestDTO.getHinhAnhSanPhams());
+        validateColorImagesForCreate(requestDTO.getHinhAnhMauSacs());
 
-        if (requestDTO.getBienThes() == null || requestDTO.getBienThes().isEmpty()) {
-            throw new RuntimeException("San pham phai co it nhat 1 bien the");
-        }
-
-        List<String> maSKUs = requestDTO.getBienThes().stream()
-                .map(BienTheRequestDTO::getMaSKU)
-                .collect(Collectors.toList());
-
-        long distinctCount = maSKUs.stream().distinct().count();
-        if (distinctCount != maSKUs.size()) {
-            throw new RuntimeException("Co ma SKU bi trung lap trong danh sach bien the");
-        }
-
-        for (String maSKU : maSKUs) {
-            if (bienTheRepository.findByMaSKU(maSKU).isPresent()) {
-                throw new RuntimeException("Ma SKU da ton tai: " + maSKU);
+        for (BienTheRequestDTO variant : requestDTO.getBienThes()) {
+            String sku = variant.getMaSKU() != null ? variant.getMaSKU().trim() : "";
+            if (bienTheRepository.findByMaSKU(sku).isPresent()) {
+                throw new RuntimeException("Ma SKU da ton tai: " + sku);
             }
         }
     }
@@ -194,7 +192,7 @@ public class SanPhamService {
         }
 
         List<HinhAnhSanPhamDTO> validDTOs = hinhAnhDTOs.stream()
-                .filter(dto -> dto != null && dto.getDuongDanAnh() != null && !dto.getDuongDanAnh().trim().isEmpty())
+                .filter(dto -> dto != null && !normalizeImagePath(dto.getDuongDanAnh()).isEmpty())
                 .collect(Collectors.toList());
 
         if (validDTOs.isEmpty()) {
@@ -213,9 +211,13 @@ public class SanPhamService {
 
         List<HinhAnhSanPham> hinhAnhs = new ArrayList<>();
         for (HinhAnhSanPhamDTO dto : validDTOs) {
+            String duongDanAnh = normalizeImagePath(dto.getDuongDanAnh());
+            if (duongDanAnh.isEmpty()) {
+                continue;
+            }
             HinhAnhSanPham hinhAnh = new HinhAnhSanPham();
             hinhAnh.setSanPham(sanPham);
-            hinhAnh.setDuongDanAnh(dto.getDuongDanAnh().trim());
+            hinhAnh.setDuongDanAnh(duongDanAnh);
             hinhAnh.setLaAnhChinh(dto.getLaAnhChinh() != null ? dto.getLaAnhChinh() : false);
             hinhAnh.setThuTu(dto.getThuTu() != null ? dto.getThuTu() : 0);
             hinhAnh.setNgayTao(Instant.now());
@@ -232,16 +234,17 @@ public class SanPhamService {
 
         List<HinhAnhMauSac> hinhAnhMauSacs = new ArrayList<>();
         for (HinhAnhMauSacDTO dto : hinhAnhMauSacDTOs) {
+            String duongDanAnh = normalizeImagePath(dto != null ? dto.getDuongDanAnh() : null);
             if (dto == null
                     || dto.getMauSac() == null || dto.getMauSac().trim().isEmpty()
-                    || dto.getDuongDanAnh() == null || dto.getDuongDanAnh().trim().isEmpty()) {
+                    || duongDanAnh.isEmpty()) {
                 continue;
             }
 
             HinhAnhMauSac hinhAnhMauSac = new HinhAnhMauSac();
             hinhAnhMauSac.setSanPham(sanPham);
             hinhAnhMauSac.setMauSac(dto.getMauSac().trim());
-            hinhAnhMauSac.setDuongDanAnh(dto.getDuongDanAnh().trim());
+            hinhAnhMauSac.setDuongDanAnh(duongDanAnh);
             hinhAnhMauSac.setNgayTao(Instant.now());
             hinhAnhMauSacs.add(hinhAnhMauSac);
         }
@@ -256,8 +259,10 @@ public class SanPhamService {
         responseDTO.setTen(sanPham.getTen());
         responseDTO.setMoTaNgan(sanPham.getMoTaNgan());
         responseDTO.setMoTa(sanPham.getMoTa());
-        responseDTO.setChatLieu(sanPham.getChatLieu());
+        responseDTO.setChatLieu(getChatLieuTen(sanPham));
         responseDTO.setGioiTinh(sanPham.getGioiTinh());
+        responseDTO.setThuongHieuId(getThuongHieuId(sanPham));
+        responseDTO.setTenThuongHieu(getThuongHieuTen(sanPham));
         responseDTO.setTrangThai(sanPham.getTrangThai());
         responseDTO.setNgayTao(sanPham.getNgayTao());
         responseDTO.setNgayCapNhat(sanPham.getNgayCapNhat());
@@ -272,8 +277,9 @@ public class SanPhamService {
         }
 
         List<BienTheResponseDTO> bienTheDTOs = sanPham.getBienThes().stream()
-                .map(this::convertBienTheToDTO)
-                .collect(Collectors.toList());
+            .filter(bt -> bt.getTrangThai() == null || "ACTIVE".equalsIgnoreCase(bt.getTrangThai()))
+            .map(this::convertBienTheToDTO)
+            .collect(Collectors.toList());
         responseDTO.setBienThes(bienTheDTOs);
 
         int tongTon = bienTheDTOs.stream()
@@ -294,6 +300,41 @@ public class SanPhamService {
         return responseDTO;
     }
 
+    private ChatLieu resolveChatLieu(String tenChatLieu) {
+        if (tenChatLieu == null || tenChatLieu.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalizedName = tenChatLieu.trim();
+        return chatLieuRepository.findByTenChatLieuIgnoreCase(normalizedName)
+                .orElseGet(() -> {
+                    ChatLieu chatLieu = new ChatLieu();
+                    chatLieu.setTenChatLieu(normalizedName);
+                    chatLieu.setTrangThai("ACTIVE");
+                    return chatLieuRepository.save(chatLieu);
+                });
+    }
+
+    private String getChatLieuTen(SanPham sanPham) {
+        return sanPham.getChatLieu() != null ? sanPham.getChatLieu().getTenChatLieu() : null;
+    }
+
+    private ThuongHieu resolveThuongHieu(Integer thuongHieuId) {
+        if (thuongHieuId == null) {
+            return null;
+        }
+        return thuongHieuRepository.findById(thuongHieuId)
+                .orElseThrow(() -> new RuntimeException("Thuong hieu khong ton tai: " + thuongHieuId));
+    }
+
+    private Integer getThuongHieuId(SanPham sanPham) {
+        return sanPham.getThuongHieu() != null ? sanPham.getThuongHieu().getId() : null;
+    }
+
+    private String getThuongHieuTen(SanPham sanPham) {
+        return sanPham.getThuongHieu() != null ? sanPham.getThuongHieu().getTen() : null;
+    }
+
     private BienTheResponseDTO convertBienTheToDTO(BienTheSanPham bienThe) {
         BienTheResponseDTO dto = new BienTheResponseDTO();
         dto.setId(bienThe.getId());
@@ -310,7 +351,7 @@ public class SanPhamService {
 
     private HinhAnhSanPhamDTO convertHinhAnhSanPhamToDTO(HinhAnhSanPham hinhAnh) {
         HinhAnhSanPhamDTO dto = new HinhAnhSanPhamDTO();
-        dto.setDuongDanAnh(hinhAnh.getDuongDanAnh());
+        dto.setDuongDanAnh(normalizeImagePath(hinhAnh.getDuongDanAnh()));
         dto.setLaAnhChinh(hinhAnh.getLaAnhChinh());
         dto.setThuTu(hinhAnh.getThuTu());
         return dto;
@@ -319,8 +360,44 @@ public class SanPhamService {
     private HinhAnhMauSacDTO convertHinhAnhMauSacToDTO(HinhAnhMauSac hinhAnhMauSac) {
         HinhAnhMauSacDTO dto = new HinhAnhMauSacDTO();
         dto.setMauSac(hinhAnhMauSac.getMauSac());
-        dto.setDuongDanAnh(hinhAnhMauSac.getDuongDanAnh());
+        dto.setDuongDanAnh(normalizeImagePath(hinhAnhMauSac.getDuongDanAnh()));
         return dto;
+    }
+
+    private String normalizeImagePath(String rawPath) {
+        if (rawPath == null) {
+            return "";
+        }
+        String value = rawPath.trim();
+        if (value.isEmpty() || !value.startsWith("{")) {
+            return value;
+        }
+
+        String extracted = extractJsonStringValue(value, "\"url\"");
+        if (!extracted.isEmpty()) {
+            return extracted;
+        }
+        return extractJsonStringValue(value, "\"path\"");
+    }
+
+    private String extractJsonStringValue(String json, String key) {
+        int keyIndex = json.indexOf(key);
+        if (keyIndex < 0) {
+            return "";
+        }
+        int colonIndex = json.indexOf(':', keyIndex + key.length());
+        if (colonIndex < 0) {
+            return "";
+        }
+        int startQuote = json.indexOf('"', colonIndex + 1);
+        if (startQuote < 0) {
+            return "";
+        }
+        int endQuote = json.indexOf('"', startQuote + 1);
+        if (endQuote <= startQuote) {
+            return "";
+        }
+        return json.substring(startQuote + 1, endQuote).trim();
     }
 
     @Transactional(readOnly = true)
@@ -399,7 +476,8 @@ public class SanPhamService {
         sanPham.setTen(requestDTO.getTen());
         sanPham.setMoTaNgan(requestDTO.getMoTaNgan());
         sanPham.setMoTa(requestDTO.getMoTa());
-        sanPham.setChatLieu(requestDTO.getChatLieu());
+        sanPham.setChatLieu(resolveChatLieu(requestDTO.getChatLieu()));
+        sanPham.setThuongHieu(resolveThuongHieu(requestDTO.getThuongHieuId()));
         sanPham.setGioiTinh(requestDTO.getGioiTinh());
 
         if (requestDTO.getDanhMucId() != null) {
@@ -415,7 +493,12 @@ public class SanPhamService {
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toList());
 
-        currentBienThes.removeIf(bt -> !requestIds.contains(bt.getId()));
+        for (BienTheSanPham bt : currentBienThes) {
+            if (!requestIds.contains(bt.getId())) {
+                bt.setTrangThai("INACTIVE");
+                bt.setSoLuongTon(0);
+            }
+        }
 
         for (BienTheRequestDTO btDto : requestDTO.getBienThes()) {
             if (btDto.getId() != null) {
@@ -431,17 +514,30 @@ public class SanPhamService {
                 bt.setSoLuongTon(btDto.getSoLuongTon());
                 bt.setKhoiLuongGram(btDto.getKhoiLuongGram());
             } else {
-                BienTheSanPham newBt = new BienTheSanPham();
-                newBt.setSanPham(sanPham);
-                newBt.setMaSKU(btDto.getMaSKU());
-                newBt.setMauSac(btDto.getMauSac());
-                newBt.setKichCo(btDto.getKichCo());
-                newBt.setGia(btDto.getGia());
-                newBt.setGiaGoc(btDto.getGiaGoc());
-                newBt.setSoLuongTon(btDto.getSoLuongTon());
-                newBt.setKhoiLuongGram(btDto.getKhoiLuongGram());
-                newBt.setTrangThai("ACTIVE");
-                currentBienThes.add(newBt);
+                String sku = btDto.getMaSKU() != null ? btDto.getMaSKU().trim() : "";
+                BienTheSanPham reuse = null;
+                if (!sku.isEmpty()) {
+                    reuse = currentBienThes.stream()
+                            .filter(b -> b.getMaSKU() != null
+                                    && b.getMaSKU().equalsIgnoreCase(sku)
+                                    && isInactiveStatus(b.getTrangThai()))
+                            .findFirst()
+                            .orElse(null);
+                }
+
+                BienTheSanPham target = reuse != null ? reuse : new BienTheSanPham();
+                target.setSanPham(sanPham);
+                target.setMaSKU(btDto.getMaSKU());
+                target.setMauSac(btDto.getMauSac());
+                target.setKichCo(btDto.getKichCo());
+                target.setGia(btDto.getGia());
+                target.setGiaGoc(btDto.getGiaGoc());
+                target.setSoLuongTon(btDto.getSoLuongTon());
+                target.setKhoiLuongGram(btDto.getKhoiLuongGram());
+                target.setTrangThai("ACTIVE");
+                if (reuse == null) {
+                    currentBienThes.add(target);
+                }
             }
         }
 
@@ -470,6 +566,7 @@ public class SanPhamService {
         if (requestDTO.getTen() == null || requestDTO.getTen().trim().isEmpty()) {
             throw new RuntimeException("Ten san pham khong duoc de trong");
         }
+        validateMaterialAndBrand(requestDTO.getChatLieu(), requestDTO.getThuongHieuId());
         if (requestDTO.getDanhMucId() == null) {
             throw new RuntimeException("Vui long chon danh muc.");
         }
@@ -538,10 +635,19 @@ public class SanPhamService {
 
             bienTheRepository.findByMaSKU(sku).ifPresent(existing -> {
                 if (variant.getId() == null || !existing.getId().equals(variant.getId())) {
-                    throw new RuntimeException("Ma SKU da ton tai: " + sku);
+                    boolean sameProduct = existing.getSanPham() != null
+                            && existing.getSanPham().getId() != null
+                            && existing.getSanPham().getId().equals(currentProduct.getId());
+                    if (!(sameProduct && isInactiveStatus(existing.getTrangThai()))) {
+                        throw new RuntimeException("Ma SKU da ton tai: " + sku);
+                    }
                 }
             });
         }
+    }
+
+    private boolean isInactiveStatus(String status) {
+        return status != null && "INACTIVE".equalsIgnoreCase(status.trim());
     }
 
     @Transactional
@@ -623,11 +729,16 @@ public class SanPhamService {
 
     @Transactional(readOnly = true)
     public Page<InventoryVariantDTO> getInventoryVariants(String keyword, int page, int size) {
-        String normalizedKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
-        List<BienTheSanPham> variants = bienTheRepository.searchInventoryVariants(normalizedKeyword, Pageable.unpaged())
+        String trimmedKeyword = keyword != null ? keyword.trim() : "";
+        String normalizedKeyword = ProductScopeUtil.normalizeText(trimmedKeyword);
+        boolean hasKeyword = !normalizedKeyword.isEmpty();
+
+        List<BienTheSanPham> variants = bienTheRepository.searchInventoryVariants(null, Pageable.unpaged())
                 .getContent()
                 .stream()
                 .filter(v -> isAllowedProduct(v.getSanPham()))
+            // Filter in-memory to support product-name search without accents.
+            .filter(v -> !hasKeyword || matchesInventoryKeyword(v, normalizedKeyword))
                 .sorted(Comparator
                         .comparing((BienTheSanPham v) -> v.getSanPham().getTen(), String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(v -> v.getMauSac() != null ? v.getMauSac() : "", String.CASE_INSENSITIVE_ORDER)
@@ -655,6 +766,22 @@ public class SanPhamService {
         }).collect(Collectors.toList());
 
         return paginate(mapped, page, size);
+    }
+
+    private boolean matchesInventoryKeyword(BienTheSanPham variant, String normalizedKeyword) {
+        if (normalizedKeyword == null || normalizedKeyword.isEmpty()) {
+            return true;
+        }
+
+        String tenSanPham = variant.getSanPham() != null ? variant.getSanPham().getTen() : "";
+        String sku = variant.getMaSKU();
+        String mauSac = variant.getMauSac();
+        String kichCo = variant.getKichCo();
+
+        return ProductScopeUtil.normalizeText(tenSanPham).contains(normalizedKeyword)
+                || ProductScopeUtil.normalizeText(sku).contains(normalizedKeyword)
+                || ProductScopeUtil.normalizeText(mauSac).contains(normalizedKeyword)
+                || ProductScopeUtil.normalizeText(kichCo).contains(normalizedKeyword);
     }
 
     @Transactional(readOnly = true)
@@ -793,7 +920,8 @@ public class SanPhamService {
 
     @Transactional
     public void addGalleryImage(Integer sanPhamId, String duongDanAnh) {
-        if (duongDanAnh == null || duongDanAnh.trim().isEmpty()) {
+        String normalizedPath = normalizeImagePath(duongDanAnh);
+        if (normalizedPath.isEmpty()) {
             throw new RuntimeException("Duong dan anh khong hop le.");
         }
 
@@ -807,7 +935,7 @@ public class SanPhamService {
         List<HinhAnhSanPham> currentImages = hinhAnhSanPhamRepository.findBySanPham_IdOrderByLaAnhChinhDescThuTuAscIdAsc(sanPhamId);
 
         boolean duplicated = currentImages.stream()
-                .anyMatch(img -> duongDanAnh.equals(img.getDuongDanAnh()));
+                .anyMatch(img -> normalizedPath.equals(normalizeImagePath(img.getDuongDanAnh())));
         if (duplicated) {
             return;
         }
@@ -820,7 +948,7 @@ public class SanPhamService {
 
         HinhAnhSanPham image = new HinhAnhSanPham();
         image.setSanPham(sanPham);
-        image.setDuongDanAnh(duongDanAnh);
+        image.setDuongDanAnh(normalizedPath);
         image.setLaAnhChinh(currentImages.isEmpty());
         image.setThuTu(nextOrder);
         image.setNgayTao(Instant.now());
@@ -899,9 +1027,21 @@ public class SanPhamService {
         if (productName.isEmpty()) {
             throw new RuntimeException("Ten san pham khong duoc de trong");
         }
+        if (productName.length() < 3 || productName.length() > 200) {
+            throw new RuntimeException("Ten san pham phai dai tu 3 den 200 ky tu.");
+        }
+        if (code.isEmpty()) {
+            throw new RuntimeException("Ma san pham khong duoc de trong.");
+        }
+        if (!code.matches("^[A-Za-z0-9_-]{2,50}$")) {
+            throw new RuntimeException("Ma san pham chi gom chu, so, dau gach duoi hoac gach ngang, dai 2-50 ky tu.");
+        }
         if (danhMucId == null) {
             throw new RuntimeException("Vui long chon danh muc.");
         }
+        DanhMuc danhMuc = danhMucRepository.findById(danhMucId)
+                .orElseThrow(() -> new RuntimeException("Danh muc khong ton tai: " + danhMucId));
+        validateCategoryScope(danhMuc);
         if (!code.isEmpty() && sanPhamRepository.findByMaSanPham(code).isPresent()) {
             throw new RuntimeException("Ma san pham da ton tai: " + code);
         }
@@ -948,8 +1088,11 @@ public class SanPhamService {
             if (variant.getSoLuongTon() == null || variant.getSoLuongTon() < 0) {
                 throw new RuntimeException("So luong ton phai la so >= 0.");
             }
-            if (variant.getGia() == null || variant.getGia().compareTo(BigDecimal.ZERO) < 0) {
-                throw new RuntimeException("Gia ban phai la so >= 0.");
+            if (variant.getGia() == null || variant.getGia().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new RuntimeException("Gia ban phai la so > 0.");
+            }
+            if (variant.getGia().remainder(BigDecimal.valueOf(1000)).compareTo(BigDecimal.ZERO) != 0) {
+                throw new RuntimeException("Gia ban phai la boi so cua 1.000 dong.");
             }
             if (variant.getKhoiLuongGram() == null || variant.getKhoiLuongGram() <= 0) {
                 throw new RuntimeException("Khoi luong phai la so > 0.");
@@ -958,6 +1101,77 @@ public class SanPhamService {
             String comboKey = (color + "__" + size).toLowerCase();
             if (!comboSet.add(comboKey)) {
                 throw new RuntimeException("Khong duoc trung mau sac + kich co.");
+            }
+            if (bienTheRepository.findByMaSKU(sku).isPresent()) {
+                throw new RuntimeException("Ma SKU da ton tai: " + sku);
+            }
+        }
+    }
+
+    private void validateMaterialAndBrand(String chatLieu, Integer thuongHieuId) {
+        if (chatLieu == null || chatLieu.trim().isEmpty()) {
+            throw new RuntimeException("Vui long chon chat lieu.");
+        }
+        if (thuongHieuId == null) {
+            throw new RuntimeException("Vui long chon thuong hieu.");
+        }
+        if (chatLieuRepository.findByTenChatLieuIgnoreCase(chatLieu.trim()).isEmpty()) {
+            throw new RuntimeException("Chat lieu khong ton tai: " + chatLieu.trim());
+        }
+        if (thuongHieuRepository.findById(thuongHieuId).isEmpty()) {
+            throw new RuntimeException("Thuong hieu khong ton tai: " + thuongHieuId);
+        }
+    }
+
+    private void validateProductImagesForCreate(List<HinhAnhSanPhamDTO> images) {
+        if (images == null || images.isEmpty()) {
+            throw new RuntimeException("Vui long them it nhat 1 hinh anh san pham.");
+        }
+
+        List<HinhAnhSanPhamDTO> validImages = images.stream()
+                .filter(image -> image != null && !normalizeImagePath(image.getDuongDanAnh()).isEmpty())
+                .toList();
+        if (validImages.isEmpty()) {
+            throw new RuntimeException("Vui long upload it nhat 1 hinh anh san pham.");
+        }
+
+        long primaryCount = validImages.stream()
+                .filter(image -> Boolean.TRUE.equals(image.getLaAnhChinh()))
+                .count();
+        if (primaryCount != 1) {
+            throw new RuntimeException("Vui long chon dung 1 anh chinh.");
+        }
+
+        for (HinhAnhSanPhamDTO image : validImages) {
+            if (image.getThuTu() != null && image.getThuTu() <= 0) {
+                throw new RuntimeException("Thu tu hinh anh phai la so > 0.");
+            }
+        }
+    }
+
+    private void validateColorImagesForCreate(List<HinhAnhMauSacDTO> colorImages) {
+        if (colorImages == null || colorImages.isEmpty()) {
+            return;
+        }
+
+        Set<String> colors = new HashSet<>();
+        for (HinhAnhMauSacDTO image : colorImages) {
+            if (image == null) {
+                continue;
+            }
+            String color = image.getMauSac() != null ? image.getMauSac().trim() : "";
+            String path = normalizeImagePath(image.getDuongDanAnh());
+            if (color.isEmpty() && path.isEmpty()) {
+                continue;
+            }
+            if (color.isEmpty()) {
+                throw new RuntimeException("Vui long nhap mau sac cho hinh anh theo mau.");
+            }
+            if (path.isEmpty()) {
+                throw new RuntimeException("Vui long upload anh cho mau " + color + ".");
+            }
+            if (!colors.add(color.toLowerCase())) {
+                throw new RuntimeException("Khong duoc trung mau trong danh sach hinh anh theo mau.");
             }
         }
     }
