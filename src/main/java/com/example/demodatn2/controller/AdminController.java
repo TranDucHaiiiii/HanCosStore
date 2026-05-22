@@ -72,12 +72,14 @@ public class AdminController {
     private final DonHangRepository donHangRepository;
 
     @GetMapping("/dashboard")
+    // Trang tong quan thong ke
     public String dashboard(Model model) {
         model.addAttribute("stats", thongKeService.getDoanhThuTongHop());
         return "admin/dashboard";
     }
 
     @GetMapping("/inventory")
+    // Trang quan ly ton kho
     public String inventoryPage(@RequestParam(required = false) String q,
                                 @RequestParam(defaultValue = "1") int page,
                                 @RequestParam(defaultValue = "12") int size,
@@ -101,6 +103,7 @@ public class AdminController {
     }
 
     @PostMapping("/inventory/adjust")
+    // Dieu chinh so luong ton kho theo bien the
     public String adjustInventory(@RequestParam Integer sanPhamId,
                                   @RequestParam Integer bienTheId,
                                   @RequestParam Integer soLuong,
@@ -126,6 +129,7 @@ public class AdminController {
     }
 
     @PostMapping("/inventory/returns/{id}/import-main")
+    // Nhap hang hoan ve kho chinh
     public String importReturnItemToMainStock(@PathVariable Long id,
                                               @RequestParam(required = false) String ghiChu,
                                               HttpSession session,
@@ -141,6 +145,7 @@ public class AdminController {
     }
 
     @PostMapping("/inventory/returns/{id}/liquidate")
+    // Dua hang hoan vao thanh ly
     public String liquidateReturnItem(@PathVariable Long id,
                                       @RequestParam(required = false) String ghiChu,
                                       RedirectAttributes redirectAttributes) {
@@ -154,6 +159,7 @@ public class AdminController {
     }
 
     @PostMapping("/inventory/returns/{id}/resell")
+    // Danh dau hang hoan de ban lai
     public String resellReturnItem(@PathVariable Long id,
                                    @RequestParam(required = false) String ghiChu,
                                    RedirectAttributes redirectAttributes) {
@@ -167,11 +173,13 @@ public class AdminController {
     }
 
     @GetMapping("/pos")
+    // Trang POS
     public String pos() {
         return "admin/pos";
     }
 
     @GetMapping("/ban-hang-tai-quay")
+    // Trang ban hang tai quay (POS UI)
     public String banHangTaiQuay(Model model, HttpSession session) {
         model.addAttribute("customers", taiKhoanService.searchTaiKhoans(null, ACTIVE_STATUS));
         model.addAttribute("products", sanPhamService.searchSanPham(null, null, ACTIVE_STATUS));
@@ -184,12 +192,14 @@ public class AdminController {
 
     @GetMapping("/pos/api/cart")
     @ResponseBody
+    // Lay gio hang POS hien tai
     public Map<String, Object> posCart(HttpSession session) {
         return buildCartResponse(posCartService.getCart(session));
     }
 
     @GetMapping("/pos/api/cart/summary")
     @ResponseBody
+    // Tinh toan tong quan gio hang POS
     public Map<String, Object> posCartSummary(@RequestParam(required = false) String voucherCode,
                                               @RequestParam(required = false) BigDecimal cashGiven,
                                               HttpSession session) {
@@ -201,6 +211,7 @@ public class AdminController {
 
     @PostMapping("/pos/api/cart/items")
     @ResponseBody
+    // Them san pham vao gio POS
     public Map<String, Object> addPosCartItem(@RequestBody PosCartItemRequestDTO req, HttpSession session) {
         try {
             return buildCartResponse(posCartService.addItem(session, req.getVariantId(), req.getQty()));
@@ -211,6 +222,7 @@ public class AdminController {
 
     @PutMapping("/pos/api/cart/items/{variantId}")
     @ResponseBody
+    // Cap nhat so luong san pham trong gio POS
     public Map<String, Object> updatePosCartItem(@PathVariable Integer variantId,
                                                  @RequestBody PosCartItemRequestDTO req,
                                                  HttpSession session) {
@@ -223,12 +235,14 @@ public class AdminController {
 
     @DeleteMapping("/pos/api/cart/items/{variantId}")
     @ResponseBody
+    // Xoa san pham khoi gio POS
     public Map<String, Object> removePosCartItem(@PathVariable Integer variantId, HttpSession session) {
         return buildCartResponse(posCartService.removeItem(session, variantId));
     }
 
     @DeleteMapping("/pos/api/cart")
     @ResponseBody
+    // Xoa toan bo gio POS
     public Map<String, Object> clearPosCart(HttpSession session) {
         posCartService.clear(session);
         return buildCartResponse(List.of());
@@ -236,30 +250,35 @@ public class AdminController {
 
     @GetMapping("/orders/pending-count")
     @ResponseBody
+    // Dem don hang dang cho xac nhan
     public Map<String, Long> getPendingOrderCount() {
         return Map.of("count", orderService.getPendingConfirmationCount());
     }
 
     @GetMapping("/pos/api/products")
     @ResponseBody
+    // Danh sach san pham cho POS
     public List<SanPhamResponseDTO> posProducts() {
         return sanPhamService.searchSanPham(null, null, ACTIVE_STATUS);
     }
 
     @GetMapping("/pos/api/categories")
     @ResponseBody
+    // Danh sach danh muc cho POS
     public List<DanhMucDTO> posCategories() {
         return danhMucService.getAllDTOs();
     }
 
     @GetMapping("/pos/api/customers")
     @ResponseBody
+    // Tim khach hang cho POS
     public List<TaiKhoanDTO> searchCustomers(@RequestParam(required = false) String q) {
         return taiKhoanService.searchTaiKhoans(q, ACTIVE_STATUS);
     }
 
     @PostMapping("/pos/api/voucher/validate")
     @ResponseBody
+    // Kiem tra ma giam gia POS
     public Map<String, Object> validatePosVoucher(@RequestBody Map<String, Object> body, HttpSession session) {
         String code = (String) body.get("code");
         if (isBlank(code)) {
@@ -282,6 +301,7 @@ public class AdminController {
 
     @GetMapping("/pos/api/vouchers/eligible")
     @ResponseBody
+    // Lay danh sach voucher hop le theo tong tien
     public Map<String, Object> getEligiblePosVouchers(@RequestParam(name = "amount", required = false) BigDecimal amount,
                                                       HttpSession session) {
         BigDecimal safeAmount = amount != null ? amount : calculatePosSubtotal(posCartService.getCart(session));
@@ -304,6 +324,7 @@ public class AdminController {
 
     @PostMapping("/pos/api/order-code")
     @ResponseBody
+    // Tao/lay ma don chuyen khoan POS
     public Map<String, Object> generatePosOrderCode(@RequestBody PosOrderRequestDTO req, HttpSession session) {
         try {
             List<PosCartItemDTO> cart = posCartService.getCart(session);
@@ -335,6 +356,7 @@ public class AdminController {
 
     @PostMapping("/pos/api/transfer/{orderCode}/complete")
     @ResponseBody
+    // Xac nhan hoan tat chuyen khoan POS
     public Map<String, Object> completePosTransfer(@PathVariable String orderCode, HttpSession session) {
         try {
             DonHang donHang = donHangRepository.findByMaDonHangIgnoreCase(orderCode)
@@ -353,6 +375,7 @@ public class AdminController {
 
     @GetMapping("/pos/api/invoices")
     @ResponseBody
+    // Danh sach hoa don POS
     public Map<String, Object> getInvoices(HttpSession session) {
         return Map.of("success", true,
                 "invoices", posCartService.listInvoices(session),
@@ -361,6 +384,7 @@ public class AdminController {
 
     @PostMapping("/pos/api/invoices")
     @ResponseBody
+    // Tao hoa don POS moi
     public Map<String, Object> createInvoice(HttpSession session) {
         try {
             String newId = posCartService.createInvoice(session);
@@ -376,6 +400,7 @@ public class AdminController {
 
     @PutMapping("/pos/api/invoices/{invoiceId}/activate")
     @ResponseBody
+    // Kich hoat hoa don POS
     public Map<String, Object> activateInvoice(@PathVariable String invoiceId, HttpSession session) {
         try {
             posCartService.switchInvoice(session, invoiceId);
@@ -390,6 +415,7 @@ public class AdminController {
 
     @DeleteMapping("/pos/api/invoices/{invoiceId}")
     @ResponseBody
+    // Xoa hoa don POS
     public Map<String, Object> removeInvoice(@PathVariable String invoiceId, HttpSession session) {
         String newActiveId = posCartService.deleteInvoice(session, invoiceId);
         return Map.of("success", true,
@@ -400,6 +426,7 @@ public class AdminController {
 
     @PostMapping("/pos/api/checkout")
     @ResponseBody
+    // Thanh toan don POS
     public Map<String, Object> posCheckout(@RequestBody PosOrderRequestDTO req, HttpSession session) {
         try {
             List<PosCartItemDTO> cart = posCartService.getCart(session);
@@ -422,10 +449,12 @@ public class AdminController {
         }
     }
 
+    // Lay tai khoan dang dang nhap
     private TaiKhoanDTO getLoginUser(HttpSession session) {
         return (TaiKhoanDTO) session.getAttribute(LOGIN_USER);
     }
 
+    // Dong goi du lieu gio hang + tong quan
     private Map<String, Object> buildCartResponse(List<PosCartItemDTO> cart) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
@@ -434,12 +463,14 @@ public class AdminController {
         return response;
     }
 
+    // Chuyen cart item sang item request
     private List<PosOrderRequestDTO.PosItemDTO> toPosOrderItems(List<PosCartItemDTO> cart) {
         return cart.stream()
                 .map(this::toPosOrderItem)
                 .toList();
     }
 
+    // Tao item request tu cart item
     private PosOrderRequestDTO.PosItemDTO toPosOrderItem(PosCartItemDTO cartItem) {
         PosOrderRequestDTO.PosItemDTO item = new PosOrderRequestDTO.PosItemDTO();
         item.setVariantId(cartItem.getVariantId());
@@ -448,6 +479,7 @@ public class AdminController {
         return item;
     }
 
+    // Chuan hoa va kiem tra thong tin khach hang POS
     private void validateAndNormalizePosCustomer(PosOrderRequestDTO req) {
         String mode = req.getCustomerMode() != null ? req.getCustomerMode().trim().toLowerCase() : "guest";
         req.setCustomerMode(mode);
@@ -490,6 +522,7 @@ public class AdminController {
         throw new RuntimeException("Chế độ khách hàng không hợp lệ");
     }
 
+    // Kiem tra phuong thuc thanh toan POS
     private void validatePosPayment(PosOrderRequestDTO req, List<PosCartItemDTO> cart) {
         String paymentMethod = req.getPaymentMethod() != null ? req.getPaymentMethod().trim().toLowerCase() : "cash";
         if (!paymentMethod.equals("cash") && !paymentMethod.equals("transfer")) {
@@ -512,6 +545,7 @@ public class AdminController {
         }
     }
 
+    // Kiem tra ma giam gia POS
     private void validatePosVoucher(PosOrderRequestDTO req, List<PosCartItemDTO> cart) {
         Map<String, Object> summary = buildPosSummary(cart, req.getVoucherCode(), null);
         if (!isBlank(req.getVoucherCode()) && summary.get("voucherCode") == null) {
@@ -519,6 +553,7 @@ public class AdminController {
         }
     }
 
+    // Tinh tong tam tinh gio POS
     private BigDecimal calculatePosSubtotal(List<PosCartItemDTO> cart) {
         BigDecimal subtotal = BigDecimal.ZERO;
         if (cart == null) {
@@ -532,6 +567,7 @@ public class AdminController {
         return subtotal;
     }
 
+    // Tinh tong quan gio POS (subtotal/discount/total/change)
     private Map<String, Object> buildPosSummary(List<PosCartItemDTO> cart, String voucherCode, BigDecimal cashGiven) {
         BigDecimal subtotal = calculatePosSubtotal(cart);
         BigDecimal discount = BigDecimal.ZERO;
@@ -559,10 +595,12 @@ public class AdminController {
         return summary;
     }
 
+    // Kiem tra chuoi rong
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
 
+    // Lay gia tri khong rong dau tien
     private String firstNonBlank(String first, String fallback) {
         return !isBlank(first) ? first.trim() : fallback;
     }
