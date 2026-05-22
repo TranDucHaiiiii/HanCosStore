@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class OrderService {
     private final LichSuSuDungMaGiamGiaRepository lichSuSuDungMaGiamGiaRepository;
     private final YeuCauDoiTraRepository yeuCauDoiTraRepository;
     private final GiaoDichTonKhoRepository giaoDichTonKhoRepository;
+    private final OrderConfirmationEmailService orderConfirmationEmailService;
     @Getter
     private final VoucherService voucherService;
 
@@ -41,8 +43,9 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<DonHang> searchOrders(String keyword, String status) {
+    public List<DonHang> searchOrders(String keyword, String status, String channel) {
         String normalizedStatus = normalizeStatus(status);
+        String normalizedChannel = normalizeChannel(channel);
 
         List<DonHang> sourceOrders;
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -51,7 +54,9 @@ public class OrderService {
             sourceOrders = donHangRepository.timKiemTheoTuKhoa(keyword.trim());
         }
 
-        return filterOrdersByStatus(sourceOrders, normalizedStatus);
+        List<DonHang> statusFiltered = filterOrdersByStatus(sourceOrders, normalizedStatus);
+        List<DonHang> channelFiltered = filterOrdersByChannel(statusFiltered, normalizedChannel);
+        return filterReturnOrdersByApprovalStatus(channelFiltered);
     }
 
     @Transactional(readOnly = true)
@@ -66,7 +71,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Map<String, Long> getOrderStatusCounts() {
-        List<DonHang> orders = getAllOrders();
+        List<DonHang> orders = filterReturnOrdersByApprovalStatus(getAllOrders());
         Map<String, Long> counts = new LinkedHashMap<>();
         counts.put("ALL", (long) orders.size());
         counts.put("CHO_XAC_NHAN", 0L);
@@ -93,6 +98,58 @@ public class OrderService {
         return orders.stream()
                 .filter(order -> normalizedStatus.equals(normalizeStatus(order.getTrangThai())))
                 .toList();
+    }
+
+    private List<DonHang> filterOrdersByChannel(List<DonHang> orders, String normalizedChannel) {
+        if (normalizedChannel == null || normalizedChannel.isEmpty() || "ALL".equals(normalizedChannel)) {
+            return orders;
+        }
+        if ("POS".equals(normalizedChannel)) {
+            return orders.stream()
+                    .filter(this::isPosCounterOrder)
+                    .toList();
+        }
+        if ("ONLINE".equals(normalizedChannel)) {
+            return orders.stream()
+                    .filter(order -> !isPosCounterOrder(order))
+                    .toList();
+        }
+        return orders;
+    }
+
+    private String normalizeChannel(String channel) {
+        if (channel == null || channel.trim().isEmpty()) {
+            return "ALL";
+        }
+        return channel.trim().toUpperCase();
+    }
+
+    private boolean isPosCounterOrder(DonHang order) {
+        return order != null
+                && order.getDiaChiNhan() != null
+                && "Mua tại quầy".equalsIgnoreCase(order.getDiaChiNhan().trim());
+    }
+
+    private List<DonHang> filterReturnOrdersByApprovalStatus(List<DonHang> orders) {
+        return orders.stream()
+                .filter(order -> {
+                    String normalized = normalizeStatus(order.getTrangThai());
+                    if (!"TRA_HANG".equals(normalized)) {
+                        return true;
+                    }
+                    return isReturnRequestPendingApproval(order);
+                })
+                .toList();
+    }
+
+    private boolean isReturnRequestPendingApproval(DonHang order) {
+        if (order == null || order.getId() == null) {
+            return false;
+        }
+        return yeuCauDoiTraRepository.existsByDonHangIdAndTrangThai(
+                order.getId(),
+                ReturnRequestService.STATUS_CHO_DUYET
+        );
     }
 
     private String normalizeStatus(String status) {
@@ -479,6 +536,7 @@ public class OrderService {
             lichSuSuDungMaGiamGiaRepository.save(lichSu);
         }
 
+        List<ChiTietDonHang> orderItems = new ArrayList<>();
         for (ChiTietGioHang item : gioHang.getChiTiets()) {
             BienTheSanPham bt = item.getBienTheSanPham();
 
@@ -497,7 +555,8 @@ public class OrderService {
             ctdh.setDonGia(item.getDonGia());
             ctdh.setThanhTien(item.getDonGia().multiply(new BigDecimal(item.getSoLuong())));
             
-            chiTietDonHangRepository.save(ctdh);
+            ChiTietDonHang savedItem = chiTietDonHangRepository.save(ctdh);
+            orderItems.add(savedItem);
 
             logStockTransaction(bt, "XUAT", item.getSoLuong(), donHang,
                     "Tru kho tu don " + donHang.getMaDonHang());
@@ -509,6 +568,8 @@ public class OrderService {
         // Xóa thông tin voucher khỏi session
         session.removeAttribute("APPLIED_VOUCHER_CODE");
         session.removeAttribute("DISCOUNT_AMOUNT");
+
+        orderConfirmationEmailService.sendOrderConfirmation(donHang, orderItems);
 
         return donHang;
     }

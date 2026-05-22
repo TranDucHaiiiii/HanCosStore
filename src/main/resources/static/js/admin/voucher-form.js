@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Chặn submit nếu mức giảm tối đa vượt quá 30% giá trị đơn tối thiểu.
+// Chặn submit nếu đơn tối thiểu không đủ lớn so với tiền giảm.
 document.querySelector('form').addEventListener('submit', function(e) {
     clearVoucherFieldErrors();
     const loai = document.getElementById('loaiGiam').value;
@@ -221,12 +221,13 @@ document.querySelector('form').addEventListener('submit', function(e) {
     const giaTriToiDa = parseFloat(giaTriToiDaInput.value);
     const donToiThieu = parseFloat(donToiThieuInput.value);
 
-    if (loai === 'FIXED' && giaTri && donToiThieu && giaTri > donToiThieu) {
+    if (loai === 'FIXED' && giaTri && donToiThieu && donToiThieu < giaTri * 5) {
         e.preventDefault();
+        const minOrder = formatCurrency(giaTri * 5);
         giaTriInput.classList.add('is-invalid');
         donToiThieuInput.classList.add('is-invalid');
-        setVoucherFormError('Voucher giảm tiền mặt không được lớn hơn đơn tối thiểu.');
-        giaTriInput.focus();
+        setVoucherFormError('Đơn tối thiểu phải ít nhất gấp 5 lần giá trị giảm (' + minOrder + ').');
+        donToiThieuInput.focus();
         return;
     }
 

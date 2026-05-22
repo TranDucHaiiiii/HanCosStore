@@ -89,8 +89,7 @@ public class SepayService {
         tx.setDuLieuRaw(serializePayload(payload));
          giaoDichThanhToanRepository.save(tx);
 
-         // Tự động xác nhận đơn sau khi thanh toán thành công (chuyển sang DA_XAC_NHAN)
-         order.setTrangThai("DA_XAC_NHAN");
+         order.setTrangThai(isPosCounterOrder(order) ? "HOAN_THANH" : "DA_XAC_NHAN");
          order.setNgayCapNhat(Instant.now());
         donHangRepository.save(order);
     }
@@ -105,7 +104,8 @@ public class SepayService {
                 .findFirstByDonHangAndNhaCungCapOrderByNgayTaoDesc(order, PROVIDER);
         if (txOpt.isPresent() && STATUS_PAID.equalsIgnoreCase(txOpt.get().getTrangThai())) {
             status = STATUS_PAID;
-        } else if ("DA_XAC_NHAN".equalsIgnoreCase(order.getTrangThai())) {
+        } else if ("DA_XAC_NHAN".equalsIgnoreCase(order.getTrangThai())
+                || "HOAN_THANH".equalsIgnoreCase(order.getTrangThai())) {
             status = STATUS_PAID;
         }
 
@@ -178,5 +178,11 @@ public class SepayService {
         } catch (JsonProcessingException e) {
             return "{}";
         }
+    }
+
+    private boolean isPosCounterOrder(DonHang order) {
+        return order != null
+                && order.getDiaChiNhan() != null
+                && "Mua tại quầy".equalsIgnoreCase(order.getDiaChiNhan().trim());
     }
 }

@@ -252,7 +252,7 @@ function addVariant(data = null) {
             </div>
             <div class="form-group variant-field variant-price-field">
                 <label>Gia Ban <span class="required">*</span></label>
-                <input type="number" name="bienThes[${index}].gia" required min="0" value="${seed ? seed.gia : ''}" placeholder="850000">
+                <input type="number" name="bienThes[${index}].gia" required min="0" step="any" value="${seed ? seed.gia : ''}" placeholder="850000">
             </div>
             <div class="form-group variant-field variant-weight-field">
                 <label>Khoi Luong (gram) <span class="required">*</span></label>
@@ -856,6 +856,11 @@ function validateVariants() {
             return false;
         }
 
+        if (soLuongRaw === undefined || soLuongRaw === null || String(soLuongRaw).trim() === '') {
+            showAlert('error', 'Vui lòng nhập số lượng tồn cho biến thể.');
+            focusInvalidField(variant.querySelector('input[name*=".soLuongTon"]'));
+            return false;
+        }
         const soLuong = Number(soLuongRaw);
         if (!Number.isInteger(soLuong) || soLuong < 0) {
             showAlert('error', 'Số lượng tồn phải là số nguyên >= 0.');
@@ -863,18 +868,24 @@ function validateVariants() {
             return false;
         }
 
+        if (giaRaw === undefined || giaRaw === null || String(giaRaw).trim() === '') {
+            showAlert('error', 'Vui lòng nhập giá bán cho biến thể.');
+            focusInvalidField(variant.querySelector('input[name*=".gia"]'));
+            return false;
+        }
         const gia = Number(giaRaw);
         if (!Number.isFinite(gia) || gia <= 0) {
             showAlert('error', 'Giá bán phải là số > 0.');
             focusInvalidField(variant.querySelector('input[name*=".gia"]'));
             return false;
         }
-        if (gia % 1000 !== 0) {
-            showAlert('error', 'Giá bán nên là bội số của 1.000đ.');
-            focusInvalidField(variant.querySelector('input[name*=".gia"]'));
+      
+
+        if (khoiLuongRaw === undefined || khoiLuongRaw === null || String(khoiLuongRaw).trim() === '') {
+            showAlert('error', 'Vui lòng nhập khối lượng cho biến thể.');
+            focusInvalidField(variant.querySelector('input[name*=".khoiLuongGram"]'));
             return false;
         }
-
         const khoiLuong = Number(khoiLuongRaw);
         if (!Number.isInteger(khoiLuong) || khoiLuong <= 0) {
             showAlert('error', 'Khối lượng phải là số nguyên > 0.');
@@ -967,9 +978,15 @@ function collectVariantPayload() {
         maSKU: (variant.querySelector('input[name*=".maSKU"]')?.value || '').trim(),
         mauSac: (variant.querySelector('select[name*=".mauSac"]')?.value || '').trim(),
         kichCo: (variant.querySelector('select[name*=".kichCo"]')?.value || '').trim(),
-        soLuongTon: Number(variant.querySelector('input[name*=".soLuongTon"]')?.value || 0),
-        gia: Number(variant.querySelector('input[name*=".gia"]')?.value || 0),
-        khoiLuongGram: Number(variant.querySelector('input[name*=".khoiLuongGram"]')?.value || 0)
+        soLuongTon: variant.querySelector('input[name*=".soLuongTon"]')?.value === ''
+            ? null
+            : Number(variant.querySelector('input[name*=".soLuongTon"]')?.value),
+        gia: variant.querySelector('input[name*=".gia"]')?.value === ''
+            ? null
+            : Number(variant.querySelector('input[name*=".gia"]')?.value),
+        khoiLuongGram: variant.querySelector('input[name*=".khoiLuongGram"]')?.value === ''
+            ? null
+            : Number(variant.querySelector('input[name*=".khoiLuongGram"]')?.value)
     }));
 }
 

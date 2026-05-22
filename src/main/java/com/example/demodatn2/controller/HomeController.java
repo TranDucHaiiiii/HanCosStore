@@ -114,10 +114,9 @@ public class HomeController {
         return parentCategories.stream()
                 .collect(Collectors.toMap(
                         DanhMuc::getId,
-                        parent -> homeService.getHomeProducts(parent.getId(), null)
-                                .stream()
-                                .limit(CATEGORY_PREVIEW_LIMIT)
-                                .toList()
+                parent -> homeService
+                    .getHomeProductsPage(parent.getId(), null, PageRequest.of(0, CATEGORY_PREVIEW_LIMIT))
+                    .getContent()
                 ));
     }
 }

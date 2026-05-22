@@ -1058,6 +1058,26 @@ body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; color: #333;
     color: var(--primary-color);
     background: rgba(139, 77, 77, 0.06);
 }
+
+.transfer-auto-status,
+.transfer-modal-status {
+    border: 1px solid #d9e6f2;
+    background: #f7fbff;
+    color: #425466;
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.transfer-auto-status strong {
+    color: var(--primary-color);
+}
+
+.transfer-modal-status {
+    margin-top: 0.75rem;
+    font-weight: 700;
+}
 .pos-invoice-add:hover {
     border-color: var(--primary-color);
     color: var(--primary-color);

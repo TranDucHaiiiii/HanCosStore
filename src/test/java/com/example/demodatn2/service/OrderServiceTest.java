@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.javamail.JavaMailSender;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -33,10 +34,12 @@ class OrderServiceTest {
     @Mock private LichSuSuDungMaGiamGiaRepository lichSuSuDungMaGiamGiaRepository;
     @Mock private YeuCauDoiTraRepository yeuCauDoiTraRepository;
     @Mock private GiaoDichTonKhoRepository giaoDichTonKhoRepository;
+    @Mock private JavaMailSender mailSender;
 
     @Test
     void createOrder_includesGhtkShippingFeeInSepayTotal() {
         VoucherService voucherService = new VoucherService(maGiamGiaRepository);
+        OrderConfirmationEmailService orderConfirmationEmailService = new OrderConfirmationEmailService(mailSender);
         OrderService orderService = new OrderService(
                 donHangRepository,
                 chiTietDonHangRepository,
@@ -47,6 +50,7 @@ class OrderServiceTest {
                 lichSuSuDungMaGiamGiaRepository,
                 yeuCauDoiTraRepository,
                 giaoDichTonKhoRepository,
+                orderConfirmationEmailService,
                 voucherService
         );
 
@@ -102,6 +106,7 @@ class OrderServiceTest {
         assertThat(order.getTongTien()).isEqualByComparingTo("70000");
         verify(giaoDichTonKhoRepository).save(any());
         verify(gioHangRepository).delete(gioHang);
+        verify(mailSender).send(any(org.springframework.mail.SimpleMailMessage.class));
     }
 }
 

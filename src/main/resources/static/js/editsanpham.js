@@ -404,13 +404,13 @@ function addVariant(data = null) {
         <div class="form-row">
           <div class="form-group">
             <label>Giá Bán <span class="required">*</span></label>
-            <input type="number" name="gia"
+            <input type="number" name="gia" step="any"
                                      value="${data ? (data.gia ?? 0) : ''}">
           </div>
 
           <div class="form-group">
             <label>Giá Gốc</label>
-            <input type="number" name="giaGoc"
+            <input type="number" name="giaGoc" step="any"
                    value="${data && data.giaGoc != null ? data.giaGoc : ''}">
           </div>
         </div>

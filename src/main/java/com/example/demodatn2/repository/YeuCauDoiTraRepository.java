@@ -10,6 +10,8 @@ import java.util.Optional;
 public interface YeuCauDoiTraRepository extends JpaRepository<YeuCauDoiTra, Integer> {
     boolean existsByDonHangId(Integer donHangId);
 
+    boolean existsByDonHangIdAndTrangThai(Integer donHangId, String trangThai);
+
     @EntityGraph(attributePaths = {"donHang", "taiKhoan"})
     Optional<YeuCauDoiTra> findByDonHangId(Integer donHangId);
 

@@ -13,6 +13,7 @@ import com.example.demodatn2.entity.DonHang;
 import com.example.demodatn2.entity.MaGiamGia;
 import com.example.demodatn2.entity.TaiKhoan;
 import com.example.demodatn2.repository.TaiKhoanRepository;
+import com.example.demodatn2.repository.DonHangRepository;
 import com.example.demodatn2.service.DanhMucService;
 import com.example.demodatn2.service.KhoHangHoanService;
 import com.example.demodatn2.service.OrderService;
@@ -68,6 +69,7 @@ public class AdminController {
     private final PosCartService posCartService;
     private final KhoHangHoanService khoHangHoanService;
     private final TaiKhoanRepository taiKhoanRepository;
+    private final DonHangRepository donHangRepository;
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
@@ -310,13 +312,40 @@ public class AdminController {
             }
 
             req.setItems(toPosOrderItems(cart));
+            validateAndNormalizePosCustomer(req);
+            validatePosVoucher(req, cart);
             if (req.getOrderCode() == null || req.getOrderCode().trim().isEmpty()) {
                 req.setOrderCode(posCartService.ensureTransferReference(session));
             }
             req.setPaymentMethod(PAYMENT_TRANSFER);
+            Optional<DonHang> existingOrder = donHangRepository.findByMaDonHangIgnoreCase(req.getOrderCode().trim());
+            if (existingOrder.isPresent()) {
+                DonHang donHang = existingOrder.get();
+                return Map.of("success", true, "orderId", donHang.getId(),
+                        "orderCode", donHang.getMaDonHang(), "total", donHang.getTongTien());
+            }
             TaiKhoanDTO staff = getLoginUser(session);
             DonHang donHang = orderService.createPendingPosTransferOrder(req, staff);
-            return Map.of("success", true, "orderCode", donHang.getMaDonHang(), "total", donHang.getTongTien());
+            return Map.of("success", true, "orderId", donHang.getId(),
+                    "orderCode", donHang.getMaDonHang(), "total", donHang.getTongTien());
+        } catch (Exception e) {
+            return Map.of("success", false, "message", e.getMessage());
+        }
+    }
+
+    @PostMapping("/pos/api/transfer/{orderCode}/complete")
+    @ResponseBody
+    public Map<String, Object> completePosTransfer(@PathVariable String orderCode, HttpSession session) {
+        try {
+            DonHang donHang = donHangRepository.findByMaDonHangIgnoreCase(orderCode)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn chuyển khoản"));
+            String status = donHang.getTrangThai() != null ? donHang.getTrangThai().trim().toUpperCase() : "";
+            if (!"DA_XAC_NHAN".equals(status) && !"HOAN_THANH".equals(status) && !"PAID".equals(status)) {
+                return Map.of("success", false, "message", "Đơn chưa được SePay xác nhận thanh toán");
+            }
+            posCartService.clear(session);
+            return Map.of("success", true, "orderId", donHang.getId(), "orderCode", donHang.getMaDonHang(),
+                    "total", donHang.getTongTien(), "invoices", posCartService.listInvoices(session));
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
@@ -480,6 +509,13 @@ public class AdminController {
             }
         } else if (!Boolean.TRUE.equals(req.getTransferConfirmed())) {
             throw new RuntimeException("Vui lòng xác nhận đã nhận được tiền chuyển khoản!");
+        }
+    }
+
+    private void validatePosVoucher(PosOrderRequestDTO req, List<PosCartItemDTO> cart) {
+        Map<String, Object> summary = buildPosSummary(cart, req.getVoucherCode(), null);
+        if (!isBlank(req.getVoucherCode()) && summary.get("voucherCode") == null) {
+            throw new RuntimeException("Mã giảm giá không hợp lệ hoặc không đủ điều kiện");
         }
     }
 

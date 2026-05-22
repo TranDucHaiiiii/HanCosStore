@@ -49,8 +49,6 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-700">Mã voucher <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" th:field="*{ma}" required
-                                       minlength="5" maxlength="20" pattern="[A-Za-z0-9]+"
-                                       title="5–20 ký tự, không chứa khoảng trắng hoặc ký tự đặc biệt"
                                        placeholder="VD: VOUCHER10">
                             </div>
                             <div class="col-md-6">
@@ -198,4 +196,3 @@
 <script th:src="@{/js/admin/voucher-form.js}"></script>
 </body>
 </html>
-

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết trả hàng - HANCOS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
+    <link rel="stylesheet" th:href="@{/css/admin/order-detail.css}">
+    <style>
+        .return-status { border-radius: 999px; border: 1px solid transparent; padding: 8px 14px; font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; white-space: nowrap; }
+        .return-status-pending { background: #fff8db; color: #9a6b00; border-color: #ffe08a; }
+        .return-status-approved { background: #e7f8ee; color: #16784b; border-color: #b8ebcf; }
+        .return-status-rejected { background: #fde8eb; color: #b42334; border-color: #f7b8c0; }
+        .return-status-inspection { background: #e7f0ff; color: #1e5bb8; border-color: #b9d2ff; }
+        .return-status-refunded { background: #eee9ff; color: #5a3db5; border-color: #d4c8ff; }
+        .return-status-done { background: #e9f7f6; color: #0f766e; border-color: #b7e3df; }
+        .inspection-pending { background: #fff8db; color: #9a6b00; border: 1px solid #ffe08a; }
+        .inspection-passed { background: #e7f8ee; color: #16784b; border: 1px solid #b8ebcf; }
+        .inspection-failed { background: #fde8eb; color: #b42334; border: 1px solid #f7b8c0; }
+    </style>
+</head>
+<body>
+<div th:replace="~{admin/fragments/sidebar :: sidebar('returns')}"></div>
+
+<div class="main-content"
+     th:attr="data-return-id=${request.id},data-order-code=${request.donHang.maDonHang},data-default-refund-method=${request.phuongThucHoanTien},data-default-refund-amount=${maxRefundAmount}">
+    <header class="top-header">
+        <div class="d-flex align-items-center">
+            <a th:href="@{/admin/returns}" class="btn-action me-3"><i class="fas fa-arrow-left"></i></a>
+            <h4 class="fw-800 mb-0 text-uppercase letter-spacing-1">Yêu cầu trả hàng <span th:text="'#' + ${request.id}"></span></h4>
+        </div>
+        <span class="return-status"
+              th:classappend="${request.trangThai == 'CHO_DUYET' or request.trangThai == 'PENDING' ? ' return-status-pending' :
+                              (request.trangThai == 'DA_DUYET' or request.trangThai == 'APPROVED' ? ' return-status-approved' :
+                              (request.trangThai == 'TU_CHOI' or request.trangThai == 'REJECTED' ? ' return-status-rejected' :
+                              (request.trangThai == 'CHO_KIEM_DINH' ? ' return-status-inspection' :
+                              (request.trangThai == 'DA_HOAN_TIEN' ? ' return-status-refunded' :
+                              (request.trangThai == 'HOAN_TAT' ? ' return-status-done' : ' return-status-pending')))))}"
+              th:text="${request.trangThai == 'CHO_DUYET' or request.trangThai == 'PENDING' ? 'Chờ duyệt' :
+                       (request.trangThai == 'DA_DUYET' or request.trangThai == 'APPROVED' ? 'Đã duyệt' :
+                       (request.trangThai == 'TU_CHOI' or request.trangThai == 'REJECTED' ? 'Từ chối' :
+                       (request.trangThai == 'CHO_KIEM_DINH' ? 'Chờ kiểm định' :
+                       (request.trangThai == 'DA_HOAN_TIEN' ? 'Đã hoàn tiền' :
+                       (request.trangThai == 'HOAN_TAT' ? 'Hoàn tất' : request.trangThai)))))}">Chờ duyệt</span>
+    </header>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">Sản phẩm trả</div>
+                <div class="card-body p-0">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Số lượng trả</th>
+                            <th>Kiểm định</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="detail : ${details}">
+                            <td>
+                                <div class="fw-700" th:text="${detail.chiTietDonHang.tenSanPham}">Sản phẩm</div>
+                                <small class="text-muted" th:text="${detail.chiTietDonHang.mauSac + ' / ' + detail.chiTietDonHang.kichCo}">Màu/size</small>
+                            </td>
+                            <td class="fw-800" th:text="${detail.soLuong}">1</td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${detail.inspectionStatus == 'PENDING_INSPECTION' ? ' inspection-pending' :
+                                                      (detail.inspectionStatus == 'PASSED' ? ' inspection-passed' :
+                                                      (detail.inspectionStatus == 'FAILED' ? ' inspection-failed' : ' inspection-pending'))}"
+                                      th:text="${detail.inspectionStatus == 'PENDING_INSPECTION' ? 'Chờ kiểm định' :
+                                               (detail.inspectionStatus == 'PASSED' ? 'Đạt' :
+                                               (detail.inspectionStatus == 'FAILED' ? 'Không đạt' : detail.inspectionStatus))}">Chờ kiểm định</span>
+                            </td>
+                            <td class="text-end">
+                                <button th:if="${detail.inspectionStatus == 'PENDING_INSPECTION' and (request.trangThai == 'DA_DUYET' or request.trangThai == 'CHO_KIEM_DINH' or request.trangThai == 'APPROVED')}"
+                                        type="button"
+                                        class="btn btn-success btn-sm js-inspect-item"
+                                        th:attr="data-detail-id=${detail.id},data-inspection-status='PASSED'">Đạt</button>
+                                <button th:if="${detail.inspectionStatus == 'PENDING_INSPECTION' and (request.trangThai == 'DA_DUYET' or request.trangThai == 'CHO_KIEM_DINH' or request.trangThai == 'APPROVED')}"
+                                        type="button"
+                                        class="btn btn-outline-danger btn-sm js-inspect-item"
+                                        th:attr="data-detail-id=${detail.id},data-inspection-status='FAILED'">Không đạt</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Ảnh minh chứng</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-3">
+                        <a th:each="img : ${images}" th:href="${img.duongDanAnh}" target="_blank">
+                            <img th:src="${img.duongDanAnh}" alt="Ảnh trả hàng" style="width:140px;height:140px;object-fit:cover;" class="border bg-white">
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Lịch sử xử lý</div>
+                <div class="card-body">
+                    <div th:each="h : ${histories}" class="border-bottom pb-3 mb-3">
+                        <div class="fw-800" th:text="${h.hanhDong}">ACTION</div>
+                        <div class="text-muted small" th:text="${#temporals.format(h.thoiGian, 'dd/MM/yyyy HH:mm')}">time</div>
+                        <div class="small" th:text="${h.ghiChu ?: 'Không có ghi chú'}">note</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" th:if="${!#lists.isEmpty(refundTransactions)}">
+                <div class="card-header">Giao dịch hoàn tiền</div>
+                <div class="card-body">
+                    <div th:each="refund : ${refundTransactions}" class="border-bottom pb-3 mb-3">
+                        <div class="fw-800" th:text="${#numbers.formatDecimal(refund.soTienHoan, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
+                        <div class="small">
+                            <span th:text="${refund.phuongThucHoanTien == 'BANK_TRANSFER' ? 'Chuyển khoản' :
+                                           (refund.phuongThucHoanTien == 'STORE_CREDIT' ? 'Ví mua hàng' :
+                                           (refund.phuongThucHoanTien == 'CASH' ? 'Tiền mặt' : refund.phuongThucHoanTien))}">Chuyển khoản</span>
+                            <span th:if="${refund.maGiaoDich != null and !#strings.isEmpty(refund.maGiaoDich)}"
+                                  th:text="${' - Mã GD: ' + refund.maGiaoDich}"> - Mã GD</span>
+                        </div>
+                        <div class="text-muted small" th:text="${#temporals.format(refund.thoiGianHoan, 'dd/MM/yyyy HH:mm')}">time</div>
+                        <div class="small" th:text="${refund.ghiChu ?: 'Không có ghi chú'}">note</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">Thông tin yêu cầu</div>
+                <div class="card-body p-4">
+                    <div class="mb-3"><div class="order-info-label">Đơn hàng</div><div class="fw-700" th:text="${request.donHang.maDonHang}"></div></div>
+                    <div class="mb-3"><div class="order-info-label">Khách hàng</div><div class="fw-700" th:text="${request.taiKhoan.hoTen}"></div></div>
+                    <div class="mb-3"><div class="order-info-label">Lý do</div><div th:text="${request.lyDo}"></div></div>
+                    <div class="mb-3"><div class="order-info-label">Mô tả</div><div th:text="${request.moTaChiTiet ?: 'Không có'}"></div></div>
+                    <div class="mb-4">
+                        <div class="order-info-label">Phương thức hoàn tiền</div>
+                        <div th:text="${request.phuongThucHoanTien == 'BANK_TRANSFER' ? 'Chuyển khoản ngân hàng' :
+                                      (request.phuongThucHoanTien == 'STORE_CREDIT' ? 'Hoàn vào ví/tài khoản mua hàng' :
+                                      (request.phuongThucHoanTien == 'CASH' ? 'Tiền mặt' : request.phuongThucHoanTien))}"></div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="order-info-label">Số tiền cần hoàn</div>
+                        <div class="fw-800 text-danger"
+                             th:text="${#numbers.formatDecimal(maxRefundAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
+                    </div>
+
+                    <label class="order-info-label">Cập nhật trạng thái</label>
+                    <select id="returnStatus" class="form-select mb-3" th:disabled="${#lists.isEmpty(nextStatuses)}">
+                        <option value="" selected disabled
+                                th:text="${#lists.isEmpty(nextStatuses) ? 'Không còn trạng thái kế tiếp' : 'Chọn trạng thái kế tiếp'}">Chọn trạng thái kế tiếp</option>
+                        <option th:each="st : ${nextStatuses}"
+                                th:value="${st}"
+                                th:text="${st == 'CHO_DUYET' ? 'Chờ duyệt' :
+                                         (st == 'DA_DUYET' ? 'Đã duyệt' :
+                                         (st == 'TU_CHOI' ? 'Từ chối' :
+                                         (st == 'CHO_KIEM_DINH' ? 'Chờ kiểm định' :
+                                         (st == 'DA_HOAN_TIEN' ? 'Đã hoàn tiền' :
+                                         (st == 'HOAN_TAT' ? 'Hoàn tất' : st)))))}">Chờ duyệt</option>
+                    </select>
+                    <div id="refundFields" class="border rounded p-3 mb-3 d-none">
+                        <div class="order-info-label mb-2">Thông tin hoàn tiền</div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-700">Số tiền hoàn</label>
+                            <input id="refundAmount" class="form-control" type="number" min="1" step="1000"
+                                   th:value="${#numbers.formatDecimal(maxRefundAmount, 0, 0)}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-700">Phương thức hoàn tiền</label>
+                            <select id="refundMethod" class="form-select">
+                                <option value="BANK_TRANSFER" th:selected="${request.phuongThucHoanTien == 'BANK_TRANSFER'}">Chuyển khoản</option>
+                                <option value="STORE_CREDIT" th:selected="${request.phuongThucHoanTien == 'STORE_CREDIT'}">Ví mua hàng</option>
+                                <option value="CASH" th:selected="${request.phuongThucHoanTien == 'CASH'}">Tiền mặt</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-700">Mã giao dịch</label>
+                            <input id="refundTransactionCode" class="form-control" type="text" maxlength="100"
+                                   placeholder="Bắt buộc nếu chuyển khoản">
+                        </div>
+                    </div>
+                    <textarea id="returnNote" class="form-control mb-3" rows="3" placeholder="Ghi chú xử lý"></textarea>
+                    <button class="btn btn-primary w-100" onclick="updateReturnStatus()" th:disabled="${#lists.isEmpty(nextStatuses)}">Lưu trạng thái</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.js-inspect-item').forEach((button) => {
+        button.addEventListener('click', () => {
+            inspectItem(button.dataset.detailId, button.dataset.inspectionStatus);
+        });
+    });
+    const statusSelect = document.getElementById('returnStatus');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', toggleRefundFields);
+        toggleRefundFields();
+    }
+    const refundMethod = document.getElementById('refundMethod');
+    if (refundMethod) {
+        refundMethod.addEventListener('change', () => renderRefundInfo(true));
+    }
+});
+
+function inspectItem(detailId, status) {
+    const label = status === 'PASSED' ? 'Đạt' : 'Không đạt';
+    Swal.fire({
+        title: 'Xác nhận kiểm định: ' + label,
+        input: 'textarea',
+        inputPlaceholder: 'Ghi chú kiểm định',
+        showCancelButton: true,
+        confirmButtonText: 'Lưu',
+        cancelButtonText: 'Hủy'
+    })
+        .then(result => {
+            if (!result.isConfirmed) return;
+            fetch('/api/returns/items/' + detailId + '/inspection', {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body: JSON.stringify({inspectionStatus: status, note: result.value})
+            }).then(toJson).then(data => {
+                if (data.success) Swal.fire('Thành công', 'Đã cập nhật kiểm định.', 'success').then(() => location.reload());
+                else Swal.fire('Lỗi', data.message || 'Không cập nhật được.', 'error');
+            }).catch(showRequestError);
+        });
+}
+
+function toJson(response) {
+    return response.text().then((text) => {
+        try {
+            const data = text ? JSON.parse(text) : {};
+            if (!response.ok && data.message) {
+                return data;
+            }
+            return data;
+        } catch (_) {
+            return {
+                success: false,
+                message: response.status === 401
+                    ? 'Phiên đăng nhập đã hết hạn.'
+                    : (response.status === 403 ? 'Bạn không có quyền thực hiện thao tác này.' : text)
+            };
+        }
+    });
+}
+
+function showRequestError(error) {
+    Swal.fire('Lỗi', error?.message || 'Không gửi được yêu cầu. Vui lòng thử lại.', 'error');
+}
+function toggleRefundFields() {
+    const statusSelect = document.getElementById('returnStatus');
+    const refundFields = document.getElementById('refundFields');
+    if (!statusSelect || !refundFields) {
+        return;
+    }
+    const shouldShow = statusSelect.value === 'DA_HOAN_TIEN';
+    refundFields.classList.toggle('d-none', !shouldShow);
+    if (shouldShow) {
+        renderRefundInfo(false);
+    }
+}
+
+function renderRefundInfo(forceCode) {
+    const container = document.querySelector('.main-content');
+    const amountEl = document.getElementById('refundAmount');
+    const methodEl = document.getElementById('refundMethod');
+    const codeEl = document.getElementById('refundTransactionCode');
+    const noteEl = document.getElementById('returnNote');
+    if (!container || !amountEl || !methodEl || !codeEl) {
+        return;
+    }
+
+    const defaultAmount = Number(container.dataset.defaultRefundAmount || 0);
+    if ((!amountEl.value || Number(amountEl.value) <= 0) && defaultAmount > 0) {
+        amountEl.value = defaultAmount;
+    }
+
+    const defaultMethod = container.dataset.defaultRefundMethod || 'BANK_TRANSFER';
+    if (!methodEl.value && defaultMethod) {
+        methodEl.value = defaultMethod;
+    }
+
+    const generatedCode = generateRefundTransactionCode(methodEl.value);
+    if (forceCode || !codeEl.value.trim()) {
+        codeEl.value = generatedCode;
+        codeEl.dataset.autoGenerated = generatedCode;
+    }
+
+    if (noteEl && !noteEl.value.trim()) {
+        noteEl.value = `Hoàn tiền ${formatVnd(amountEl.value)} qua ${refundMethodLabel(methodEl.value)}.`;
+    }
+}
+
+function generateRefundTransactionCode(method) {
+    const container = document.querySelector('.main-content');
+    const orderCode = (container?.dataset.orderCode || `RETURN-${container?.dataset.returnId || ''}`)
+        .replace(/[^A-Za-z0-9]/g, '')
+        .toUpperCase();
+    const now = new Date();
+    const pad = value => String(value).padStart(2, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const prefix = method === 'CASH' ? 'CASH' : (method === 'STORE_CREDIT' ? 'CREDIT' : 'BANK');
+    return `${prefix}-${orderCode}-${timestamp}`;
+}
+
+function refundMethodLabel(method) {
+    if (method === 'CASH') return 'tiền mặt';
+    if (method === 'STORE_CREDIT') return 'ví mua hàng';
+    return 'chuyển khoản';
+}
+
+function formatVnd(value) {
+    const amount = Number(value || 0);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        return '0 đ';
+    }
+    return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+}
+
+function updateReturnStatus() {
+    const id = document.querySelector('.main-content').dataset.returnId;
+    const status = document.getElementById('returnStatus').value;
+    if (!status) {
+        Swal.fire('Thiếu trạng thái', 'Vui lòng chọn trạng thái kế tiếp.', 'warning');
+        return;
+    }
+
+    const payload = {status: status, note: document.getElementById('returnNote').value};
+    if (status === 'DA_HOAN_TIEN') {
+        const refundAmount = Number(document.getElementById('refundAmount').value || 0);
+        const refundMethod = document.getElementById('refundMethod').value;
+        const refundTransactionCode = document.getElementById('refundTransactionCode').value.trim();
+        if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
+            Swal.fire('Thiếu số tiền hoàn', 'Vui lòng nhập số tiền hoàn hợp lệ.', 'warning');
+            return;
+        }
+        if (refundMethod === 'BANK_TRANSFER' && !refundTransactionCode) {
+            Swal.fire('Thiếu mã giao dịch', 'Vui lòng nhập mã giao dịch ngân hàng.', 'warning');
+            return;
+        }
+        payload.refundAmount = refundAmount;
+        payload.refundMethod = refundMethod;
+        payload.refundTransactionCode = refundTransactionCode;
+    }
+
+    fetch('/api/returns/' + id + '/status', {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+        body: JSON.stringify(payload)
+    }).then(toJson).then(data => {
+        if (data.success) Swal.fire('Thành công', 'Đã cập nhật trạng thái.', 'success').then(() => location.reload());
+        else Swal.fire('Lỗi', data.message || 'Không cập nhật được.', 'error');
+    }).catch(showRequestError);
+}
+</script>
+</body>
+</html>

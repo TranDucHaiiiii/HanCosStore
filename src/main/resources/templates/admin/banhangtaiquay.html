@@ -317,11 +317,9 @@
                                 <i class="fas fa-qrcode me-1"></i>Xem mã QR chuyển khoản
                             </button>
                         </div>
-                        <div class="transfer-confirm">
-                            <label class="transfer-check-label">
-                                <input type="checkbox" id="transferConfirm">
-                                <span>Đã xác nhận nhận được tiền chuyển khoản</span>
-                            </label>
+                        <div class="transfer-auto-status">
+                            <div>Mã đơn: <strong id="transferOrderCodeInline">Chưa tạo</strong></div>
+                            <div id="transferStatusTextInline">Tạo mã QR để chờ SePay xác nhận tự động</div>
                         </div>
                     </div>
 
@@ -406,7 +404,12 @@
                         <span class="transfer-label">Số tiền:</span>
                         <span class="transfer-value text-danger fw-800" style="font-size:1.1rem;" id="transferAmount">0₫</span>
                     </div>
+                    <div class="transfer-detail justify-content-center">
+                        <span class="transfer-label">Nội dung:</span>
+                        <span class="transfer-value fw-800" id="transferOrderCode">Chưa tạo</span>
+                    </div>
                 </div>
+                <div class="transfer-modal-status" id="transferStatusText">Đang chờ SePay xác nhận chuyển khoản</div>
             </div>
             <div class="modal-footer justify-content-center" style="border:none;padding:0.5rem 1rem 1rem;">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Đóng</button>

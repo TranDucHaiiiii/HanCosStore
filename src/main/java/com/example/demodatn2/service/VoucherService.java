@@ -152,12 +152,6 @@ public class VoucherService {
         if (voucher.getMa() == null || voucher.getMa().isEmpty()) {
             throw new IllegalArgumentException("Mã voucher không được để trống.");
         }
-        if (voucher.getMa().length() < 5 || voucher.getMa().length() > 20) {
-            throw new IllegalArgumentException("Mã voucher phải có độ dài từ 5 đến 20 ký tự.");
-        }
-        if (!voucher.getMa().matches("^[A-Za-z0-9]+$")) {
-            throw new IllegalArgumentException("Mã voucher không được chứa khoảng trắng hoặc ký tự đặc biệt.");
-        }
         // Kiểm tra trùng mã
         Optional<MaGiamGia> existing = voucherRepository.findByMa(voucher.getMa());
         if (existing.isPresent() && !existing.get().getId().equals(voucher.getId())) {
@@ -192,8 +186,16 @@ public class VoucherService {
             throw new IllegalArgumentException("Đơn tối thiểu phải lớn hơn 0.");
         }
 
-        if ("FIXED".equals(voucher.getLoai()) && voucher.getGiaTri().compareTo(voucher.getDonToiThieu()) > 0) {
-            throw new IllegalArgumentException("Voucher giảm tiền mặt không được lớn hơn đơn tối thiểu.");
+        if ("FIXED".equals(voucher.getLoai())) {
+            BigDecimal minOrderRequired = voucher.getGiaTri().multiply(new BigDecimal("5"));
+            if (voucher.getDonToiThieu().compareTo(minOrderRequired) < 0) {
+                throw new IllegalArgumentException(
+                        "Đơn tối thiểu phải ít nhất gấp 5 lần giá trị giảm. " +
+                                "Với voucher giảm "
+                                + voucher.getGiaTri().setScale(0, java.math.RoundingMode.DOWN).toPlainString() +
+                                "₫, đơn tối thiểu phải từ " +
+                                minOrderRequired.setScale(0, java.math.RoundingMode.DOWN).toPlainString() + "₫.");
+            }
         }
 
         // Giá trị giảm tối đa ≤ 30% đơn tối thiểu

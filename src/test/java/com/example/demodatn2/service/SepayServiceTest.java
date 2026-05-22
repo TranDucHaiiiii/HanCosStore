@@ -61,7 +61,7 @@ class SepayServiceTest {
         assertThat(tx.getDonHang()).isEqualTo(order);
         assertThat(tx.getSoTien()).isEqualByComparingTo("199000");
         assertThat(tx.getTrangThai()).isEqualTo("PAID");
-        assertThat(order.getTrangThai()).isEqualTo("PAID");
+        assertThat(order.getTrangThai()).isEqualTo("DA_XAC_NHAN");
     }
 
     @Test
@@ -108,6 +108,35 @@ class SepayServiceTest {
         GiaoDichThanhToan tx = txCaptor.getValue();
         assertThat(tx.getSoTien()).isEqualByComparingTo("40000");
         assertThat(tx.getMaGiaoDich()).isEqualTo("FT261278J12P");
-        assertThat(order.getTrangThai()).isEqualTo("PAID");
+        assertThat(order.getTrangThai()).isEqualTo("DA_XAC_NHAN");
+    }
+
+    @Test
+    void handleWebhook_completesPosCounterTransferOrder() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        SepayService sepayService = new SepayService(donHangRepository, giaoDichThanhToanRepository, phuongThucThanhToanRepository, objectMapper);
+
+        SepayWebhookRequest payload = new SepayWebhookRequest();
+        payload.setContent("DH-POS001");
+        payload.setAmount(new BigDecimal("150000"));
+        payload.setTransactionId("SEPAY-POS-001");
+
+        DonHang order = new DonHang();
+        order.setMaDonHang("DH-POS001");
+        order.setTongTien(new BigDecimal("150000"));
+        order.setTrangThai("PENDING");
+        order.setDiaChiNhan("Mua tại quầy");
+
+        when(donHangRepository.findByMaDonHangIgnoreCase("DH-POS001")).thenReturn(Optional.of(order));
+        when(giaoDichThanhToanRepository.findFirstByDonHangAndNhaCungCapOrderByNgayTaoDesc(order, "SEPAY"))
+                .thenReturn(Optional.empty());
+        when(phuongThucThanhToanRepository.findByMa("SEPAY"))
+                .thenReturn(Optional.of(new com.example.demodatn2.entity.PhuongThucThanhToan()));
+
+        sepayService.handleWebhook(payload);
+
+        verify(giaoDichThanhToanRepository).save(any(GiaoDichThanhToan.class));
+        verify(donHangRepository).save(order);
+        assertThat(order.getTrangThai()).isEqualTo("HOAN_THANH");
     }
 }

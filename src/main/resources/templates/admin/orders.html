@@ -49,11 +49,18 @@
                                 th:value="${keyword}" placeholder="Mã đơn, tên khách, SĐT...">
                         </div>
                     </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="channel" onchange="this.form.submit()">
+                            <option value="ALL" th:selected="${currentChannel == 'ALL'}">Tất cả kênh</option>
+                            <option value="POS" th:selected="${currentChannel == 'POS'}">Bán tại quầy</option>
+                            <option value="ONLINE" th:selected="${currentChannel == 'ONLINE'}">Bán online</option>
+                        </select>
+                    </div>
                     <input type="hidden" name="status" th:value="${currentStatus}">
-                    <div class="col-md-8">
+                    <div class="col-md-5">
                         <div class="d-flex gap-2 flex-wrap justify-content-end">
                             <a th:each="filter : ${statusFilters}"
-                                th:href="@{/admin/orders(status=${filter.key}, keyword=${keyword})}" class="filter-btn"
+                                th:href="@{/admin/orders(status=${filter.key}, keyword=${keyword}, channel=${currentChannel})}" class="filter-btn"
                                 th:classappend="${currentStatus == filter.key ? 'active' : ''}"
                                 th:text="${filter.label + ' (' + filter.count + ')'}">
                             </a>
@@ -92,6 +99,9 @@
                                 <td>
                                     <span class="badge bg-light text-dark border text-uppercase"
                                         style="font-size: 10px;" th:text="${order.phuongThucThanhToan}">COD</span>
+                                    <span class="badge bg-secondary text-white text-uppercase ms-1"
+                                        style="font-size: 10px;"
+                                        th:text="${order.diaChiNhan != null and #strings.equalsIgnoreCase(order.diaChiNhan, 'Mua tại quầy') ? 'POS' : 'ONLINE'}">ONLINE</span>
                                 </td>
                                 <td class="fw-800 text-danger"
                                     th:text="${#numbers.formatDecimal(order.tongTien, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫
