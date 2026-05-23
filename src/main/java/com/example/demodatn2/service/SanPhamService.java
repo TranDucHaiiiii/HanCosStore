@@ -153,7 +153,7 @@ public class SanPhamService {
         validateMaterialAndBrand(requestDTO.getChatLieu(), requestDTO.getThuongHieuId());
         validateVariantRequests(requestDTO.getBienThes());
         validateProductImagesForCreate(requestDTO.getHinhAnhSanPhams());
-        validateColorImagesForCreate(requestDTO.getHinhAnhMauSacs());
+        validateColorImagesForCreate(requestDTO.getHinhAnhMauSacs(), requestDTO.getBienThes());
 
         for (BienTheRequestDTO variant : requestDTO.getBienThes()) {
             String sku = variant.getMaSKU() != null ? variant.getMaSKU().trim() : "";
@@ -648,6 +648,8 @@ public class SanPhamService {
                 }
             });
         }
+
+        validateColorImagesForCreate(requestDTO.getHinhAnhMauSacs(), requestDTO.getBienThes());
     }
 
     private boolean isInactiveStatus(String status) {
@@ -1155,12 +1157,27 @@ public class SanPhamService {
         }
     }
 
-    private void validateColorImagesForCreate(List<HinhAnhMauSacDTO> colorImages) {
-        if (colorImages == null || colorImages.isEmpty()) {
-            return;
+    private void validateColorImagesForCreate(List<HinhAnhMauSacDTO> colorImages, List<BienTheRequestDTO> variants) {
+        Set<String> variantColorKeys = new HashSet<>();
+        List<String> variantColors = new ArrayList<>();
+        if (variants != null) {
+            for (BienTheRequestDTO variant : variants) {
+                if (variant == null) {
+                    continue;
+                }
+                String color = variant.getMauSac() != null ? variant.getMauSac().trim() : "";
+                String key = color.toLowerCase();
+                if (!color.isEmpty() && variantColorKeys.add(key)) {
+                    variantColors.add(color);
+                }
+            }
         }
 
         Set<String> colors = new HashSet<>();
+        Set<String> colorsWithImages = new HashSet<>();
+        if (colorImages == null) {
+            colorImages = Collections.emptyList();
+        }
         for (HinhAnhMauSacDTO image : colorImages) {
             if (image == null) {
                 continue;
@@ -1176,8 +1193,16 @@ public class SanPhamService {
             if (path.isEmpty()) {
                 throw new RuntimeException("Vui long upload anh cho mau " + color + ".");
             }
-            if (!colors.add(color.toLowerCase())) {
+            String key = color.toLowerCase();
+            if (!colors.add(key)) {
                 throw new RuntimeException("Khong duoc trung mau trong danh sach hinh anh theo mau.");
+            }
+            colorsWithImages.add(key);
+        }
+
+        for (String color : variantColors) {
+            if (!colorsWithImages.contains(color.toLowerCase())) {
+                throw new RuntimeException("Vui long them anh theo mau cho mau " + color + ".");
             }
         }
     }

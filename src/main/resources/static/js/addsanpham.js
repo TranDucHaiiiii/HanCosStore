@@ -942,6 +942,7 @@ function validateProductImages() {
 function validateColorImages() {
     const colorImages = Array.from(document.querySelectorAll('#colorImagesList .image-item'));
     const seenColors = new Set();
+    const colorsWithImages = new Set();
     for (const item of colorImages) {
         const colorInput = item.querySelector('input[name*=".mauSac"]');
         const hiddenInput = item.querySelector('input[type="hidden"][name*=".duongDanAnh"]');
@@ -968,6 +969,17 @@ function validateColorImages() {
             return false;
         }
         seenColors.add(key);
+        colorsWithImages.add(key);
+    }
+
+    const variantColors = Array.from(document.querySelectorAll('#variantsList select[name*=".mauSac"]'))
+        .map(select => (select.value || '').trim())
+        .filter(Boolean);
+    for (const color of variantColors) {
+        if (!colorsWithImages.has(color.toLowerCase())) {
+            showAlert('error', `Vui lòng thêm ảnh theo màu cho màu ${color}.`);
+            return false;
+        }
     }
     return true;
 }

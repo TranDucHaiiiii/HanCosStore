@@ -897,10 +897,21 @@
         return promise;
     }
 
+    function markUploadError(input, hasError) {
+        const item = input.closest('.image-item');
+        if (!item) return;
+        if (hasError) {
+            item.dataset.uploadError = 'true';
+        } else {
+            delete item.dataset.uploadError;
+        }
+    }
+
     async function uploadFile(input, hiddenInputName, previewId) {
         const uploadPromise = (async () => {
             const file = input.files && input.files[0];
             if (!file) return;
+            markUploadError(input, false);
 
             const preview = document.getElementById(previewId);
             if (preview) {
@@ -930,9 +941,11 @@
                         ? item.querySelector('input[type="hidden"]')
                         : document.querySelector(`input[name="${hiddenInputName}"]`);
                     if (hidden) hidden.value = path;
+                    markUploadError(input, false);
                 } else {
                     let msg = await res.text();
                     if (!msg || !msg.trim()) msg = `HTTP ${res.status}`;
+                    markUploadError(input, true);
 
                     if (res.status === 401) {
                         try {
@@ -950,6 +963,7 @@
                     Swal.fire('Loi!', `Upload that bai: ${msg}`, 'error');
                 }
             } catch (e) {
+                markUploadError(input, true);
                 Swal.fire('Loi!', `Upload loi ket noi: ${e.message}`, 'error');
             }
         })();
@@ -1107,6 +1121,49 @@
         checkboxes.forEach((cb, i) => { if (i !== index) cb.checked = false; });
     }
 
+    function validateGalleryImagesForSubmit() {
+        const images = Array.from(document.querySelectorAll('#imagesList .image-item'));
+        if (images.length === 0) {
+            Swal.fire('Lỗi', 'Vui lòng tải lên ít nhất 1 ảnh gallery trước khi lưu.', 'error');
+            return false;
+        }
+
+        let primaryCount = 0;
+        for (const item of images) {
+            if (item.dataset.uploadError === 'true') {
+                Swal.fire('Lỗi', 'Có ảnh gallery upload chưa thành công. Vui lòng chọn lại ảnh hoặc chờ upload xong.', 'error');
+                item.querySelector('input.file-upload')?.focus();
+                return false;
+            }
+
+            const hidden = item.querySelector('input[type="hidden"][name$=".duongDanAnh"]');
+            const imagePath = (hidden?.value || '').trim();
+            if (!imagePath) {
+                Swal.fire('Lỗi', 'Vui lòng upload đầy đủ ảnh gallery trước khi lưu.', 'error');
+                item.querySelector('input.file-upload')?.focus();
+                return false;
+            }
+
+            const orderInput = item.querySelector('input[name$=".thuTu"]');
+            const order = Number(orderInput?.value || 0);
+            if (!Number.isInteger(order) || order <= 0) {
+                Swal.fire('Lỗi', 'Thứ tự hình ảnh phải là số nguyên > 0.', 'error');
+                orderInput?.focus();
+                return false;
+            }
+
+            if (item.querySelector('input[type="checkbox"]')?.checked) {
+                primaryCount++;
+            }
+        }
+
+        if (primaryCount !== 1) {
+            Swal.fire('Lỗi', 'Vui lòng chọn đúng 1 ảnh chính.', 'error');
+            return false;
+        }
+        return true;
+    }
+
     function addColorImage(data = null) {
         const list = document.getElementById('colorImagesList');
         const index = list.children.length;
@@ -1255,6 +1312,51 @@
             if (v) keys.add(normalizeColorKey(v));
         });
         return keys;
+    }
+
+    function validateColorImagesForSubmit() {
+        const colorsWithImages = new Set();
+        const seenColors = new Set();
+        for (const item of Array.from(document.querySelectorAll('#colorImagesList .image-item'))) {
+            const colorSelect = item.querySelector('select[name$=".mauSac"]');
+            const hidden = item.querySelector('input[type="hidden"][name$=".duongDanAnh"]');
+            const color = (colorSelect?.value || '').trim();
+            const imagePath = (hidden?.value || '').trim();
+            if (item.dataset.uploadError === 'true') {
+                Swal.fire('Lỗi', 'Có ảnh theo màu upload chưa thành công. Vui lòng chọn lại ảnh hoặc chờ upload xong.', 'error');
+                item.querySelector('input.file-upload')?.focus();
+                return false;
+            }
+            if (!color && !imagePath) {
+                continue;
+            }
+            if (!color) {
+                Swal.fire('Lỗi', 'Vui lòng chọn màu sắc cho hình ảnh theo màu.', 'error');
+                colorSelect?.focus();
+                return false;
+            }
+            if (!imagePath) {
+                Swal.fire('Lỗi', `Vui lòng upload ảnh cho màu ${color}.`, 'error');
+                item.querySelector('input.file-upload')?.focus();
+                return false;
+            }
+            const key = normalizeColorKey(color);
+            if (seenColors.has(key)) {
+                Swal.fire('Lỗi', 'Không được trùng màu trong danh sách hình ảnh theo màu.', 'error');
+                colorSelect?.focus();
+                return false;
+            }
+            seenColors.add(key);
+            colorsWithImages.add(key);
+        }
+
+        for (const color of getVariantColors()) {
+            if (!colorsWithImages.has(normalizeColorKey(color))) {
+                Swal.fire('Lỗi', `Vui lòng thêm ảnh theo màu cho màu ${color}.`, 'error');
+                return false;
+            }
+        }
+        return true;
     }
 
     function syncColors() {
@@ -1570,7 +1672,7 @@
 
         Array.from(document.querySelectorAll('#imagesList .image-item')).forEach((el) => {
             const hidden = el.querySelector('input[type="hidden"]');
-            if (!hidden || !hidden.value || hidden.value.trim() === '') {
+            if (el.dataset.uploadError !== 'true' && (!hidden || !hidden.value || hidden.value.trim() === '')) {
                 el.remove();
             }
         });
@@ -1578,7 +1680,7 @@
         Array.from(document.querySelectorAll('#colorImagesList .image-item')).forEach((el) => {
             const mauSac = el.querySelector('select[name$=".mauSac"]')?.value || '';
             const hidden = el.querySelector('input[type="hidden"]');
-            if (!mauSac.trim() || !hidden || !hidden.value || hidden.value.trim() === '') {
+            if (el.dataset.uploadError !== 'true' && (!mauSac.trim() || !hidden || hidden.value.trim() === '')) {
                 el.remove();
             }
         });
@@ -1587,10 +1689,20 @@
         reindexImages();
         reindexColorImages();
 
+        if (!validateColorImagesForSubmit()) {
+            document.getElementById('loading').classList.remove('show');
+            return;
+        }
+
         const checkedMain = document.querySelector('#imagesList input[type="checkbox"]:checked');
         if (!checkedMain) {
             const firstMain = document.querySelector('#imagesList input[type="checkbox"]');
             if (firstMain) firstMain.checked = true;
+        }
+
+        if (!validateGalleryImagesForSubmit()) {
+            document.getElementById('loading').classList.remove('show');
+            return;
         }
 
         e.target.submit();
