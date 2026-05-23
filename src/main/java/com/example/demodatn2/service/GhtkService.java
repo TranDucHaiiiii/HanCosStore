@@ -21,13 +21,13 @@ import java.util.Map;
 
 @Service
 public class GhtkService {
-    @Value("${ghtk.base-url}")
+    @Value("${ghtk.base-url:${GHTK_BASE_URL:https://services.giaohangtietkiem.vn}}")
     private String baseUrl;
 
-    @Value("${ghtk.token}")
+    @Value("${ghtk.token:${GHTK_TOKEN:}}")
     private String token;
 
-    @Value("${ghtk.partner-code}")
+    @Value("${ghtk.partner-code:${GHTK_PARTNER_CODE:}}")
     private String partnerCode;
 
     @Value("${ghtk.pick-province}")
