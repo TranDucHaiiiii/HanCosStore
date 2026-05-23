@@ -38,6 +38,11 @@
             </div>
         </header>
 
+        <div th:if="${successMessage}" class="alert alert-success border-0 rounded-0 small mb-4"
+            th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger border-0 rounded-0 small mb-4"
+            th:text="${errorMessage}"></div>
+
         <!-- Search & Filter -->
         <div class="card mb-4">
             <div class="card-body p-4">
