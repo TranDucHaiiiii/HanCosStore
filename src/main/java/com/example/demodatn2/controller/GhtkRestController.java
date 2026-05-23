@@ -95,7 +95,17 @@ public class GhtkRestController {
         request.setValue(value);
         request.setTransport(transport);
 
-        GhtkFeeResponse response = ghtkService.calculateFeeWithDefaultPick(request);
+        GhtkFeeResponse response;
+        try {
+            response = ghtkService.calculateFeeWithDefaultPick(request);
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("success", false, "message", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of("success", false, "message", "Khong the tinh phi. Vui long thu lai."));
+        }
+
         if (response != null && response.getFee() != null) {
             Integer fee = response.getFee().getFee();
             if (fee != null) {
