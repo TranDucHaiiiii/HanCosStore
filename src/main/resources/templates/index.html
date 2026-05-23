@@ -110,7 +110,8 @@
                                                 <a class="preview-card" th:each="pv : ${previews}"
                                                     th:href="@{/products/{id}(id=${pv.id})}">
                                                     <img th:src="${pv.anhChinh != null ? pv.anhChinh : '/images/no-image.png'}"
-                                                        th:alt="${pv.ten}" alt="product">
+                                                        th:alt="${pv.ten}" alt="product"
+                                                        onerror="this.onerror=null; this.src='/images/no-image.png';">
                                                     <div class="preview-name" th:text="${pv.ten}">Sản phẩm</div>
                                                     <div class="preview-price">
                                                         <span th:if="${pv.giaMin != null}"
@@ -234,7 +235,7 @@
                         <div class="product-img-container">
 
                             <img th:src="${p.anhChinh != null ? p.anhChinh : '/images/no-image.png'}" th:alt="${p.ten}"
-                                alt="product">
+                                alt="product" onerror="this.onerror=null; this.src='/images/no-image.png';">
                         </div>
 
                         <div class="product-info">

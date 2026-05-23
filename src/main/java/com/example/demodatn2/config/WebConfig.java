@@ -7,9 +7,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 @Configuration
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
@@ -25,26 +22,20 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Map /images/products/** to the actual directory on disk
-        Path productDir = Paths.get("src/main/resources/static/images/products/");
-        String productPath = productDir.toFile().getAbsolutePath();
-        
-        if (!productPath.endsWith("/")) {
-            productPath += "/";
-        }
-
         registry.addResourceHandler("/images/products/**")
-                .addResourceLocations("file:///" + productPath);
-
-        Path returnDir = Paths.get("src/main/resources/static/images/returns/");
-        String returnPath = returnDir.toFile().getAbsolutePath();
-
-        if (!returnPath.endsWith("/")) {
-            returnPath += "/";
-        }
+            .addResourceLocations("classpath:/static/images/products/");
 
         registry.addResourceHandler("/images/returns/**")
-                .addResourceLocations("file:///" + returnPath);
+            .addResourceLocations("classpath:/static/images/returns/");
+
+        registry.addResourceHandler("/images/**")
+            .addResourceLocations("classpath:/static/images/");
+
+        registry.addResourceHandler("/css/**")
+            .addResourceLocations("classpath:/static/css/");
+
+        registry.addResourceHandler("/js/**")
+            .addResourceLocations("classpath:/static/js/");
     }
 
 
