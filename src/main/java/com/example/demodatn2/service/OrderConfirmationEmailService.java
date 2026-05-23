@@ -3,6 +3,7 @@ package com.example.demodatn2.service;
 import com.example.demodatn2.entity.ChiTietDonHang;
 import com.example.demodatn2.entity.DonHang;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -18,6 +19,7 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderConfirmationEmailService {
     private static final Locale VIETNAM = Locale.forLanguageTag("vi-VN");
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -44,8 +46,12 @@ public class OrderConfirmationEmailService {
             message.setSubject("HancosStore - Xác nhận đơn hàng " + order.getMaDonHang());
             message.setText(buildMessage(order, items));
             mailSender.send(message);
-        } catch (Exception ignored) {
+        } catch (Exception ex) {
             // Email failure must not make a successful order fail.
+            log.error("Send order confirmation email failed: orderId={}, email={}",
+                    order != null ? order.getId() : null,
+                    order != null ? order.getEmailNhan() : null,
+                    ex);
         }
     }
 
