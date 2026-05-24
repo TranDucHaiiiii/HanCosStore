@@ -22,6 +22,15 @@ public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Integer> {
     @Modifying
     @Query("""
         update MaGiamGia m
+        set m.trangThai = 'INACTIVE'
+        where m.trangThai = 'ACTIVE'
+          and m.ketThucLuc < CURRENT_TIMESTAMP
+    """)
+    int deactivateExpiredActiveVouchers();
+
+    @Modifying
+    @Query("""
+        update MaGiamGia m
         set m.soLuongDaDung = coalesce(m.soLuongDaDung, 0) + 1,
             m.trangThai = case
                 when m.soLuongToiDa is not null and coalesce(m.soLuongDaDung, 0) + 1 >= m.soLuongToiDa

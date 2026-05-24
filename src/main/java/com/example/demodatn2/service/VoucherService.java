@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -20,11 +21,38 @@ public class VoucherService {
 
     private final MaGiamGiaRepository voucherRepository;
 
+    @Transactional
     public List<MaGiamGia> getAll() {
+        deactivateExpiredVouchers();
         return voucherRepository.findAll();
     }
 
+    @Transactional
+    public List<MaGiamGia> search(String keyword, String status, String type, String validity) {
+        deactivateExpiredVouchers();
+        Instant now = Instant.now();
+        String normalizedKeyword = keyword == null ? "" : keyword.trim().toUpperCase();
+        String normalizedStatus = status == null ? "" : status.trim().toUpperCase();
+        String normalizedType = type == null ? "" : type.trim().toUpperCase();
+        String normalizedValidity = validity == null ? "" : validity.trim().toUpperCase();
+
+        return voucherRepository.findAll().stream()
+                .filter(v -> normalizedKeyword.isEmpty()
+                        || (v.getMa() != null && v.getMa().toUpperCase().contains(normalizedKeyword)))
+                .filter(v -> normalizedStatus.isEmpty()
+                        || (v.getTrangThai() != null && v.getTrangThai().equalsIgnoreCase(normalizedStatus)))
+                .filter(v -> normalizedType.isEmpty()
+                        || (v.getLoai() != null && v.getLoai().equalsIgnoreCase(normalizedType)))
+                .filter(v -> matchesValidity(v, normalizedValidity, now))
+                .sorted(Comparator
+                        .comparing(MaGiamGia::getKetThucLuc, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(v -> v.getMa() == null ? "" : v.getMa()))
+                .toList();
+    }
+
+    @Transactional
     public Optional<MaGiamGia> getById(Integer id) {
+        deactivateExpiredVouchers();
         return voucherRepository.findById(id);
     }
 
@@ -47,15 +75,19 @@ public class VoucherService {
         voucherRepository.save(voucher);
     }
 
+    @Transactional
     public List<MaGiamGia> getAvailableVouchers() {
+        deactivateExpiredVouchers();
         return voucherRepository.findAvailableVouchers();
     }
 
+    @Transactional
     public List<MaGiamGia> getEligibleVouchers(BigDecimal orderAmount) {
         if (orderAmount == null || orderAmount.compareTo(BigDecimal.ZERO) <= 0) {
             return List.of();
         }
 
+        deactivateExpiredVouchers();
         return voucherRepository.findAvailableVouchers().stream()
                 .filter(v -> v.getDonToiThieu() == null || orderAmount.compareTo(v.getDonToiThieu()) >= 0)
                 .filter(v -> !"FIXED".equals(v.getLoai())
@@ -68,6 +100,7 @@ public class VoucherService {
                 .toList();
     }
 
+    @Transactional
     public Optional<MaGiamGia> validateVoucher(String code, BigDecimal orderAmount) {
         if (code == null || orderAmount == null || orderAmount.compareTo(BigDecimal.ZERO) <= 0) {
             return Optional.empty();
@@ -78,6 +111,7 @@ public class VoucherService {
             return Optional.empty();
         }
 
+        deactivateExpiredVouchers();
         Optional<MaGiamGia> voucherOpt = voucherRepository.findValidVoucher(normalizedCode);
         if (voucherOpt.isEmpty()) {
             return Optional.empty();
@@ -235,5 +269,29 @@ public class VoucherService {
         if (!voucher.getKetThucLuc().isAfter(voucher.getBatDauLuc())) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu.");
         }
+
+        if ("ACTIVE".equals(voucher.getTrangThai()) && voucher.getKetThucLuc().isBefore(Instant.now())) {
+            throw new IllegalArgumentException("Voucher đã quá hạn. Vui lòng gia hạn thời gian kết thúc trước khi kích hoạt lại.");
+        }
+    }
+
+    private int deactivateExpiredVouchers() {
+        return voucherRepository.deactivateExpiredActiveVouchers();
+    }
+
+    private boolean matchesValidity(MaGiamGia voucher, String validity, Instant now) {
+        if (validity == null || validity.isBlank()) {
+            return true;
+        }
+
+        Instant startsAt = voucher.getBatDauLuc();
+        Instant endsAt = voucher.getKetThucLuc();
+        return switch (validity) {
+            case "UPCOMING" -> startsAt != null && startsAt.isAfter(now);
+            case "VALID" -> (startsAt == null || !startsAt.isAfter(now))
+                    && (endsAt == null || !endsAt.isBefore(now));
+            case "EXPIRED" -> endsAt != null && endsAt.isBefore(now);
+            default -> true;
+        };
     }
 }

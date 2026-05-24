@@ -27,8 +27,16 @@ public class AdminVoucherController {
     private final VoucherService voucherService;
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("vouchers", voucherService.getAll());
+    public String list(@RequestParam(required = false) String q,
+                       @RequestParam(required = false) String status,
+                       @RequestParam(required = false) String type,
+                       @RequestParam(required = false) String validity,
+                       Model model) {
+        model.addAttribute("vouchers", voucherService.search(q, status, type, validity));
+        model.addAttribute("q", q);
+        model.addAttribute("status", status);
+        model.addAttribute("type", type);
+        model.addAttribute("validity", validity);
         return "admin/vouchers";
     }
 

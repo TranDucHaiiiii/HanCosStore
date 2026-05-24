@@ -24,3 +24,25 @@ function deleteVoucher(id) {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('voucherFilterForm');
+    if (!form) return;
+
+    let searchTimer = null;
+    const submitFilters = () => {
+        form.requestSubmit ? form.requestSubmit() : form.submit();
+    };
+
+    form.querySelectorAll('select').forEach(select => {
+        select.addEventListener('change', submitFilters);
+    });
+
+    const keywordInput = form.querySelector('input[name="q"]');
+    if (keywordInput) {
+        keywordInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(submitFilters, 450);
+        });
+    }
+});

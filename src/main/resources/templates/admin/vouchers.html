@@ -34,6 +34,50 @@
     <div th:if="${successMessage}" class="alert alert-success border-0 rounded-0 small mb-4" th:text="${successMessage}"></div>
     <div th:if="${errorMessage}" class="alert alert-danger border-0 rounded-0 small mb-4" th:text="${errorMessage}"></div>
 
+    <form th:action="@{/admin/vouchers}" method="get" class="voucher-filter-bar" id="voucherFilterForm">
+        <div class="filter-field filter-search">
+            <label for="voucherKeyword">Từ khóa</label>
+            <div class="filter-input-icon">
+                <i class="fas fa-search"></i>
+                <input id="voucherKeyword" type="text" name="q" class="form-control"
+                       th:value="${q}" placeholder="Tìm theo mã voucher">
+            </div>
+        </div>
+        <div class="filter-field">
+            <label for="voucherStatus">Trạng thái</label>
+            <select id="voucherStatus" name="status" class="form-select">
+                <option value="" th:selected="${status == null or status == ''}">Tất cả</option>
+                <option value="ACTIVE" th:selected="${status == 'ACTIVE'}">Hoạt động</option>
+                <option value="INACTIVE" th:selected="${status == 'INACTIVE'}">Ngưng hoạt động</option>
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="voucherType">Loại giảm</label>
+            <select id="voucherType" name="type" class="form-select">
+                <option value="" th:selected="${type == null or type == ''}">Tất cả</option>
+                <option value="PERCENT" th:selected="${type == 'PERCENT'}">Phần trăm</option>
+                <option value="FIXED" th:selected="${type == 'FIXED'}">Tiền mặt</option>
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="voucherValidity">Thời hạn</label>
+            <select id="voucherValidity" name="validity" class="form-select">
+                <option value="" th:selected="${validity == null or validity == ''}">Tất cả</option>
+                <option value="VALID" th:selected="${validity == 'VALID'}">Còn hiệu lực</option>
+                <option value="UPCOMING" th:selected="${validity == 'UPCOMING'}">Chưa bắt đầu</option>
+                <option value="EXPIRED" th:selected="${validity == 'EXPIRED'}">Đã hết hạn</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-dark rounded-0 fw-700 text-uppercase small">
+                <i class="fas fa-filter me-2"></i>Lọc
+            </button>
+            <a th:href="@{/admin/vouchers}" class="btn btn-outline-secondary rounded-0 fw-700 text-uppercase small">
+                Xóa lọc
+            </a>
+        </div>
+    </form>
+
     <div class="card">
         <div class="card-body p-0">
             <div class="table-responsive">

@@ -8,9 +8,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +39,56 @@ class VoucherServiceTest {
 
         assertThat(vouchers).extracting(MaGiamGia::getMa)
                 .containsExactly("P10MAX70", "FIX50K", "FIX30K");
+    }
+
+    @Test
+    void getAll_deactivatesExpiredActiveVouchersBeforeListing() {
+        VoucherService voucherService = new VoucherService(voucherRepository);
+        when(voucherRepository.findAll()).thenReturn(List.of());
+
+        voucherService.getAll();
+
+        verify(voucherRepository).deactivateExpiredActiveVouchers();
+    }
+
+    @Test
+    void save_rejectsActiveExpiredVoucherUntilExtended() {
+        VoucherService voucherService = new VoucherService(voucherRepository);
+        MaGiamGia voucher = voucher("EXPIRED", "FIXED", "30000", null, "150000");
+        voucher.setTrangThai("ACTIVE");
+        voucher.setSoLuongToiDa(10);
+        voucher.setSoLuongDaDung(0);
+        voucher.setBatDauLuc(Instant.now().minus(10, ChronoUnit.DAYS));
+        voucher.setKetThucLuc(Instant.now().minus(1, ChronoUnit.DAYS));
+        when(voucherRepository.findByMa("EXPIRED")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> voucherService.save(voucher))
+                .hasMessageContaining("gia hạn thời gian kết thúc");
+    }
+
+    @Test
+    void search_filtersByKeywordStatusTypeAndValidity() {
+        VoucherService voucherService = new VoucherService(voucherRepository);
+        MaGiamGia validPercent = voucher("SUMMER10", "PERCENT", "10", "30000", "100000");
+        validPercent.setTrangThai("ACTIVE");
+        validPercent.setBatDauLuc(Instant.now().minus(1, ChronoUnit.DAYS));
+        validPercent.setKetThucLuc(Instant.now().plus(1, ChronoUnit.DAYS));
+
+        MaGiamGia expiredPercent = voucher("SUMMER20", "PERCENT", "20", "50000", "200000");
+        expiredPercent.setTrangThai("INACTIVE");
+        expiredPercent.setBatDauLuc(Instant.now().minus(10, ChronoUnit.DAYS));
+        expiredPercent.setKetThucLuc(Instant.now().minus(1, ChronoUnit.DAYS));
+
+        MaGiamGia validFixed = voucher("FIX30K", "FIXED", "30000", null, "150000");
+        validFixed.setTrangThai("ACTIVE");
+        validFixed.setBatDauLuc(Instant.now().minus(1, ChronoUnit.DAYS));
+        validFixed.setKetThucLuc(Instant.now().plus(1, ChronoUnit.DAYS));
+
+        when(voucherRepository.findAll()).thenReturn(List.of(validPercent, expiredPercent, validFixed));
+
+        List<MaGiamGia> vouchers = voucherService.search("summer", "ACTIVE", "PERCENT", "VALID");
+
+        assertThat(vouchers).extracting(MaGiamGia::getMa).containsExactly("SUMMER10");
     }
 
     private MaGiamGia voucher(String code, String type, String value, String maxValue, String minOrder) {
