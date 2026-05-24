@@ -280,29 +280,12 @@ public class OrderService {
         }
         // Admin được hủy mọi trạng thái chưa kết thúc (đã check ở trên).
 
-        if ("DA_XAC_NHAN".equals(currentStatus) && isBankTransferPayment(donHang.getPhuongThucThanhToan())) {
-            throw new RuntimeException("Đơn hàng thanh toán qua chuyển khoản sẽ không được hủy và không hỗ trợ hoàn tiền  sau khi xác nhận.");
-        }
-
         donHang.setTrangThai("DA_HUY");
         donHang.setLyDoHuy(reason);
         donHang.setNgayCapNhat(Instant.now());
         
         restoreStock(donHang);
         donHangRepository.save(donHang);
-    }
-
-    private boolean isBankTransferPayment(String paymentMethod) {
-        if (paymentMethod == null) {
-            return false;
-        }
-
-        String normalized = paymentMethod.trim().toUpperCase();
-        return normalized.contains("TRANSFER")
-                || normalized.contains("CHUYEN_KHOAN")
-                || normalized.contains("CHUYENKHOAN")
-                || normalized.contains("CHUYEN KHOAN")
-                || normalized.contains("SEPAY");
     }
 
     @Transactional
@@ -419,6 +402,11 @@ public class OrderService {
 
     @Transactional
     public void updateOrderAddress(Integer orderId, String hoTen, String soDienThoai, String diaChi) {
+        updateOrderAddress(orderId, hoTen, soDienThoai, diaChi, null);
+    }
+
+    @Transactional
+    public void updateOrderAddress(Integer orderId, String hoTen, String soDienThoai, String diaChi, BigDecimal shippingFee) {
         DonHang donHang = getOrderById(orderId);
         String status = normalizeStatus(donHang.getTrangThai());
 
@@ -426,12 +414,35 @@ public class OrderService {
             throw new RuntimeException("Không thể thay đổi địa chỉ cho đơn hàng ở trạng thái: " + status);
         }
 
+        if ("DA_XAC_NHAN".equals(status) && isBankTransferPayment(donHang.getPhuongThucThanhToan())) {
+            throw new RuntimeException("Không thể thay đổi địa chỉ cho đơn hàng chuyển khoản đã xác nhận.");
+        }
+
         donHang.setHoTenNhan(hoTen);
         donHang.setSoDienThoaiNhan(soDienThoai);
         donHang.setDiaChiNhan(diaChi);
+        if (shippingFee != null && shippingFee.compareTo(BigDecimal.ZERO) >= 0) {
+            donHang.setPhiVanChuyen(shippingFee);
+            BigDecimal tamTinh = donHang.getTamTinh() != null ? donHang.getTamTinh() : BigDecimal.ZERO;
+            BigDecimal giamGia = donHang.getGiamGia() != null ? donHang.getGiamGia() : BigDecimal.ZERO;
+            donHang.setTongTien(tamTinh.subtract(giamGia).add(shippingFee));
+        }
         donHang.setNgayCapNhat(Instant.now());
 
         donHangRepository.save(donHang);
+    }
+
+    private boolean isBankTransferPayment(String paymentMethod) {
+        if (paymentMethod == null) {
+            return false;
+        }
+
+        String normalized = paymentMethod.trim().toUpperCase();
+        return normalized.contains("TRANSFER")
+                || normalized.contains("CHUYEN_KHOAN")
+                || normalized.contains("CHUYENKHOAN")
+                || normalized.contains("CHUYEN KHOAN")
+                || normalized.contains("SEPAY");
     }
 
     @Transactional
@@ -493,10 +504,10 @@ public class OrderService {
             tamTinh = tamTinh.add(item.getDonGia().multiply(new BigDecimal(item.getSoLuong())));
         }
         donHang.setTamTinh(tamTinh);
-        // Sử dụng phí ship từ form (GHTK API) nếu có, nếu không dùng công thức mặc định
+        // Phí ship chỉ lấy từ GHTK/form; không dùng công thức theo giá trị đơn hàng.
         BigDecimal phiVanChuyen = (shippingFeeFromForm != null && shippingFeeFromForm.compareTo(BigDecimal.ZERO) > 0)
             ? shippingFeeFromForm
-            : CartService.calculateShippingFee(tamTinh);
+            : BigDecimal.ZERO;
         donHang.setPhiVanChuyen(phiVanChuyen);
         System.out.println("DEBUG: tamTinh=" + tamTinh + ", phiVanChuyen=" + phiVanChuyen + " (from form: " + shippingFeeFromForm + ")");
 

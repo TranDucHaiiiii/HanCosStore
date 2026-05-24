@@ -138,7 +138,7 @@
                             </td>
                             <td class="price-col" th:text="${#numbers.formatDecimal(item.donGia, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
                             <td>
-                                <input type="number" class="qty-input" th:value="${item.soLuong}" min="1" 
+                                <input type="number" class="qty-input" th:value="${item.soLuong}" min="1"
                                        th:onchange="'updateQuantity(' + ${item.id} + ', this.value)'">
                             </td>
                             <td class="total-col text-end" th:text="${#numbers.formatDecimal(item.thanhTien, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
@@ -160,52 +160,10 @@
                     <span class="text-muted">Tạm tính</span>
                     <span class="fw-600" id="cart-subtotal" th:text="${#numbers.formatDecimal(total, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
                 </div>
-                <div class="summary-row">
-                    <span class="text-muted">Phí vận chuyển</span>
-                    <span class="fw-600" id="shipping-value"
-                          th:data-fee="${shippingFee}"
-                          th:text="${shippingFee == 0 ? 'Miễn phí' : #numbers.formatDecimal(shippingFee, 0, 'COMMA', 0, 'POINT') + '₫'}">0₫</span>
-                </div>
-                <div class="voucher-section mt-4 mb-4">
-                    <label class="small fw-700 text-uppercase letter-spacing-1 mb-2 d-block">Mã giảm giá</label>
-                    <div class="input-group">
-                        <input type="text" id="voucher-code" class="form-control rounded-0" placeholder="Nhập mã..." th:value="${session.APPLIED_VOUCHER_CODE}">
-                        <button class="btn btn-dark rounded-0 px-3" type="button" onclick="applyVoucher()">ÁP DỤNG</button>
-                    </div>
-                    <div id="voucher-message" class="small mt-2"></div>
-                </div>
-
-                <!-- Suggested Vouchers -->
-                <div th:if="${not #lists.isEmpty(availableVouchers)}" class="suggested-vouchers mb-4">
-                    <label class="small fw-700 text-uppercase letter-spacing-1 mb-3 d-block">Mã giảm giá có sẵn</label>
-                    <div class="voucher-list d-flex flex-column gap-2">
-                        <div th:each="v : ${availableVouchers}" class="voucher-item p-2 border border-dashed rounded d-flex justify-content-between align-items-center" style="border-style: dashed !important; border-width: 1.5px !important;">
-                            <div>
-                                <div class="fw-bold text-dark small" th:text="${v.ma}">CODE</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">
-                                    <span th:if="${v.loai == 'PERCENT'}" th:text="|Giảm ${v.giaTri}%${v.giaTriToiDa != null ? ' (Tối đa ' + #numbers.formatDecimal(v.giaTriToiDa, 0, 'COMMA', 0, 'POINT') + '₫)' : ''}|"></span>
-                                    <span th:if="${v.loai == 'FIXED'}" th:text="|Giảm ${#numbers.formatDecimal(v.giaTri, 0, 'COMMA', 0, 'POINT')}₫|"></span>
-                                    <br>
-                                    <span th:if="${v.donToiThieu != null}" th:text="|Đơn tối thiểu ${#numbers.formatDecimal(v.donToiThieu, 0, 'COMMA', 0, 'POINT')}₫|"></span>
-                                </div>
-                            </div>
-                            <button class="btn btn-sm btn-outline-dark rounded-0 px-2 py-1" 
-                                    style="font-size: 0.7rem;" 
-                                    th:data-code="${v.ma}"
-                                    onclick="useSuggestedVoucher(this.getAttribute('data-code'))">DÙNG</button>
-                        </div>
-                    </div>
-                </div>
-
-                
-                <div class="summary-row" id="discount-row" th:style="${discount != null and discount > 0 ? '' : 'display: none'}">
-                    <span class="text-muted">Giảm giá</span>
-                    <span class="text-danger fw-600" id="discount-value" th:text="${discount != null and discount > 0 ? '-' + #numbers.formatDecimal(discount, 0, 'COMMA', 0, 'POINT') + '₫' : '0₫'}">0₫</span>
-                </div>
                 <div class="summary-row summary-total">
                     <span>Tổng cộng</span>
                     <span id="cart-total"
-                          th:text="${#numbers.formatDecimal(totalAfterDiscount != null ? totalAfterDiscount : (total + shippingFee), 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
+                          th:text="${#numbers.formatDecimal(total, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
                 </div>
                 <a th:href="@{/order/checkout}" class="btn-checkout">TIẾN HÀNH THANH TOÁN</a>
                 <a th:href="@{/}" class="btn btn-outline-dark w-100 mt-3 py-3 rounded-0 fw-700 text-uppercase small letter-spacing-1">Tiếp tục mua sắm</a>

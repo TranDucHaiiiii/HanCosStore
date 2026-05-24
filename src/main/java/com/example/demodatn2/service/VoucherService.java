@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,11 +52,19 @@ public class VoucherService {
     }
 
     public List<MaGiamGia> getEligibleVouchers(BigDecimal orderAmount) {
+        if (orderAmount == null || orderAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return List.of();
+        }
+
         return voucherRepository.findAvailableVouchers().stream()
                 .filter(v -> v.getDonToiThieu() == null || orderAmount.compareTo(v.getDonToiThieu()) >= 0)
                 .filter(v -> !"FIXED".equals(v.getLoai())
                         || v.getGiaTri() == null
                         || v.getGiaTri().compareTo(orderAmount) <= 0)
+                .sorted(Comparator
+                        .comparing((MaGiamGia v) -> calculateDiscount(v, orderAmount)).reversed()
+                        .thenComparing(v -> v.getDonToiThieu() == null ? BigDecimal.ZERO : v.getDonToiThieu())
+                        .thenComparing(v -> v.getMa() == null ? "" : v.getMa()))
                 .toList();
     }
 

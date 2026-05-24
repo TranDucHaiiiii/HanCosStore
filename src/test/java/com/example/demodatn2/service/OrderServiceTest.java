@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -36,11 +37,10 @@ class OrderServiceTest {
     @Mock private GiaoDichTonKhoRepository giaoDichTonKhoRepository;
     @Mock private JavaMailSender mailSender;
 
-    @Test
-    void createOrder_includesGhtkShippingFeeInSepayTotal() {
+    private OrderService newOrderService() {
         VoucherService voucherService = new VoucherService(maGiamGiaRepository);
         OrderConfirmationEmailService orderConfirmationEmailService = new OrderConfirmationEmailService(mailSender);
-        OrderService orderService = new OrderService(
+        return new OrderService(
                 donHangRepository,
                 chiTietDonHangRepository,
                 gioHangRepository,
@@ -53,6 +53,11 @@ class OrderServiceTest {
                 orderConfirmationEmailService,
                 voucherService
         );
+    }
+
+    @Test
+    void createOrder_includesGhtkShippingFeeInSepayTotal() {
+        OrderService orderService = newOrderService();
 
         HttpSession session = mock(HttpSession.class);
         when(session.getId()).thenReturn("session-1");
@@ -107,6 +112,48 @@ class OrderServiceTest {
         verify(giaoDichTonKhoRepository).save(any());
         verify(gioHangRepository).delete(gioHang);
         verify(mailSender).send(any(org.springframework.mail.SimpleMailMessage.class));
+    }
+
+    @Test
+    void cancelOrder_allowsConfirmedSepayOrder() {
+        OrderService orderService = newOrderService();
+
+        DonHang order = new DonHang();
+        order.setId(1);
+        order.setMaDonHang("DH-SEPAY01");
+        order.setTrangThai("DA_XAC_NHAN");
+        order.setPhuongThucThanhToan("SEPAY");
+
+        when(donHangRepository.findById(1)).thenReturn(Optional.of(order));
+        when(chiTietDonHangRepository.findByDonHang(order)).thenReturn(List.of());
+
+        orderService.cancelOrder(1, "Khach huy", false);
+
+        assertThat(order.getTrangThai()).isEqualTo("DA_HUY");
+        assertThat(order.getLyDoHuy()).isEqualTo("Khach huy");
+        verify(donHangRepository).save(order);
+    }
+
+    @Test
+    void updateOrderAddress_rejectsConfirmedSepayOrder() {
+        OrderService orderService = newOrderService();
+
+        DonHang order = new DonHang();
+        order.setId(1);
+        order.setTrangThai("DA_XAC_NHAN");
+        order.setPhuongThucThanhToan("SEPAY");
+
+        when(donHangRepository.findById(1)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.updateOrderAddress(
+                1,
+                "Nguyen Van A",
+                "0900000000",
+                "Dia chi moi",
+                new BigDecimal("30000")
+        )).hasMessageContaining("Không thể thay đổi địa chỉ");
+
+        verify(donHangRepository, never()).save(any());
     }
 }
 

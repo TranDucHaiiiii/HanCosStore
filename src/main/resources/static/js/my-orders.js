@@ -1,7 +1,25 @@
 function cancelOrder(orderId) {
+    const orderRow = document.querySelector(`.order-row[data-order-id="${orderId}"]`);
+    const status = (orderRow?.dataset.status || '').toUpperCase();
+    const paymentMethod = (orderRow?.dataset.paymentMethod || '').toUpperCase();
+    const isConfirmed = status === 'DA_XAC_NHAN' || status === 'CONFIRMED' || status === 'PAID';
+    const isBankTransfer = paymentMethod.includes('SEPAY')
+        || paymentMethod.includes('TRANSFER')
+        || paymentMethod.includes('CHUYEN_KHOAN')
+        || paymentMethod.includes('CHUYENKHOAN')
+        || paymentMethod.includes('CHUYEN KHOAN');
+    const refundNotice = isConfirmed && isBankTransfer
+        ? `
+            <div style="text-align:left;background:#fff3cd;border:1px solid #ffe69c;color:#664d03;padding:10px 12px;margin:0 0 12px 0;font-size:13px;line-height:1.45;">
+                Đơn hàng đã xác nhận và đã thanh toán chuyển khoản. Để được hoàn tiền, vui lòng liên hệ Zalo shop:
+                <a href="https://zalo.me/0559105153" target="_blank" rel="noopener noreferrer" style="font-weight:800;color:#0d6efd;">0559105153</a>
+            </div>
+        `
+        : '';
+
     Swal.fire({
         title: 'Hủy đơn hàng',
-        text: 'Vui lòng cho biết lý do hủy đơn hàng này:',
+        html: refundNotice + '<div style="text-align:left;font-size:14px;margin-bottom:6px;">Vui lòng cho biết lý do hủy đơn hàng này:</div>',
         input: 'text',
         inputPlaceholder: 'Nhập lý do tại đây...',
         showCancelButton: true,

@@ -20,7 +20,7 @@
 .btn-remove:hover { color: #8b4d4d; transform: scale(1.1); }
 .cart-summary { background: white; padding: 2.5rem; border: 1px solid #eee; }
 .summary-row { display: flex; justify-content: space-between; margin-bottom: 1.25rem; font-size: 0.9rem; }
-.summary-total { font-size: 1.25rem; font-weight: 800; color: #1a1a1a; border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1.5rem; letter-spacing: -0.5px; }
+.summary-total { font-size: 1.25rem; font-weight: 800; color: #1a1a1a; border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1.5rem; letter-spacing: 0; }
 .btn-checkout { 
     background: #1a1a1a; 
     color: white; 

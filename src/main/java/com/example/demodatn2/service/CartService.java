@@ -149,18 +149,6 @@ public class CartService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    // Quy tắc phí vận chuyển theo tổng tiền hàng (chưa trừ voucher)
-    // > 500.000đ: miễn phí, từ 200.000đ - 500.000đ: 20.000đ, còn lại: 30.000đ
-    public static BigDecimal calculateShippingFee(BigDecimal subtotal) {
-        if (subtotal.compareTo(new BigDecimal("500000")) > 0) {
-            return BigDecimal.ZERO;
-        } else if (subtotal.compareTo(new BigDecimal("200000")) >= 0) {
-            return new BigDecimal("20000");
-        } else {
-            return new BigDecimal("30000");
-        }
-    }
-
     // Tổng số lượng sản phẩm (theo từng đơn vị) đang có trong giỏ
     @Transactional(readOnly = true)
     public int getTotalWeightGram(HttpSession session) {

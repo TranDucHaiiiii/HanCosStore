@@ -4,7 +4,6 @@ import com.example.demodatn2.dto.CartItemDTO;
 import com.example.demodatn2.dto.TaiKhoanDTO;
 import com.example.demodatn2.service.CartService;
 import com.example.demodatn2.service.DanhMucService;
-import com.example.demodatn2.service.VoucherService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -22,72 +21,18 @@ public class CartController {
 
     private final CartService cartService;
     private final DanhMucService danhMucService;
-    private final VoucherService voucherService;
 
     @GetMapping
     public String viewCart(HttpSession session, Model model) {
         String sessionId = session.getId(); // Force session creation
         List<CartItemDTO> items = cartService.getCartItems(session);
         BigDecimal total = cartService.getTotalAmount(items);
-        
-        String voucherCode = (String) session.getAttribute("APPLIED_VOUCHER_CODE");
-        BigDecimal discount = BigDecimal.ZERO;
-        
-        if (voucherCode != null) {
-            var voucherOpt = voucherService.validateVoucher(voucherCode, total);
-            if (voucherOpt.isPresent()) {
-                discount = voucherService.calculateDiscount(voucherOpt.get(), total);
-                session.setAttribute("DISCOUNT_AMOUNT", discount);
-            } else {
-                session.removeAttribute("APPLIED_VOUCHER_CODE");
-                session.removeAttribute("DISCOUNT_AMOUNT");
-            }
-        }
-        
-        BigDecimal shippingFee = CartService.calculateShippingFee(total);
+        clearAppliedVoucher(session);
         
         model.addAttribute("items", items);
         model.addAttribute("total", total);
-        model.addAttribute("discount", discount);
-        model.addAttribute("shippingFee", shippingFee);
-        model.addAttribute("totalAfterDiscount", total.subtract(discount).add(shippingFee));
         model.addAttribute("categories", danhMucService.getActive());
-        model.addAttribute("availableVouchers", voucherService.getEligibleVouchers(total));
         return "cart";
-    }
-
-    @PostMapping("/apply-voucher")
-    @ResponseBody
-    public Map<String, Object> applyVoucher(@RequestParam String code, HttpSession session) {
-        try {
-            if (code == null || code.trim().isEmpty()) {
-                return Map.of("success", false, "message", "Vui lòng nhập mã giảm giá");
-            }
-
-            List<CartItemDTO> items = cartService.getCartItems(session);
-            BigDecimal total = cartService.getTotalAmount(items);
-            
-            var voucherOpt = voucherService.validateVoucher(code, total);
-            if (voucherOpt.isPresent()) {
-                var voucher = voucherOpt.get();
-                BigDecimal discount = voucherService.calculateDiscount(voucher, total);
-                session.setAttribute("APPLIED_VOUCHER_CODE", voucher.getMa());
-                session.setAttribute("DISCOUNT_AMOUNT", discount);
-                BigDecimal shippingFee = CartService.calculateShippingFee(total);
-                
-                return Map.of(
-                    "success", true,
-                    "message", "Áp dụng mã giảm giá thành công",
-                    "discount", discount,
-                    "shippingFee", shippingFee,
-                    "totalAfterDiscount", total.subtract(discount).add(shippingFee)
-                );
-            } else {
-                return Map.of("success", false, "message", "Mã giảm giá không hợp lệ hoặc không đủ điều kiện");
-            }
-        } catch (Exception e) {
-            return Map.of("success", false, "message", e.getMessage());
-        }
     }
 
     @GetMapping("/pending-add")
@@ -145,28 +90,12 @@ public class CartController {
             BigDecimal total = cartService.getTotalAmount(items);
             int count = cartService.getItemCount(session);
             session.setAttribute("CART_COUNT", count);
-            
-            // Recalculate discount if a voucher was applied
-            String voucherCode = (String) session.getAttribute("APPLIED_VOUCHER_CODE");
-            BigDecimal discount = BigDecimal.ZERO;
-            if (voucherCode != null) {
-                var voucherOpt = voucherService.validateVoucher(voucherCode, total);
-                if (voucherOpt.isPresent()) {
-                    discount = voucherService.calculateDiscount(voucherOpt.get(), total);
-                    session.setAttribute("DISCOUNT_AMOUNT", discount);
-                } else {
-                    // If the voucher is no longer valid (e.g., total below minimum)
-                    session.removeAttribute("APPLIED_VOUCHER_CODE");
-                    session.removeAttribute("DISCOUNT_AMOUNT");
-                }
-            }
+            clearAppliedVoucher(session);
 
             return Map.of(
                 "success", true, 
                 "total", total,
-                "discount", discount,
-                "shippingFee", CartService.calculateShippingFee(total),
-                "totalAfterDiscount", total.subtract(discount).add(CartService.calculateShippingFee(total)),
+                "totalAfterDiscount", total,
                 "count", count
             );
         } catch (Exception e) {
@@ -183,31 +112,21 @@ public class CartController {
             BigDecimal total = cartService.getTotalAmount(items);
             int count = cartService.getItemCount(session);
             session.setAttribute("CART_COUNT", count);
-
-            // Recalculate discount if a voucher was applied
-            String voucherCode = (String) session.getAttribute("APPLIED_VOUCHER_CODE");
-            BigDecimal discount = BigDecimal.ZERO;
-            if (voucherCode != null) {
-                var voucherOpt = voucherService.validateVoucher(voucherCode, total);
-                if (voucherOpt.isPresent()) {
-                    discount = voucherService.calculateDiscount(voucherOpt.get(), total);
-                    session.setAttribute("DISCOUNT_AMOUNT", discount);
-                } else {
-                    session.removeAttribute("APPLIED_VOUCHER_CODE");
-                    session.removeAttribute("DISCOUNT_AMOUNT");
-                }
-            }
+            clearAppliedVoucher(session);
 
             return Map.of(
                 "success", true, 
                 "total", total,
-                "discount", discount,
-                "shippingFee", CartService.calculateShippingFee(total),
-                "totalAfterDiscount", total.subtract(discount).add(CartService.calculateShippingFee(total)),
+                "totalAfterDiscount", total,
                 "count", count
             );
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
+    }
+
+    private void clearAppliedVoucher(HttpSession session) {
+        session.removeAttribute("APPLIED_VOUCHER_CODE");
+        session.removeAttribute("DISCOUNT_AMOUNT");
     }
 }

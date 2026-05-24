@@ -41,7 +41,7 @@
     </div>
 
         <div class="head-row"
-            th:attr="data-order-id=${order.id},data-current-address=${order.diaChiNhan}">
+            th:attr="data-order-id=${order.id},data-current-address=${order.diaChiNhan},data-order-status=${order.trangThai},data-payment-method=${order.phuongThucThanhToan}">
         <h2 class="page-title">
             CHI TIẾT ĐƠN HÀNG <span th:text="'#' + ${order.maDonHang}"></span>
         </h2>
@@ -52,7 +52,14 @@
                     data-bs-target="#paymentMethodModal">
                 <i class="fas fa-money-check-alt me-2"></i>Đổi loại thanh toán
             </button>
-            <button th:if="${order.trangThai == 'CHO_XAC_NHAN' or order.trangThai == 'DA_XAC_NHAN' or order.trangThai == 'PENDING' or order.trangThai == 'CONFIRMED'}"
+            <button th:if="${(order.trangThai == 'CHO_XAC_NHAN' or order.trangThai == 'PENDING' or order.trangThai == 'CONFIRMED')
+                            or (order.trangThai == 'DA_XAC_NHAN'
+                                and order.phuongThucThanhToan != null
+                                and !#strings.containsIgnoreCase(order.phuongThucThanhToan, 'SEPAY')
+                                and !#strings.containsIgnoreCase(order.phuongThucThanhToan, 'TRANSFER')
+                                and !#strings.containsIgnoreCase(order.phuongThucThanhToan, 'CHUYEN_KHOAN')
+                                and !#strings.containsIgnoreCase(order.phuongThucThanhToan, 'CHUYENKHOAN')
+                                and !#strings.containsIgnoreCase(order.phuongThucThanhToan, 'CHUYEN KHOAN'))}"
                     class="btn-flat"
                     onclick="showEditAddressModal()">
                 <i class="fas fa-edit me-2"></i>Thay đổi địa chỉ
@@ -314,6 +321,10 @@
                             <input type="text" id="detailAddress" class="form-control rounded-0" required placeholder="Số nhà, tên đường...">
                         </div>
                         <input type="hidden" id="fullAddress" name="diaChi">
+                        <input type="hidden" id="selectedProvinceName" name="province">
+                        <input type="hidden" id="selectedDistrictName" name="district">
+                        <input type="hidden" id="selectedWardName" name="ward">
+                        <input type="hidden" id="selectedDetailAddress" name="detailAddress">
                     </div>
                 </form>
                 <div class="alert alert-info border-0 rounded-0 small mt-2">

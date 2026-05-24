@@ -1,6 +1,8 @@
 package com.example.demodatn2.controller;
 
 import com.example.demodatn2.dto.CartItemDTO;
+import com.example.demodatn2.dto.GhtkFeeRequest;
+import com.example.demodatn2.dto.GhtkFeeResponse;
 import com.example.demodatn2.dto.TaiKhoanDTO;
 import com.example.demodatn2.entity.ChiTietDonHang;
 import com.example.demodatn2.entity.DonHang;
@@ -10,6 +12,7 @@ import com.example.demodatn2.repository.DiaChiGiaoHangRepository;
 import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.service.CartService;
 import com.example.demodatn2.service.DanhMucService;
+import com.example.demodatn2.service.GhtkService;
 import com.example.demodatn2.service.OrderService;
 import com.example.demodatn2.service.ProductReviewService;
 import com.example.demodatn2.service.VoucherService;
@@ -29,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -56,6 +60,7 @@ public class OrderController {
     private final VoucherService voucherService;
     private final DiaChiGiaoHangRepository diaChiGiaoHangRepository;
     private final ProductReviewService productReviewService;
+    private final GhtkService ghtkService;
 
     @GetMapping("/checkout")
     public String checkout(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
@@ -71,6 +76,7 @@ public class OrderController {
         }
 
         BigDecimal total = cartService.getTotalAmount(items);
+        session.setAttribute(CURRENT_SHIPPING_FEE, BigDecimal.ZERO);
 
         // Luôn tính toán lại voucher khi vào trang thanh toán để đảm bảo chính xác nhất
         String voucherCode = (String) session.getAttribute(APPLIED_VOUCHER_CODE);
@@ -87,13 +93,11 @@ public class OrderController {
             }
         }
 
-        BigDecimal shippingFee = CartService.calculateShippingFee(total);
-
         model.addAttribute("items", items);
         model.addAttribute("total", total);
         model.addAttribute("discount", discount);
-        model.addAttribute("shippingFee", shippingFee);
-        model.addAttribute("finalTotal", total.subtract(discount).add(shippingFee));
+        model.addAttribute("shippingFee", BigDecimal.ZERO);
+        model.addAttribute("finalTotal", total.subtract(discount));
         model.addAttribute("user", loginUser);
         model.addAttribute("categories", danhMucService.getActive());
         model.addAttribute("eligibleVouchers", voucherService.getEligibleVouchers(total));
@@ -117,12 +121,10 @@ public class OrderController {
             BigDecimal discount = voucherService.calculateDiscount(voucher, total);
             session.setAttribute(APPLIED_VOUCHER_CODE, voucher.getMa());
             session.setAttribute(DISCOUNT_AMOUNT, discount);
-            BigDecimal shippingFee = CartService.calculateShippingFee(total);
             return Map.of(
                     "success", true,
                     "discount", discount,
-                    "shippingFee", shippingFee,
-                    "finalTotal", total.subtract(discount).add(shippingFee),
+                    "finalTotal", total.subtract(discount),
                     "code", voucher.getMa()
             );
         }
@@ -135,11 +137,9 @@ public class OrderController {
         clearVoucher(session);
         List<CartItemDTO> items = cartService.getCartItems(session);
         BigDecimal total = cartService.getTotalAmount(items);
-        BigDecimal shippingFee = CartService.calculateShippingFee(total);
         return Map.of(
                 "success", true,
-                "shippingFee", shippingFee,
-                "finalTotal", total.add(shippingFee)
+                "finalTotal", total
         );
     }
 
@@ -375,6 +375,10 @@ public class OrderController {
                                 @RequestParam String hoTen,
                                 @RequestParam String soDienThoai,
                                 @RequestParam String diaChi,
+                                @RequestParam(required = false) String province,
+                                @RequestParam(required = false) String district,
+                                @RequestParam(required = false) String ward,
+                                @RequestParam(required = false) String detailAddress,
                                 HttpSession session) {
         TaiKhoanDTO loginUser = getLoginUser(session);
         if (loginUser == null) {
@@ -388,7 +392,8 @@ public class OrderController {
                 return "Bạn không có quyền chỉnh sửa đơn hàng này.";
             }
 
-            orderService.updateOrderAddress(id, hoTen, soDienThoai, diaChi);
+            BigDecimal shippingFee = calculateShippingFeeForOrder(order, province, district, ward, detailAddress);
+            orderService.updateOrderAddress(id, hoTen, soDienThoai, diaChi, shippingFee);
             return "SUCCESS";
         } catch (Exception e) {
             return e.getMessage();
@@ -446,6 +451,10 @@ public class OrderController {
                                           @RequestParam String hoTen,
                                           @RequestParam String soDienThoai,
                                           @RequestParam String diaChi,
+                                          @RequestParam(required = false) String province,
+                                          @RequestParam(required = false) String district,
+                                          @RequestParam(required = false) String ward,
+                                          @RequestParam(required = false) String detailAddress,
                                           HttpSession session,
                                           RedirectAttributes redirectAttributes) {
         TaiKhoanDTO loginUser = getLoginUser(session);
@@ -460,7 +469,8 @@ public class OrderController {
                 return "redirect:/order/my-orders";
             }
 
-            orderService.updateOrderAddress(id, hoTen, soDienThoai, diaChi);
+            BigDecimal shippingFee = calculateShippingFeeForOrder(order, province, district, ward, detailAddress);
+            orderService.updateOrderAddress(id, hoTen, soDienThoai, diaChi, shippingFee);
             redirectAttributes.addFlashAttribute("actionSuccess", "Địa chỉ giao hàng đã được cập nhật.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("actionError", e.getMessage());
@@ -493,6 +503,60 @@ public class OrderController {
         }
 
         return "redirect:/order/my-orders/" + id;
+    }
+
+    private BigDecimal calculateShippingFeeForOrder(DonHang order,
+                                                    String province,
+                                                    String district,
+                                                    String ward,
+                                                    String detailAddress) {
+        if (isBlank(province) || isBlank(district) || isBlank(ward) || isBlank(detailAddress)) {
+            throw new RuntimeException("Vui lòng chọn đầy đủ địa chỉ để tính lại phí ship.");
+        }
+
+        GhtkFeeRequest request = new GhtkFeeRequest();
+        request.setProvince(province);
+        request.setDistrict(district);
+        request.setWard(ward);
+        request.setAddress(detailAddress);
+        request.setWeight(calculateOrderWeightGram(order));
+        request.setValue(toIntegerValue(order.getTamTinh()));
+
+        GhtkFeeResponse response = ghtkService.calculateFeeWithDefaultPick(request);
+        Integer fee = response != null && response.getFee() != null ? response.getFee().getFee() : null;
+        if (fee == null) {
+            throw new RuntimeException("Không thể tính lại phí ship cho địa chỉ mới.");
+        }
+        return BigDecimal.valueOf(fee.longValue());
+    }
+
+    private int calculateOrderWeightGram(DonHang order) {
+        int total = orderService.getOrderItems(order.getId()).stream()
+                .mapToInt(item -> {
+                    Integer gram = item.getBienTheSanPham() != null
+                            ? item.getBienTheSanPham().getKhoiLuongGram()
+                            : null;
+                    int safeGram = gram == null || gram <= 0 ? 100 : gram;
+                    int quantity = item.getSoLuong() == null || item.getSoLuong() <= 0 ? 1 : item.getSoLuong();
+                    return safeGram * quantity;
+                })
+                .sum();
+        return total > 0 ? total : 100;
+    }
+
+    private Integer toIntegerValue(BigDecimal totalAmount) {
+        if (totalAmount == null) {
+            return 0;
+        }
+        try {
+            return totalAmount.setScale(0, RoundingMode.HALF_UP).intValueExact();
+        } catch (ArithmeticException ex) {
+            return totalAmount.intValue();
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     @PostMapping("/my-orders/{id}/review")

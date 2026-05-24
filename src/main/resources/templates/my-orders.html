@@ -92,7 +92,7 @@
         </div>
 
            <div th:each="order : ${filteredOrders}" class="order-row"
-               th:attr="data-status=${order.trangThai}">
+               th:attr="data-order-id=${order.id},data-status=${order.trangThai},data-payment-method=${order.phuongThucThanhToan}">
             <div class="order-code" th:text="${order.maDonHang}">DH123456</div>
             <div class="order-date" th:text="${#temporals.format(order.ngayDat, 'dd/MM/yyyy - HH:mm')}">01/01/2026 - 10:00</div>
             <div>

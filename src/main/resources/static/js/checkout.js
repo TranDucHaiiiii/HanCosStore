@@ -9,7 +9,8 @@ function toggleVoucherList() {
 
     // Định dạng số tiền theo kiểu VNĐ.
     function formatVND(num) {
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '₫';
+        const value = parseIntSafe(num, 0);
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '₫';
     }
 
     let currentShippingFee = null;
@@ -76,6 +77,23 @@ function toggleVoucherList() {
         if (voucherInput) {
             voucherInput.value = code || '';
         }
+    }
+
+    // Lấy hoặc tạo dòng giảm giá ngay trước dòng phí vận chuyển.
+    function ensureDiscountRow() {
+        let discountRow = document.getElementById('discountRow');
+        if (discountRow) return discountRow;
+
+        const shippingDisplay = document.getElementById('shippingDisplay');
+        const shippingRow = shippingDisplay ? shippingDisplay.closest('.font-size-0-9') : null;
+        if (!shippingRow || !shippingRow.parentNode) return null;
+
+        discountRow = document.createElement('div');
+        discountRow.id = 'discountRow';
+        discountRow.className = 'd-flex justify-content-between mb-3 font-size-0-9';
+        discountRow.innerHTML = '<span class="text-muted">Giảm giá</span><span id="discountAmount"></span>';
+        shippingRow.parentNode.insertBefore(discountRow, shippingRow);
+        return discountRow;
     }
 
     // Gom thông tin địa chỉ hiện tại để gửi API tính phí GHTK.
@@ -168,18 +186,10 @@ function toggleVoucherList() {
                 document.getElementById('appliedBadge').style.display = 'inline-block';
                 syncSelectedVoucherCode(data.code);
 
-                // Show discount row
-                let discountRow = document.getElementById('discountRow');
-                if (!discountRow) {
-                    const shippingRow = document.querySelector('.font-size-0-9:last-of-type');
-                    discountRow = document.createElement('div');
-                    discountRow.id = 'discountRow';
-                    discountRow.className = 'd-flex justify-content-between mb-3 font-size-0-9';
-                    discountRow.innerHTML = '<span class="text-muted">Giảm giá</span><span id="discountAmount"></span>';
-                    shippingRow.parentNode.insertBefore(discountRow, shippingRow);
-                }
-                document.getElementById('discountAmount').textContent = '-' + formatVND(data.discount);
-                discountRow.style.display = 'flex';
+                const discountRow = ensureDiscountRow();
+                const discountAmount = document.getElementById('discountAmount');
+                if (discountAmount) discountAmount.textContent = '-' + formatVND(data.discount);
+                if (discountRow) discountRow.style.display = 'flex';
                 setDiscountValue(data.discount);
 
                 // Show bỏ chọn link
