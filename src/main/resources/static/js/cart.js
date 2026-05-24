@@ -1,3 +1,20 @@
+function parseCartResponse(res) {
+    return res.text().then(text => {
+        let data = {};
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch (err) {
+            throw new Error('Máy chủ trả về dữ liệu không hợp lệ');
+        }
+
+        if (!res.ok) {
+            throw new Error(data.message || 'Không thể xử lý yêu cầu');
+        }
+
+        return data;
+    });
+}
+
 // Gửi yêu cầu cập nhật số lượng sản phẩm trong giỏ hàng.
 function updateQuantity(itemId, qty) {
     if (qty < 1) return;
@@ -6,7 +23,7 @@ function updateQuantity(itemId, qty) {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
-        .then(res => res.json())
+        .then(parseCartResponse)
         .then(data => {
             if (data.success) {
                 const total = new Intl.NumberFormat('vi-VN').format(data.total) + '₫';
@@ -15,12 +32,12 @@ function updateQuantity(itemId, qty) {
 
                 location.reload();
             } else {
-                Swal.fire('Lỗi', data.message, 'error').then(() => location.reload());
+                Swal.fire('Lỗi', data.message || 'Không thể cập nhật số lượng', 'error').then(() => location.reload());
             }
         })
         .catch(err => {
             console.error(err);
-            Swal.fire('Lỗi', 'Không thể kết nối với máy chủ', 'error');
+            Swal.fire('Lỗi', err.message || 'Không thể kết nối với máy chủ', 'error').then(() => location.reload());
         });
 }
 
@@ -41,7 +58,7 @@ function removeItem(itemId) {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-                .then(res => res.json())
+                .then(parseCartResponse)
                 .then(data => {
                     if (data.success) {
                         const total = new Intl.NumberFormat('vi-VN').format(data.total) + '₫';
@@ -52,7 +69,7 @@ function removeItem(itemId) {
                 })
             .catch(err => {
                 console.error(err);
-                Swal.fire('Lỗi', 'Không thể kết nối với máy chủ', 'error');
+                Swal.fire('Lỗi', err.message || 'Không thể kết nối với máy chủ', 'error').then(() => location.reload());
             });
         }
     });

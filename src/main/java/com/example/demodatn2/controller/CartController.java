@@ -8,7 +8,11 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,11 +28,11 @@ public class CartController {
 
     @GetMapping
     public String viewCart(HttpSession session, Model model) {
-        String sessionId = session.getId(); // Force session creation
+        session.getId(); // Force session creation
         List<CartItemDTO> items = cartService.getCartItems(session);
         BigDecimal total = cartService.getTotalAmount(items);
         clearAppliedVoucher(session);
-        
+
         model.addAttribute("items", items);
         model.addAttribute("total", total);
         model.addAttribute("categories", danhMucService.getActive());
@@ -38,7 +42,7 @@ public class CartController {
     @GetMapping("/pending-add")
     public String handlePendingAdd(HttpSession session) {
         Integer bienTheId = (Integer) session.getAttribute("PENDING_BIEN_THE_ID");
-        Integer soLuong   = (Integer) session.getAttribute("PENDING_SO_LUONG");
+        Integer soLuong = (Integer) session.getAttribute("PENDING_SO_LUONG");
         TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
         if (bienTheId != null && soLuong != null && loginUser != null) {
             session.removeAttribute("PENDING_BIEN_THE_ID");
@@ -47,17 +51,18 @@ public class CartController {
                 cartService.addToCart(bienTheId, soLuong, session);
                 int count = cartService.getItemCount(session);
                 session.setAttribute("CART_COUNT", count);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         return "redirect:/cart";
     }
 
     @PostMapping("/add")
     @ResponseBody
-    public Map<String, Object> addToCart(@RequestParam Integer bienTheId, 
-                                        @RequestParam Integer soLuong, 
-                                        HttpSession session) {
-        String sessionId = session.getId(); // Force session creation
+    public Map<String, Object> addToCart(@RequestParam Integer bienTheId,
+                                         @RequestParam Integer soLuong,
+                                         HttpSession session) {
+        session.getId(); // Force session creation
         TaiKhoanDTO loginUser = (TaiKhoanDTO) session.getAttribute("LOGIN_USER");
         if (loginUser == null) {
             session.setAttribute("PENDING_BIEN_THE_ID", bienTheId);
@@ -73,17 +78,18 @@ public class CartController {
             cartService.addToCart(bienTheId, soLuong, session);
             int count = cartService.getItemCount(session);
             session.setAttribute("CART_COUNT", count);
+            clearAppliedVoucher(session);
             return Map.of("success", true, "message", "Đã thêm vào giỏ hàng", "count", count);
         } catch (Exception e) {
-            return Map.of("success", false, "message", e.getMessage());
+            return Map.of("success", false, "message", safeMessage(e));
         }
     }
 
     @PostMapping("/update")
     @ResponseBody
-    public Map<String, Object> updateQuantity(@RequestParam Integer itemId, 
-                                             @RequestParam Integer soLuong, 
-                                             HttpSession session) {
+    public Map<String, Object> updateQuantity(@RequestParam Integer itemId,
+                                              @RequestParam Integer soLuong,
+                                              HttpSession session) {
         try {
             cartService.updateQuantity(itemId, soLuong);
             List<CartItemDTO> items = cartService.getCartItems(session);
@@ -93,13 +99,13 @@ public class CartController {
             clearAppliedVoucher(session);
 
             return Map.of(
-                "success", true, 
-                "total", total,
-                "totalAfterDiscount", total,
-                "count", count
+                    "success", true,
+                    "total", total,
+                    "totalAfterDiscount", total,
+                    "count", count
             );
         } catch (Exception e) {
-            return Map.of("success", false, "message", e.getMessage());
+            return Map.of("success", false, "message", safeMessage(e));
         }
     }
 
@@ -115,18 +121,24 @@ public class CartController {
             clearAppliedVoucher(session);
 
             return Map.of(
-                "success", true, 
-                "total", total,
-                "totalAfterDiscount", total,
-                "count", count
+                    "success", true,
+                    "total", total,
+                    "totalAfterDiscount", total,
+                    "count", count
             );
         } catch (Exception e) {
-            return Map.of("success", false, "message", e.getMessage());
+            return Map.of("success", false, "message", safeMessage(e));
         }
     }
 
     private void clearAppliedVoucher(HttpSession session) {
         session.removeAttribute("APPLIED_VOUCHER_CODE");
         session.removeAttribute("DISCOUNT_AMOUNT");
+    }
+
+    private String safeMessage(Exception e) {
+        return e.getMessage() == null || e.getMessage().isBlank()
+                ? "Không thể xử lý giỏ hàng"
+                : e.getMessage();
     }
 }
