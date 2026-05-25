@@ -231,6 +231,14 @@ let locationData = [];
 
     // Khởi tạo dữ liệu địa chỉ, tổng tiền, voucher và các sự kiện checkout.
     document.addEventListener('DOMContentLoaded', function() {
+        const voucherList = document.getElementById('voucherList');
+        const voucherArrow = document.getElementById('voucherArrow');
+        if (voucherList) voucherList.classList.add('show');
+        if (voucherArrow) {
+            voucherArrow.classList.remove('fa-chevron-down');
+            voucherArrow.classList.add('fa-chevron-up');
+        }
+
         // Tải dữ liệu hành chính
         fetch('/data/dvhcvn.json')
             .then(response => response.json())
