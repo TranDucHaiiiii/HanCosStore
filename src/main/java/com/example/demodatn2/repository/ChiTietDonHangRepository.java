@@ -43,4 +43,5 @@ public interface ChiTietDonHangRepository extends JpaRepository<ChiTietDonHang, 
         order by sum(c.soLuong) desc, sum(c.thanhTien) desc
     """)
     List<Object[]> findTopSellingProducts(Pageable pageable);
+
 }

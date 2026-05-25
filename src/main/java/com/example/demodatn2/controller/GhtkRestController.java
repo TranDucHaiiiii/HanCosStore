@@ -59,13 +59,13 @@ public class GhtkRestController {
                     .body(Map.of("success", false, "message", "Chua co dia chi giao hang trong tai khoan."));
         }
 
-        int totalWeight = cartService.getTotalWeightGram(session);
+        int totalWeight = cartService.getSelectedTotalWeightGram(session);
         if (totalWeight <= 0) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "message", "Gio hang chua co khoi luong de tinh phi."));
+                    .body(Map.of("success", false, "message", "Vui long chon san pham de tinh phi giao hang."));
         }
 
-        List<CartItemDTO> items = cartService.getCartItems(session);
+        List<CartItemDTO> items = cartService.getSelectedCartItems(session);
         BigDecimal totalAmount = cartService.getTotalAmount(items);
         Integer value = toIntegerValue(totalAmount);
 

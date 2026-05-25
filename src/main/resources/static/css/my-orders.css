@@ -1,8 +1,8 @@
 :root {
-    --bg: #f3f3f3;
+    --bg: #fff;
     --ink: #141414;
-    --line: #d8d8d8;
-    --muted: #8d8d8d;
+    --line: #e8e8e8;
+    --muted: #777;
     --chip-pending-bg: #f7f1db;
     --chip-pending-text: #b58900;
     --chip-done-bg: #e9f3e8;
@@ -12,23 +12,28 @@
 }
 
 body {
-    background: radial-gradient(circle at top right, #f8f8f8 0%, var(--bg) 45%), var(--bg);
+    background: var(--bg);
     color: var(--ink);
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .minimal-nav {
-    background: #fff;
-    border-bottom: 1px solid var(--line);
-    padding: 0.85rem 0;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0.78rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .brand-mark {
-    letter-spacing: 0.15em;
+    letter-spacing: 0;
     font-weight: 800;
     color: var(--ink);
     text-decoration: none;
-    font-size: 1.15rem;
+    font-size: 1.35rem;
+    text-transform: uppercase;
 }
 
 .nav-center {
@@ -45,6 +50,7 @@ body {
 .nav-center a {
     color: var(--ink);
     text-decoration: none;
+    font-weight: 700;
 }
 
 .nav-icons a {
@@ -55,38 +61,44 @@ body {
 }
 
 .orders-wrap {
-    max-width: 1120px;
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 3rem 1rem 4rem;
+    padding: 3.4rem 1rem 4.6rem;
     min-height: 78vh;
 }
 
 .hero-title {
-    font-size: clamp(2.2rem, 4.5vw, 3.5rem);
-    line-height: 0.9;
+    font-size: clamp(2rem, 4.2vw, 3.2rem);
+    line-height: 1;
     font-weight: 900;
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
     text-transform: uppercase;
     margin: 0;
+    text-align: center;
 }
 
 .hero-sub {
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
     color: var(--muted);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
 }
 
 .stats-grid {
-    margin-top: 2rem;
-    border: 1px solid var(--line);
-    background: #f5f5f5;
+    margin-top: 2.3rem;
+    border: 1px solid #ededed;
+    background: #fff;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.035);
 }
 
 .stats-item {
-    padding: 0.85rem 1rem;
-    border-right: 1px solid var(--line);
+    padding: 1rem 1.15rem;
+    border-right: 1px solid #ededed;
 }
 
 .stats-item:last-child {
@@ -102,54 +114,55 @@ body {
 }
 
 .stats-value {
-    font-size: 1.9rem;
+    font-size: 1.75rem;
     line-height: 1.1;
     margin-top: 0.25rem;
     font-weight: 900;
 }
 
 .stats-value.pending { color: #c09316; }
+.stats-value.confirmed { color: #1f77bf; }
 .stats-value.completed { color: #3f8e42; }
 .stats-value.cancelled { color: #9b9b9b; }
 .stats-value.total { color: #1f1f1f; font-size: 1.7rem; }
 
 .order-board {
-    margin-top: 1.5rem;
-    border-top: 1px solid var(--line);
+    margin-top: 1.9rem;
+    border: 1px solid #ededed;
+    background: #fff;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.035);
 }
 
 .filter-tabs {
     display: flex;
-    gap: 0.65rem;
-    padding-top: 0.35rem;
+    gap: 0.55rem;
+    padding: 0.85rem 1rem;
     flex-wrap: wrap;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid #ededed;
 }
 
 .filter-btn {
-    border: 0;
-    background: transparent;
-    color: #a0a0a0;
+    border: 1px solid #e5e5e5;
+    background: #fafafa;
+    color: #555;
     text-transform: uppercase;
     font-size: 0.68rem;
     letter-spacing: 0.1em;
     font-weight: 700;
-    padding: 0.62rem 0.75rem;
+    padding: 0.55rem 0.9rem;
     position: relative;
+    text-decoration: none;
+    border-radius: 999px;
 }
 
 .filter-btn.is-active {
-    color: var(--ink);
+    color: #fff;
+    background: #111;
+    border-color: #111;
 }
 
 .filter-btn.is-active::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 2px;
-    background: var(--ink);
+    display: none;
 }
 
 .orders-head,
@@ -161,8 +174,8 @@ body {
 }
 
 .orders-head {
-    padding: 0.7rem 0;
-    border-bottom: 1px solid var(--line);
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #ededed;
     color: #9a9a9a;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -171,9 +184,14 @@ body {
 }
 
 .order-row {
-    padding: 0.85rem 0;
-    border-bottom: 1px solid #e2e2e2;
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
     font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.order-row:hover {
+    background: #fafafa;
 }
 
 .order-code {
@@ -196,7 +214,7 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    border-radius: 0;
+    border-radius: 999px;
     border: 1px solid transparent;
     min-width: 88px;
 }
@@ -207,6 +225,23 @@ body {
 .status-delivered { background: var(--chip-done-bg); color: var(--chip-done-text); border-color: #d4e7d2; }
 .status-cancelled { background: var(--chip-cancel-bg); color: var(--chip-cancel-text); border-color: #e0e0e0; }
 .status-return { background: #fff1df; color: #c7782f; border-color: #f6d8b2; }
+
+.payment-countdown {
+    margin-top: 0.35rem;
+    color: #9b6a00;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.payment-countdown strong {
+    color: #b42318;
+    font-variant-numeric: tabular-nums;
+}
+
+.payment-countdown.is-expired {
+    color: #b42318;
+}
 
 .order-money {
     font-weight: 700;
@@ -220,26 +255,27 @@ body {
 }
 
 .btn-flat {
-    border: 1px solid var(--line);
-    background: #f5f5f5;
-    color: #5f5f5f;
+    border: 1px solid #111;
+    background: #fff;
+    color: #111;
     text-transform: uppercase;
     font-size: 0.62rem;
     letter-spacing: 0.08em;
     font-weight: 800;
-    padding: 0.37rem 0.62rem;
+    padding: 0.44rem 0.72rem;
     min-width: 70px;
     text-align: center;
     text-decoration: none;
+    border-radius: 999px;
 }
 
 .btn-flat:hover {
-    background: #ececec;
-    color: #333;
+    background: #111;
+    color: #fff;
 }
 
 .btn-detail {
-    background: #0f0f0f;
+    background: #111;
     color: #fff;
     border-color: #0f0f0f;
 }
@@ -250,7 +286,7 @@ body {
 }
 
 .empty-state {
-    border: 1px dashed var(--line);
+    border: 1px dashed #d8d8d8;
     padding: 3.5rem 1rem;
     text-align: center;
     margin-top: 1.5rem;
@@ -258,10 +294,10 @@ body {
 }
 
 footer {
-    margin-top: 3rem;
-    background: #111;
+    margin-top: 0;
+    background: #000;
     color: #fff;
-    padding: 1.3rem 0;
+    padding: 2rem 0;
 }
 
 .footer-bottom {

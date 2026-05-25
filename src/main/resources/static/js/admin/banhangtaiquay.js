@@ -182,7 +182,7 @@ function restoreMeta(invoiceId) {
     paymentMethod = meta ? (meta.paymentMethod || 'cash') : 'cash';
     document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.toggle('active', b.dataset.method === paymentMethod));
     document.getElementById('cashRow').style.display = paymentMethod === 'cash' ? '' : 'none';
-    document.getElementById('changeRow').style.display = 'none';
+    document.getElementById('changeRow').style.display = paymentMethod === 'cash' ? '' : 'none';
     document.getElementById('transferRow').style.display = paymentMethod === 'cash' ? 'none' : '';
     document.getElementById('custName').value = meta ? meta.custName || '' : '';
     document.getElementById('custPhone').value = meta ? meta.custPhone || '' : '';
@@ -771,6 +771,16 @@ function recalc() {
     calcChange();
 }
 
+// Làm sạch tiền khách đưa và tính lại tiền thừa.
+function refreshCartSummary() {
+    const input = document.getElementById('cashGiven');
+    if (input) {
+        const cleaned = (input.value || '').replace(/[^0-9]/g, '');
+        if (input.value !== cleaned) input.value = cleaned;
+    }
+    recalc();
+}
+
 /* ══════════════════════════════════════════
    PAYMENT
    ══════════════════════════════════════════ */
@@ -800,8 +810,7 @@ let bankInfo = null;
 // Chọn phương thức thanh toán và cập nhật vùng nhập tiền hoặc QR chuyển khoản.
 async function selectPayment(method, el) {
     if (tempOrderCode && method === 'cash') {
-        showToast('Đơn chuyển khoản ' + tempOrderCode + ' đang chờ SePay xác nhận.', 'error');
-        return;
+        resetTransferState();
     }
     paymentMethod = method;
     document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('active'));
@@ -809,12 +818,13 @@ async function selectPayment(method, el) {
 
     const isCash = method === 'cash';
     document.getElementById('cashRow').style.display = isCash ? '' : 'none';
-    document.getElementById('changeRow').style.display = 'none';
+    document.getElementById('changeRow').style.display = paymentMethod === 'cash' ? '' : 'none';
     document.getElementById('transferRow').style.display = isCash ? 'none' : '';
 
     if (isCash) {
         resetTransferState();
         document.getElementById('btnCheckout').innerHTML = '<i class="fas fa-check-circle me-2"></i>Thanh toán';
+        calcChange();
     } else {
         document.getElementById('btnCheckout').innerHTML = '<i class="fas fa-qrcode me-2"></i>Tạo QR chuyển khoản';
         await openTransferModal();
@@ -989,7 +999,7 @@ function calcChange() {
     const total = Math.max(0, subtotal - discount);
     const given = parseFloat(document.getElementById('cashGiven').value.replace(/[^0-9]/g, '')) || 0;
 
-    if (given > 0 && paymentMethod === 'cash') {
+    if (paymentMethod === 'cash') {
         const change = given - total;
         document.getElementById('changeRow').style.display = '';
         document.getElementById('changeAmount').textContent = fmt(Math.max(0, change));
@@ -1155,7 +1165,15 @@ async function newOrder() {
    TOAST
    ══════════════════════════════════════════ */
 // Hiển thị thông báo nổi ngắn hạn cho thao tác thành công hoặc lỗi.
+let lastToastMsg = '';
+let lastToastAt = 0;
 function showToast(msg, type) {
+    const now = Date.now();
+    if (msg === lastToastMsg && now - lastToastAt < 800) {
+        return;
+    }
+    lastToastMsg = msg;
+    lastToastAt = now;
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = 'pos-toast ' + (type || 'success');

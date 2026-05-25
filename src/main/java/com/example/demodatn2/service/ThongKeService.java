@@ -10,6 +10,7 @@ import com.example.demodatn2.repository.BienTheSanPhamRepository;
 import com.example.demodatn2.repository.ChiTietDonHangRepository;
 import com.example.demodatn2.repository.DonHangRepository;
 import com.example.demodatn2.repository.HinhAnhSanPhamRepository;
+import com.example.demodatn2.repository.SanPhamRepository;
 import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.repository.YeuCauDoiTraRepository;
 import lombok.RequiredArgsConstructor;
@@ -47,10 +48,12 @@ public class ThongKeService {
     private final BienTheSanPhamRepository bienTheSanPhamRepository;
     private final HinhAnhSanPhamRepository hinhAnhSanPhamRepository;
     private final YeuCauDoiTraRepository yeuCauDoiTraRepository;
+    private final SanPhamRepository sanPhamRepository;
 
     public DoanhThuDTO getDoanhThuTongHop() {
         BigDecimal tongDoanhThu = donHangRepository.tinhTongDoanhThu();
         Long soDonHang = donHangRepository.demDonHangThanhCong();
+        Long tongSanPham = sanPhamRepository.countAvailableProducts();
         Long soSPDaBan = chiTietDonHangRepository.sumSoLuongDaBan();
         Long soKhachHang = taiKhoanRepository.countCustomers();
 
@@ -129,6 +132,7 @@ public class ThongKeService {
         return DoanhThuDTO.builder()
                 .tongDoanhThu(tongDoanhThu != null ? tongDoanhThu : BigDecimal.ZERO)
                 .soDonHang(soDonHang != null ? soDonHang : 0L)
+                .tongSanPham(tongSanPham != null ? tongSanPham : 0L)
                 .soSanPhamDaBan(soSPDaBan != null ? soSPDaBan : 0L)
                 .doanhThuHomNay(doanhThuHomNay != null ? doanhThuHomNay : BigDecimal.ZERO)
                 .soDonHomNay(soDonHomNay != null ? soDonHomNay : 0L)

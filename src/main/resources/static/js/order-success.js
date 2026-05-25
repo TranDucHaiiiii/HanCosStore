@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const statusEndpoint = container?.dataset?.statusEndpoint;
     const successUrl = container?.dataset?.successUrl;
+    const expireAt = Number(container?.dataset?.expireAt);
 
     // =============================
     // 🔥 1. LOAD BANK (VIETQR)
@@ -142,7 +143,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         window.location.href = successUrl;
                     }
                 } else if (statusEl) {
-                    statusEl.textContent = 'Đang chờ thanh toán...';
+                    if (Number.isFinite(expireAt) && expireAt <= Date.now()) {
+                        statusEl.textContent = 'Đã quá hạn thanh toán, hệ thống sẽ tự hủy đơn.';
+                        statusEl.classList.remove('text-warning');
+                        statusEl.classList.add('text-danger');
+                    } else {
+                        statusEl.textContent = 'Đang chờ thanh toán...';
+                    }
                 }
             })
             .catch(err => console.error('Lỗi polling:', err));
@@ -159,4 +166,41 @@ document.addEventListener('DOMContentLoaded', function () {
         setInterval(pollStatus, 3000);
     }
 
+    startPaymentCountdown(expireAt, statusEl);
 });
+
+function startPaymentCountdown(expireAt, statusEl) {
+    const countdownEls = Array.from(document.querySelectorAll('.payment-countdown'));
+    if (!countdownEls.length || !Number.isFinite(expireAt)) {
+        return;
+    }
+
+    const formatRemaining = (ms) => {
+        const totalSeconds = Math.max(Math.floor(ms / 1000), 0);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+
+    const tick = () => {
+        const remaining = expireAt - Date.now();
+        countdownEls.forEach((el) => {
+            const valueEl = el.querySelector('strong') || el;
+            if (remaining <= 0) {
+                el.classList.add('is-expired');
+                el.innerHTML = '<strong>00:00</strong> đã quá hạn thanh toán';
+                return;
+            }
+            valueEl.textContent = formatRemaining(remaining);
+        });
+
+        if (remaining <= 0 && statusEl) {
+            statusEl.textContent = 'Đã quá hạn thanh toán, hệ thống sẽ tự hủy đơn.';
+            statusEl.classList.remove('text-warning');
+            statusEl.classList.add('text-danger');
+        }
+    };
+
+    tick();
+    setInterval(tick, 1000);
+}

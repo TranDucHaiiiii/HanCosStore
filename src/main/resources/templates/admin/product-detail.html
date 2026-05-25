@@ -38,9 +38,9 @@
 
     <section class="product-overview">
         <div class="product-media">
-            <img th:if="${product.hinhAnhSanPhams != null and !#lists.isEmpty(product.hinhAnhSanPhams)}"
-                 th:src="${product.hinhAnhSanPhams[0].duongDanAnh}"
-                 th:alt="${product.ten}">
+              <img th:if="${product.hinhAnhSanPhams != null and !#lists.isEmpty(product.hinhAnhSanPhams)}"
+                  th:src="${#strings.startsWith(product.hinhAnhSanPhams[0].duongDanAnh, '/images/') ? product.hinhAnhSanPhams[0].duongDanAnh : '/images/products/' + product.hinhAnhSanPhams[0].duongDanAnh}"
+                  th:alt="${product.ten}">
             <div th:unless="${product.hinhAnhSanPhams != null and !#lists.isEmpty(product.hinhAnhSanPhams)}"
                  class="empty-media">
                 <i class="fas fa-image"></i>
@@ -145,8 +145,10 @@
                     <h2><i class="fas fa-images"></i> Gallery sản phẩm</h2>
                 </div>
                 <div class="image-grid" th:if="${product.hinhAnhSanPhams != null and !#lists.isEmpty(product.hinhAnhSanPhams)}">
-                    <a class="gallery-item" th:each="img : ${product.hinhAnhSanPhams}" th:href="${img.duongDanAnh}" target="_blank">
-                        <img th:src="${img.duongDanAnh}" alt="Ảnh sản phẩm">
+                    <a class="gallery-item" th:each="img : ${product.hinhAnhSanPhams}"
+                       th:href="${#strings.startsWith(img.duongDanAnh, '/images/') ? img.duongDanAnh : '/images/products/' + img.duongDanAnh}"
+                       target="_blank">
+                        <img th:src="${#strings.startsWith(img.duongDanAnh, '/images/') ? img.duongDanAnh : '/images/products/' + img.duongDanAnh}" alt="Ảnh sản phẩm">
                         <span class="primary-badge" th:if="${img.laAnhChinh}">Ảnh chính</span>
                         <span class="image-order" th:text="'#' + ${img.thuTu ?: 1}">#1</span>
                     </a>
@@ -199,8 +201,10 @@
                     <h2><i class="fas fa-palette"></i> Ảnh theo màu</h2>
                 </div>
                 <div class="color-image-list" th:if="${product.hinhAnhMauSacs != null and !#lists.isEmpty(product.hinhAnhMauSacs)}">
-                    <a class="color-image-item" th:each="cimg : ${product.hinhAnhMauSacs}" th:href="${cimg.duongDanAnh}" target="_blank">
-                        <img th:src="${cimg.duongDanAnh}" alt="Ảnh màu">
+                    <a class="color-image-item" th:each="cimg : ${product.hinhAnhMauSacs}"
+                       th:href="${#strings.startsWith(cimg.duongDanAnh, '/images/') ? cimg.duongDanAnh : '/images/products/' + cimg.duongDanAnh}"
+                       target="_blank">
+                        <img th:src="${#strings.startsWith(cimg.duongDanAnh, '/images/') ? cimg.duongDanAnh : '/images/products/' + cimg.duongDanAnh}" alt="Ảnh màu">
                         <span th:text="${cimg.mauSac}">Đen</span>
                     </a>
                 </div>

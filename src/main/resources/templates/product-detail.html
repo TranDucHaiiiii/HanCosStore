@@ -166,9 +166,10 @@
                 <div class="rating-summary" th:if="${reviewCount > 0}">
                     <span class="rating-stars">
                         <i class="fa-solid fa-star" th:each="i : ${#numbers.sequence(1, 5)}"
-                           th:classappend="${i <= T(java.lang.Math).round(averageRating) ? ' active' : ''}"></i>
+                            th:classappend="${i <= T(java.lang.Math).round(averageRating) ? ' active' : ''}"></i>
                     </span>
-                    <span th:text="${#numbers.formatDecimal(averageRating, 1, 1) + '/5 (' + reviewCount + ' danh gia)'}">5.0/5</span>
+                    <span
+                        th:text="${#numbers.formatDecimal(averageRating, 1, 1) + '/5 (' + reviewCount + ' danh gia)'}">5.0/5</span>
                 </div>
                 <div class="rating-summary text-muted" th:if="${reviewCount == 0}">
                     Chua co danh gia
@@ -209,6 +210,9 @@
                         <button class="qty-btn" onclick="updateQty(1)">+</button>
                     </div>
                     <div class="flex-grow-1">
+                        <button class="buy-now-btn" onclick="buyNow()">
+                            Mua ngay
+                        </button>
                         <button class="add-to-cart-btn" id="addToCartBtn" onclick="addToCart()" disabled>Thêm vào giỏ
                             hàng</button>
                     </div>
@@ -265,7 +269,8 @@
                         <div>
                             <h3>Danh gia san pham</h3>
                             <p th:if="${reviewCount > 0}">
-                                Diem trung binh <strong th:text="${#numbers.formatDecimal(averageRating, 1, 1) + '/5'}">5.0/5</strong>
+                                Diem trung binh <strong
+                                    th:text="${#numbers.formatDecimal(averageRating, 1, 1) + '/5'}">5.0/5</strong>
                                 tu <strong th:text="${reviewCount}">0</strong> danh gia
                             </p>
                             <p th:if="${reviewCount == 0}">San pham nay chua co danh gia.</p>
@@ -276,14 +281,15 @@
                         <div class="review-item" th:each="review : ${reviews}">
                             <div class="review-top">
                                 <strong th:text="${review.tenKhachHang}">Khach hang</strong>
-                                <span th:text="${#temporals.format(review.ngayTao, 'dd/MM/yyyy HH:mm')}">01/01/2026</span>
+                                <span
+                                    th:text="${#temporals.format(review.ngayTao, 'dd/MM/yyyy HH:mm')}">01/01/2026</span>
                             </div>
                             <div class="rating-stars">
                                 <i class="fa-solid fa-star" th:each="i : ${#numbers.sequence(1, 5)}"
-                                   th:classappend="${i <= review.soSao ? ' active' : ''}"></i>
+                                    th:classappend="${i <= review.soSao ? ' active' : ''}"></i>
                             </div>
                             <p th:if="${review.noiDung != null and !#strings.isEmpty(review.noiDung)}"
-                               th:text="${review.noiDung}">Noi dung danh gia</p>
+                                th:text="${review.noiDung}">Noi dung danh gia</p>
                         </div>
                     </div>
                 </div>
@@ -347,6 +353,82 @@
             document.getElementById('mainProductImg').src = src;
             document.querySelectorAll('.thumb-item').forEach(t => t.classList.remove('active'));
             if (thumb) thumb.classList.add('active');
+        }
+        function buyNow() {
+            if (!currentVariant) {
+                Swal.fire('Lỗi', 'Vui lòng chọn màu sắc và kích thước trước khi mua hàng.', 'warning');
+                return;
+            }
+            handleQtyInput(document.getElementById('cartQty'));
+            const qty = parseInt(document.getElementById('cartQty').value, 10) || 1;
+            const formData = new FormData();
+            formData.append('bienTheId', currentVariant.id);
+            formData.append('soLuong', qty);
+            formData.append('checkout', 'true'); // Thêm tham số để server biết đây là yêu cầu mua ngay
+            fetch('/cart/add', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = '/checkout';
+                    } else {
+                        if (data.requireLogin) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Bạn chưa đăng nhập',
+                                text: data.message || 'Vui lòng đăng nhập để tiếp tục mua hàng',
+                                confirmButtonText: 'Đăng nhập ngay',
+                                confirmButtonColor: '#1a1a1a'
+                            }).then(() => {
+                                window.location.href = data.loginUrl || '/login';
+                            });
+                            return;
+                        }
+                        Swal.fire('Lỗi', data.message, 'error');
+                    }
+                });
+        }
+
+        function buyNow() {
+            if (!currentVariant) return;
+
+            const qtyInput = document.getElementById('cartQty');
+            handleQtyInput(qtyInput);
+            const qty = parseInt(qtyInput.value, 10) || 1;
+
+            const formData = new FormData();
+            formData.append('bienTheId', currentVariant.id);
+            formData.append('soLuong', qty);
+            formData.append('checkoutNow', 'true');
+
+            fetch('/cart/add', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.checkoutUrl) {
+                        window.location.href = data.checkoutUrl;
+                        return;
+                    }
+                    if (data.requireLogin) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Bạn chưa đăng nhập',
+                            text: data.message || 'Vui lòng đăng nhập để tiếp tục mua hàng',
+                            confirmButtonText: 'Đăng nhập ngay',
+                            confirmButtonColor: '#1a1a1a'
+                        }).then(() => {
+                            window.location.href = data.loginUrl || '/login';
+                        });
+                        return;
+                    }
+                    Swal.fire('Lỗi', data.message, 'error');
+                });
         }
 
         function selectColor(color, img, el) {

@@ -305,7 +305,7 @@
                         <label>Tiền khách đưa:</label>
                         <input type="text" class="form-control" id="cashGiven" placeholder="0" oninput="refreshCartSummary()">
                     </div>
-                    <div class="cash-row" id="changeRow" style="display:none;">
+                    <div class="cash-row" id="changeRow">
                         <label>Tiền thừa:</label>
                         <span class="change-amount" id="changeAmount">0₫</span>
                     </div>
@@ -460,6 +460,7 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script th:inline="javascript">
     window.POS_INITIAL_CART   = /*[[${posSessionCart}]]*/ [];
     window.POS_INVOICES       = /*[[${posInvoices}]]*/ [];

@@ -15,6 +15,7 @@ import java.util.List;
 public class DoanhThuDTO {
     private BigDecimal tongDoanhThu;
     private Long soDonHang;
+    private Long tongSanPham;
     private Long soSanPhamDaBan;
     private BigDecimal doanhThuHomNay;
     private Long soDonHomNay;

@@ -41,4 +41,20 @@ public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Integer> {
           and (m.soLuongToiDa is null or coalesce(m.soLuongDaDung, 0) < m.soLuongToiDa)
     """)
     int incrementUsageIfAvailable(@Param("voucherId") Integer voucherId);
+
+    @Modifying
+    @Query("""
+        update MaGiamGia m
+        set m.soLuongDaDung = case
+                when coalesce(m.soLuongDaDung, 0) > 0 then coalesce(m.soLuongDaDung, 0) - 1
+                else 0
+            end,
+            m.trangThai = case
+                when m.batDauLuc <= CURRENT_TIMESTAMP and m.ketThucLuc >= CURRENT_TIMESTAMP
+                    then 'ACTIVE'
+                else m.trangThai
+            end
+        where m.id = :voucherId
+    """)
+    int decrementUsageAfterOrderCancel(@Param("voucherId") Integer voucherId);
 }

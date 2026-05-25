@@ -374,8 +374,112 @@ function openReturnDetailDialog(orderId, items) {
     });
 }
 
+function cancelReturnRequest(button) {
+    const requestId = button?.dataset?.returnRequestId;
+    if (!requestId) {
+        Swal.fire('Lỗi', 'Không xác định được yêu cầu trả hàng.', 'error');
+        return;
+    }
+
+    Swal.fire({
+        title: 'Hủy yêu cầu trả hàng',
+        text: 'Bạn có chắc muốn hủy yêu cầu trả hàng này?',
+        input: 'text',
+        inputPlaceholder: 'Lý do hủy (không bắt buộc)',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xác nhận hủy',
+        cancelButtonText: 'Quay lại'
+    }).then((result) => {
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        const formData = new URLSearchParams();
+        if (result.value) {
+            formData.append('reason', result.value);
+        }
+
+        fetch('/api/returns/' + requestId + '/cancel', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Thành công', data.message || 'Đã hủy yêu cầu trả hàng.', 'success')
+                        .then(() => location.reload());
+                } else {
+                    Swal.fire('Lỗi', data.message || 'Không hủy được yêu cầu trả hàng.', 'error');
+                }
+            })
+            .catch(() => Swal.fire('Lỗi', 'Không thể kết nối với máy chủ.', 'error'));
+    });
+}
+
 function escapeReturnHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (char) => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[char]));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    startPaymentCountdowns();
+});
+
+function startPaymentCountdowns() {
+    const countdownEls = Array.from(document.querySelectorAll('.payment-countdown[data-expire-at], .success-container[data-expire-at] .detail-countdown'));
+    if (!countdownEls.length) {
+        return;
+    }
+
+    const resolveExpireAt = (el) => {
+        const ownValue = Number(el.dataset.expireAt);
+        if (Number.isFinite(ownValue)) {
+            return ownValue;
+        }
+        const parentValue = Number(el.closest('.success-container')?.dataset.expireAt);
+        return Number.isFinite(parentValue) ? parentValue : null;
+    };
+
+    const formatRemaining = (ms) => {
+        const totalSeconds = Math.max(Math.floor(ms / 1000), 0);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+
+    const tick = () => {
+        countdownEls.forEach((el) => {
+            const expireAt = resolveExpireAt(el);
+            if (expireAt === null) {
+                return;
+            }
+
+            const valueEl = el.querySelector('strong') || el;
+            const remaining = expireAt - Date.now();
+            if (remaining <= 0) {
+                el.classList.add('is-expired');
+                el.innerHTML = '<strong>00:00</strong> đã quá hạn thanh toán';
+                const statusEl = document.getElementById('payment-status');
+                if (statusEl) {
+                    statusEl.textContent = 'Đã quá hạn thanh toán, hệ thống sẽ tự hủy đơn.';
+                    statusEl.classList.remove('text-warning');
+                    statusEl.classList.add('text-danger');
+                }
+                return;
+            }
+
+            valueEl.textContent = formatRemaining(remaining);
+        });
+    };
+
+    tick();
+    setInterval(tick, 1000);
 }

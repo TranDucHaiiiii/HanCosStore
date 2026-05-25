@@ -12,12 +12,71 @@
     border-bottom: 1px solid #eee;
 }
 .cart-table td { padding: 1.5rem; vertical-align: middle; border-bottom: 1px solid #eee; }
+.cart-item-row { transition: background-color 0.2s ease; }
+.cart-item-row:not(.selected) { opacity: 0.64; }
+.select-col { width: 52px; text-align: center; }
+.cart-check-wrap { display: inline-flex; align-items: center; justify-content: center; margin: 0; cursor: pointer; }
+.cart-check-wrap input { position: absolute; opacity: 0; pointer-events: none; }
+.cart-check-wrap span {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #777;
+    border-radius: 50%;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.04);
+}
+.cart-check-wrap:hover span,
+.cart-check-wrap input:focus + span { border-color: #1a1a1a; box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.08); }
+.cart-check-wrap input:checked + span { background: #1a1a1a; border-color: #1a1a1a; }
+.cart-check-wrap input:checked + span::after {
+    content: "";
+    width: 6px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+}
 .product-img { width: 80px; height: 100px; object-fit: cover; background: #f8f9fa; }
 .product-name { font-weight: 700; color: #1a1a1a; text-decoration: none; display: block; margin-bottom: 0.2rem; font-size: 0.95rem; }
 .product-variant { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
-.qty-input { width: 60px; height: 40px; text-align: center; border: 1px solid #ddd; padding: 5px; font-weight: 600; font-size: 0.9rem; }
+.qty-control { display: inline-grid; grid-template-columns: 36px 54px 36px; height: 40px; border: 1px solid #ddd; }
+.qty-btn { border: 0; background: #fff; color: #1a1a1a; font-weight: 800; line-height: 1; transition: background-color 0.2s ease; }
+.qty-btn:hover { background: #f3f3f3; }
+.qty-input { width: 54px; height: 38px; text-align: center; border: 0; border-left: 1px solid #eee; border-right: 1px solid #eee; padding: 5px; font-weight: 600; font-size: 0.9rem; }
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .btn-remove { color: #888; cursor: pointer; background: none; border: none; transition: all 0.2s; font-size: 0.9rem; }
 .btn-remove:hover { color: #8b4d4d; transform: scale(1.1); }
+.selected-actions-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #eee;
+    background: #fafafa;
+    font-size: 0.85rem;
+    color: #555;
+}
+.btn-delete-selected {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid #1a1a1a;
+    background: #1a1a1a;
+    color: #fff;
+    padding: 0.65rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    transition: all 0.2s ease;
+}
+.btn-delete-selected:hover { background: #8b4d4d; border-color: #8b4d4d; }
 .cart-summary { background: white; padding: 2.5rem; border: 1px solid #eee; }
 .summary-row { display: flex; justify-content: space-between; margin-bottom: 1.25rem; font-size: 0.9rem; }
 .summary-total { font-size: 1.25rem; font-weight: 800; color: #1a1a1a; border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1.5rem; letter-spacing: 0; }
@@ -38,5 +97,16 @@
     letter-spacing: 1.5px;
 }
 .btn-checkout:hover { background: #8b4d4d; color: white; transform: translateY(-2px); }
+.btn-checkout.disabled,
+.btn-checkout.disabled:hover { background: #cfcfcf; color: #777; pointer-events: none; transform: none; }
 .price-col { font-weight: 600; color: #1a1a1a; font-size: 0.95rem; }
 .total-col { font-weight: 700; color: #8b4d4d; font-size: 0.95rem; }
+
+@media (max-width: 767.98px) {
+    .cart-table th,
+    .cart-table td { padding: 1rem; }
+    .product-img { width: 64px; height: 80px; }
+    .qty-control { grid-template-columns: 32px 48px 32px; }
+    .selected-actions-bar { align-items: stretch; flex-direction: column; }
+    .btn-delete-selected { justify-content: center; width: 100%; }
+}

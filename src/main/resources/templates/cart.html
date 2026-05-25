@@ -102,6 +102,8 @@
 
 <div class="container cart-container">
     <h2 class="mb-5 fw-800 text-center text-uppercase letter-spacing-2">Giỏ hàng của bạn</h2>
+
+    <div th:if="${errorMessage}" class="alert alert-warning rounded-0 mb-4" th:text="${errorMessage}"></div>
     
     <div th:if="${#lists.isEmpty(items)}" class="text-center py-5">
         <div class="mb-4 text-muted opacity-20">
@@ -117,6 +119,13 @@
                 <table class="table mb-0">
                     <thead>
                         <tr>
+                            <th class="select-col">
+                                <label class="cart-check-wrap" title="Chọn tất cả">
+                                    <input id="select-all-cart" type="checkbox"
+                                           th:checked="${selectedIds != null and selectedIds.size() == items.size()}">
+                                    <span></span>
+                                </label>
+                            </th>
                             <th>Sản phẩm</th>
                             <th>Giá</th>
                             <th>Số lượng</th>
@@ -125,7 +134,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="item : ${items}" th:id="'item-' + ${item.id}">
+                        <tr th:each="item : ${items}" th:id="'item-' + ${item.id}"
+                            class="cart-item-row"
+                            th:classappend="${selectedIds != null and selectedIds.contains(item.id)} ? ' selected' : ''"
+                            th:data-item-id="${item.id}"
+                            th:data-price="${item.donGia}"
+                            th:data-qty="${item.soLuong}">
+                            <td class="select-col">
+                                <label class="cart-check-wrap">
+                                    <input class="cart-item-check" type="checkbox"
+                                           th:data-item-id="${item.id}"
+                                           th:checked="${selectedIds != null and selectedIds.contains(item.id)}">
+                                    <span></span>
+                                </label>
+                            </td>
                             <td>
                                 <div class="d-flex align-items-center gap-4">
                                     <img th:src="${item.anh}" class="product-img" alt="Product">
@@ -137,8 +159,12 @@
                             </td>
                             <td class="price-col" th:text="${#numbers.formatDecimal(item.donGia, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
                             <td>
-                                <input type="number" class="qty-input" th:value="${item.soLuong}" min="1"
-                                       th:onchange="'updateQuantity(' + ${item.id} + ', this.value)'">
+                                <div class="qty-control">
+                                    <button type="button" class="qty-btn" th:onclick="'changeQuantity(' + ${item.id} + ', -1)'">−</button>
+                                    <input type="number" class="qty-input" th:id="'qty-' + ${item.id}" th:value="${item.soLuong}" min="1"
+                                           th:onchange="'updateQuantity(' + ${item.id} + ', this.value)'">
+                                    <button type="button" class="qty-btn" th:onclick="'changeQuantity(' + ${item.id} + ', 1)'">+</button>
+                                </div>
                             </td>
                             <td class="total-col text-end" th:text="${#numbers.formatDecimal(item.thanhTien, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
                             <td class="text-end">
@@ -149,6 +175,15 @@
                         </tr>
                     </tbody>
                 </table>
+                <div id="selected-actions-bar"
+                     class="selected-actions-bar"
+                     th:classappend="${selectedIds == null or selectedIds.isEmpty()} ? ' d-none' : ''">
+                    <span><strong id="selected-count" th:text="${selectedIds != null ? selectedIds.size() : 0}">0</strong> sản phẩm đã chọn</span>
+                    <button type="button" class="btn-delete-selected" onclick="removeSelectedItems()">
+                        <i class="fas fa-trash-alt"></i>
+                        Xóa đã chọn
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -164,7 +199,10 @@
                     <span id="cart-total"
                           th:text="${#numbers.formatDecimal(total, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
                 </div>
-                <a th:href="@{/order/checkout}" class="btn-checkout">TIẾN HÀNH THANH TOÁN</a>
+                <a id="checkout-btn"
+                   th:href="${selectedIds != null and !selectedIds.isEmpty()} ? @{/order/checkout} : '#'"
+                   class="btn-checkout"
+                   th:classappend="${selectedIds == null or selectedIds.isEmpty()} ? ' disabled' : ''">TIẾN HÀNH THANH TOÁN</a>
                 <a th:href="@{/}" class="btn btn-outline-dark w-100 mt-3 py-3 rounded-0 fw-700 text-uppercase small letter-spacing-1">Tiếp tục mua sắm</a>
             </div>
         </div>

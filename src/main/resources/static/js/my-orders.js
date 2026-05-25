@@ -179,3 +179,43 @@ function escapeHtml(value) {
         "'": '&#039;'
     }[char]));
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    startPaymentCountdowns();
+});
+
+function startPaymentCountdowns() {
+    const countdownEls = Array.from(document.querySelectorAll('.payment-countdown[data-expire-at]'));
+    if (!countdownEls.length) {
+        return;
+    }
+
+    const formatRemaining = (ms) => {
+        const totalSeconds = Math.max(Math.floor(ms / 1000), 0);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+
+    const tick = () => {
+        countdownEls.forEach((el) => {
+            const expireAt = Number(el.dataset.expireAt);
+            const valueEl = el.querySelector('strong') || el;
+            if (!Number.isFinite(expireAt)) {
+                return;
+            }
+
+            const remaining = expireAt - Date.now();
+            if (remaining <= 0) {
+                el.classList.add('is-expired');
+                el.innerHTML = '<strong>00:00</strong> đã quá hạn thanh toán';
+                return;
+            }
+
+            valueEl.textContent = formatRemaining(remaining);
+        });
+    };
+
+    tick();
+    setInterval(tick, 1000);
+}

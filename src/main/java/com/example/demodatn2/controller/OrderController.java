@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,10 +63,14 @@ public class OrderController {
     private final ProductReviewService productReviewService;
     private final GhtkService ghtkService;
 
+    @Value("${app.order.pending-transfer-timeout-minutes:30}")
+    private int pendingTransferTimeoutMinutes;
+
     @GetMapping("/checkout")
     public String checkout(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
-        List<CartItemDTO> items = cartService.getCartItems(session);
+        List<CartItemDTO> items = cartService.getSelectedCartItems(session);
         if (items.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
             return "redirect:/cart";
         }
 
@@ -112,7 +117,7 @@ public class OrderController {
     @PostMapping("/checkout/apply-voucher")
     @ResponseBody
     public Map<String, Object> applyVoucherAtCheckout(@RequestParam String code, HttpSession session) {
-        List<CartItemDTO> items = cartService.getCartItems(session);
+        List<CartItemDTO> items = cartService.getSelectedCartItems(session);
         BigDecimal total = cartService.getTotalAmount(items);
 
         var voucherOpt = voucherService.validateVoucher(code, total);
@@ -135,7 +140,7 @@ public class OrderController {
     @ResponseBody
     public Map<String, Object> removeVoucherAtCheckout(HttpSession session) {
         clearVoucher(session);
-        List<CartItemDTO> items = cartService.getCartItems(session);
+        List<CartItemDTO> items = cartService.getSelectedCartItems(session);
         BigDecimal total = cartService.getTotalAmount(items);
         return Map.of(
                 "success", true,
@@ -165,7 +170,7 @@ public class OrderController {
             session.setAttribute(CURRENT_SHIPPING_FEE, resolvedShippingFee);
 
             DonHang donHang = orderService.createOrder(hoTen, soDienThoai, email, diaChi, ghiChu, payment, resolvedShippingFee, session);
-            session.setAttribute("CART_COUNT", 0);
+            session.setAttribute("CART_COUNT", cartService.getItemCount(session));
             return "redirect:/order/success?id=" + donHang.getId();
         } catch (Exception e) {
             log.warn("Failed to place order", e);
@@ -179,6 +184,7 @@ public class OrderController {
         DonHang order = orderService.getOrderById(id);
         model.addAttribute("order", order);
         model.addAttribute("categories", danhMucService.getActive());
+        model.addAttribute("paymentDeadlineMillis", getPaymentDeadlineMillis(order));
         return "order-success";
     }
 
@@ -195,8 +201,10 @@ public class OrderController {
 
         List<DonHang> filteredOrders = switch (normalizedStatus) {
             case "CHO_XAC_NHAN" -> orders.stream()
-                    .filter(o -> "CHO_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai()))
-                            || "DA_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai())))
+                    .filter(o -> "CHO_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai())))
+                    .toList();
+            case "DA_XAC_NHAN" -> orders.stream()
+                    .filter(o -> "DA_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai())))
                     .toList();
             case "HOAN_THANH" -> orders.stream()
                     .filter(o -> "HOAN_THANH".equals(normalizeOrderStatus(o.getTrangThai())))
@@ -213,12 +221,14 @@ public class OrderController {
         Instant now = Instant.now();
         Set<Integer> returnableOrderIds = orders.stream()
                 .filter(o -> canRequestReturn(o, now))
+                .filter(o -> orderService.getReturnRequest(o.getId()).isEmpty())
                 .map(DonHang::getId)
                 .collect(Collectors.toSet());
 
         model.addAttribute("orders", orders);
         model.addAttribute("filteredOrders", filteredOrders);
         model.addAttribute("returnableOrderIds", returnableOrderIds);
+        model.addAttribute("paymentDeadlines", buildPaymentDeadlineMap(orders));
         model.addAttribute("activeFilter", normalizedStatus);
         model.addAttribute("categories", danhMucService.getActive());
         return "my-orders";
@@ -237,7 +247,8 @@ public class OrderController {
             return "redirect:/order/my-orders";
         }
 
-        boolean canRequestReturn = canRequestReturn(order, Instant.now());
+        var returnRequest = orderService.getReturnRequest(id);
+        boolean canRequestReturn = canRequestReturn(order, Instant.now()) && returnRequest.isEmpty();
         List<ChiTietDonHang> orderItems = orderService.getOrderItems(id);
         Map<Integer, String> itemImages = new HashMap<>();
         Map<Integer, Boolean> reviewedProductMap = productReviewService.getReviewedProductMap(orderItems, loginUser.getId());
@@ -252,7 +263,8 @@ public class OrderController {
         model.addAttribute("reviewedProductMap", reviewedProductMap);
         model.addAttribute("canRequestReturn", canRequestReturn);
         model.addAttribute("categories", danhMucService.getActive());
-        orderService.getReturnRequest(id).ifPresent(r -> model.addAttribute("returnRequest", r));
+        model.addAttribute("paymentDeadlineMillis", getPaymentDeadlineMillis(order));
+        returnRequest.ifPresent(r -> model.addAttribute("returnRequest", r));
         return "my-order-detail";
     }
 
@@ -300,8 +312,49 @@ public class OrderController {
             return false;
         }
 
-        Instant returnStart = order.getNgayCapNhat() != null ? order.getNgayCapNhat() : order.getNgayDat();
-        return !returnStart.plus(7, ChronoUnit.DAYS).isBefore(now);
+        return !order.getNgayDat().plus(7, ChronoUnit.DAYS).isBefore(now);
+    }
+
+    private Map<Integer, Long> buildPaymentDeadlineMap(List<DonHang> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, Long> deadlines = new HashMap<>();
+        for (DonHang order : orders) {
+            if (order == null || order.getId() == null) {
+                continue;
+            }
+            Long deadline = getPaymentDeadlineMillis(order);
+            if (deadline != null) {
+                deadlines.put(order.getId(), deadline);
+            }
+        }
+        return deadlines;
+    }
+
+    private Long getPaymentDeadlineMillis(DonHang order) {
+        if (order == null || order.getNgayDat() == null || pendingTransferTimeoutMinutes <= 0) {
+            return null;
+        }
+        String status = normalizeOrderStatus(order.getTrangThai());
+        if (!"CHO_XAC_NHAN".equals(status) || !isBankTransferPayment(order.getPhuongThucThanhToan())) {
+            return null;
+        }
+        return order.getNgayDat()
+                .plus(pendingTransferTimeoutMinutes, ChronoUnit.MINUTES)
+                .toEpochMilli();
+    }
+
+    private boolean isBankTransferPayment(String paymentMethod) {
+        if (paymentMethod == null) {
+            return false;
+        }
+        String normalized = paymentMethod.trim().toUpperCase();
+        return normalized.contains("SEPAY")
+                || normalized.contains("TRANSFER")
+                || normalized.contains("CHUYEN_KHOAN")
+                || normalized.contains("CHUYENKHOAN")
+                || normalized.contains("CHUYEN KHOAN");
     }
 
     private String normalizeOrderStatus(String status) {

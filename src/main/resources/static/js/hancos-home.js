@@ -602,6 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const body = new URLSearchParams({
                 bienTheId: String(variant.variantId),
                 soLuong: String(qty),
+                checkoutNow: "true",
             });
             const response = await fetch("/cart/add", {
                 method: "POST",
@@ -629,8 +630,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 cartBadge.style.display = data.count > 0 ? "inline-block" : "none";
             }
 
-            quickBuyModal.hide();
-            window.location.href = "/cart";
+            window.location.assign(data?.checkoutUrl || "/order/checkout");
+            return;
         } catch (error) {
             showQuickBuyError("Đã có lỗi xảy ra, vui lòng thử lại");
         } finally {

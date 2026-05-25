@@ -26,6 +26,7 @@ public class OrderService {
 
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
+    private final ChiTietGioHangRepository chiTietGioHangRepository;
     private final GioHangRepository gioHangRepository;
     private final TaiKhoanRepository taiKhoanRepository;
     private final BienTheSanPhamRepository bienTheSanPhamRepository;
@@ -311,6 +312,11 @@ public class OrderService {
 
     @Transactional
     public int cleanupExpiredPendingPosOrders(int minutes) {
+        return cleanupExpiredPendingTransferOrders(minutes);
+    }
+
+    @Transactional
+    public int cleanupExpiredPendingTransferOrders(int minutes) {
         if (minutes <= 0) {
             return 0;
         }
@@ -326,11 +332,15 @@ public class OrderService {
             if (!"PENDING".equalsIgnoreCase(donHang.getTrangThai()) && !"CHO_XAC_NHAN".equals(currentStatus)) {
                 continue;
             }
+            if (!isBankTransferPayment(donHang.getPhuongThucThanhToan())) {
+                continue;
+            }
 
             donHang.setTrangThai("DA_HUY");
-            donHang.setLyDoHuy("Het han cho thanh toan chuyen khoan");
+            donHang.setLyDoHuy("Quá hạn chờ thanh toán chuyển khoản");
             donHang.setNgayCapNhat(Instant.now());
             restoreStock(donHang);
+            restoreVoucherUsage(donHang);
             donHangRepository.save(donHang);
             cleaned++;
         }
@@ -349,6 +359,13 @@ public class OrderService {
                         "Hoan kho tu don " + donHang.getMaDonHang());
             }
         }
+    }
+
+    private void restoreVoucherUsage(DonHang donHang) {
+        if (donHang == null || donHang.getMaGiamGia() == null || donHang.getMaGiamGia().getId() == null) {
+            return;
+        }
+        maGiamGiaRepository.decrementUsageAfterOrderCancel(donHang.getMaGiamGia().getId());
     }
 
     private void logStockTransaction(BienTheSanPham bienThe,
@@ -479,6 +496,19 @@ public class OrderService {
         if (gioHang.getChiTiets().isEmpty()) {
             throw new RuntimeException("Giỏ hàng trống");
         }
+        java.util.Set<Integer> selectedIds = cartSelectedIds(session);
+        if (session.getAttribute(CartService.SELECTED_CART_ITEM_IDS) == null) {
+            selectedIds = gioHang.getChiTiets().stream()
+                    .map(ChiTietGioHang::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+        java.util.Set<Integer> checkoutItemIds = selectedIds;
+        List<ChiTietGioHang> selectedCartItems = gioHang.getChiTiets().stream()
+                .filter(item -> checkoutItemIds.contains(item.getId()))
+                .toList();
+        if (selectedCartItems.isEmpty()) {
+            throw new RuntimeException("Vui lòng chọn ít nhất một sản phẩm để thanh toán");
+        }
 
         DonHang donHang = new DonHang();
         donHang.setMaDonHang("DH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
@@ -500,7 +530,7 @@ public class OrderService {
         donHang.setNgayDat(Instant.now());
         
         BigDecimal tamTinh = BigDecimal.ZERO;
-        for (ChiTietGioHang item : gioHang.getChiTiets()) {
+        for (ChiTietGioHang item : selectedCartItems) {
             tamTinh = tamTinh.add(item.getDonGia().multiply(new BigDecimal(item.getSoLuong())));
         }
         donHang.setTamTinh(tamTinh);
@@ -548,7 +578,7 @@ public class OrderService {
         }
 
         List<ChiTietDonHang> orderItems = new ArrayList<>();
-        for (ChiTietGioHang item : gioHang.getChiTiets()) {
+        for (ChiTietGioHang item : selectedCartItems) {
             BienTheSanPham bt = item.getBienTheSanPham();
 
             int updatedStock = bienTheSanPhamRepository.decrementStockIfEnough(bt.getId(), item.getSoLuong());
@@ -573,16 +603,31 @@ public class OrderService {
                     "Tru kho tu don " + donHang.getMaDonHang());
         }
         
-        // Xóa giỏ hàng sau khi đặt thành công
-        gioHangRepository.delete(gioHang);
+        // Chỉ xóa những sản phẩm đã chọn thanh toán, giữ lại các sản phẩm chưa chọn trong giỏ.
+        chiTietGioHangRepository.deleteAll(selectedCartItems);
+        if (selectedCartItems.size() == gioHang.getChiTiets().size()) {
+            gioHangRepository.delete(gioHang);
+        }
 
         // Xóa thông tin voucher khỏi session
         session.removeAttribute("APPLIED_VOUCHER_CODE");
         session.removeAttribute("DISCOUNT_AMOUNT");
+        session.removeAttribute(CartService.SELECTED_CART_ITEM_IDS);
 
         orderConfirmationEmailService.sendOrderConfirmation(donHang, orderItems);
 
         return donHang;
+    }
+
+    private java.util.Set<Integer> cartSelectedIds(HttpSession session) {
+        Object raw = session.getAttribute(CartService.SELECTED_CART_ITEM_IDS);
+        if (raw instanceof java.util.Set<?> rawSet) {
+            return rawSet.stream()
+                    .filter(Integer.class::isInstance)
+                    .map(Integer.class::cast)
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+        return java.util.Set.of();
     }
 
     /**

@@ -15,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +30,7 @@ class OrderServiceTest {
 
     @Mock private DonHangRepository donHangRepository;
     @Mock private ChiTietDonHangRepository chiTietDonHangRepository;
+    @Mock private ChiTietGioHangRepository chiTietGioHangRepository;
     @Mock private GioHangRepository gioHangRepository;
     @Mock private TaiKhoanRepository taiKhoanRepository;
     @Mock private BienTheSanPhamRepository bienTheSanPhamRepository;
@@ -43,6 +46,7 @@ class OrderServiceTest {
         return new OrderService(
                 donHangRepository,
                 chiTietDonHangRepository,
+                chiTietGioHangRepository,
                 gioHangRepository,
                 taiKhoanRepository,
                 bienTheSanPhamRepository,
@@ -154,6 +158,40 @@ class OrderServiceTest {
         )).hasMessageContaining("Không thể thay đổi địa chỉ");
 
         verify(donHangRepository, never()).save(any());
+    }
+
+    @Test
+    void cleanupExpiredPendingTransferOrders_cancelsOnlyBankTransferOrders() {
+        OrderService orderService = newOrderService();
+
+        DonHang sepayOrder = new DonHang();
+        sepayOrder.setId(1);
+        sepayOrder.setMaDonHang("DH-SEPAY01");
+        sepayOrder.setTrangThai("PENDING");
+        sepayOrder.setPhuongThucThanhToan("SEPAY");
+        sepayOrder.setNgayDat(Instant.now().minus(45, ChronoUnit.MINUTES));
+
+        DonHang codOrder = new DonHang();
+        codOrder.setId(2);
+        codOrder.setMaDonHang("DH-COD01");
+        codOrder.setTrangThai("CHO_XAC_NHAN");
+        codOrder.setPhuongThucThanhToan("COD");
+        codOrder.setNgayDat(Instant.now().minus(45, ChronoUnit.MINUTES));
+
+        when(donHangRepository.timTheoTrangThaiVaCapNhatTruoc(eq("PENDING"), any(Instant.class)))
+                .thenReturn(List.of(sepayOrder));
+        when(donHangRepository.timTheoTrangThaiVaCapNhatTruoc(eq("CHO_XAC_NHAN"), any(Instant.class)))
+                .thenReturn(List.of(codOrder));
+        when(chiTietDonHangRepository.findByDonHang(sepayOrder)).thenReturn(List.of());
+
+        int cleaned = orderService.cleanupExpiredPendingTransferOrders(30);
+
+        assertThat(cleaned).isEqualTo(1);
+        assertThat(sepayOrder.getTrangThai()).isEqualTo("DA_HUY");
+        assertThat(sepayOrder.getLyDoHuy()).isEqualTo("Quá hạn chờ thanh toán chuyển khoản");
+        assertThat(codOrder.getTrangThai()).isEqualTo("CHO_XAC_NHAN");
+        verify(donHangRepository).save(sepayOrder);
+        verify(donHangRepository, never()).save(codOrder);
     }
 }
 

@@ -66,6 +66,22 @@
         .add-to-cart-btn:hover:not(:disabled) { background: #8b4d4d; }
         .add-to-cart-btn:disabled { background: #ccc; cursor: not-allowed; }
 
+        .buy-now-btn {
+            background: #fff;
+            color: #1a1a1a;
+            border: 1px solid #1a1a1a;
+            padding: 14px 40px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            width: 100%;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+            border-radius: 999px;
+            margin-bottom: 12px;
+        }
+        .buy-now-btn:hover { background: #1a1a1a; color: #fff; }
+
         .product-meta { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid #eee; font-size: 0.85rem; color: #666; }
         .product-meta p { margin-bottom: 0.75rem; }
         .product-meta strong { color: #1a1a1a; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; margin-right: 10px; }

@@ -16,6 +16,10 @@ import java.util.Optional;
 public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     Optional<SanPham> findByMaSanPham(String maSanPham);
     List<SanPham> findByTrangThai(String trangThai);
+
+    @Query("SELECT COUNT(sp) FROM SanPham sp WHERE sp.daXoa = false OR sp.daXoa IS NULL")
+    Long countAvailableProducts();
+
     // Load sản phẩm kèm biến thể + ảnh theo màu + ảnh gallery (tránh N+1)
     // Chia nhỏ để tránh MultipleBagFetchException
     @EntityGraph(attributePaths = {"bienThes"})

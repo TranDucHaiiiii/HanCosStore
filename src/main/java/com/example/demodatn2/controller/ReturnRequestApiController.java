@@ -89,6 +89,22 @@ public class ReturnRequestApiController {
         }
     }
 
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<String>> cancelByCustomer(@PathVariable Integer id,
+                                                                @RequestParam(required = false) String reason,
+                                                                HttpSession session) {
+        var loginUser = (com.example.demodatn2.dto.TaiKhoanDTO) session.getAttribute("LOGIN_USER");
+        if (loginUser == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Bạn cần đăng nhập."));
+        }
+        try {
+            returnRequestService.cancelByCustomer(id, loginUser.getId(), reason);
+            return ResponseEntity.ok(ApiResponse.ok("Đã hủy yêu cầu trả hàng."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @PatchMapping("/items/{detailId}/inspection")
     public ResponseEntity<ApiResponse<String>> updateInspection(@PathVariable Integer detailId,
                                                                 @RequestBody ReturnInspectionUpdateDTO dto,

@@ -11,9 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
 @Slf4j
 // Service giỏ hàng: tạo/lấy giỏ theo session hoặc tài khoản, cập nhật item và tính tiền.
 public class CartService {
+
+    public static final String SELECTED_CART_ITEM_IDS = "SELECTED_CART_ITEM_IDS";
 
     private final GioHangRepository gioHangRepository;
     private final ChiTietGioHangRepository chiTietGioHangRepository;
@@ -56,7 +59,7 @@ public class CartService {
 
     // Thêm sản phẩm vào giỏ, kiểm tra tồn kho và cộng dồn số lượng nếu biến thể đã tồn tại trong giỏ
     @Transactional
-    public void addToCart(Integer bienTheId, Integer soLuong, HttpSession session) {
+    public Integer addToCart(Integer bienTheId, Integer soLuong, HttpSession session) {
         log.info("Thêm sản phẩm vào giỏ hàng - SessionID: {}", session.getId());
         GioHang gioHang = getOrCreateCart(session);
         BienTheSanPham bienThe = bienTheSanPhamRepository.findById(bienTheId)
@@ -74,14 +77,14 @@ public class CartService {
             if (item.getSoLuong() > bienThe.getSoLuongTon()) {
                 throw new RuntimeException("Tổng số lượng vượt quá tồn kho");
             }
-            chiTietGioHangRepository.save(item);
+            return chiTietGioHangRepository.save(item).getId();
         } else {
             ChiTietGioHang newItem = new ChiTietGioHang();
             newItem.setGioHang(gioHang);
             newItem.setBienTheSanPham(bienThe);
             newItem.setSoLuong(soLuong);
             newItem.setDonGia(bienThe.getGia());
-            chiTietGioHangRepository.save(newItem);
+            return chiTietGioHangRepository.save(newItem).getId();
         }
     }
 
@@ -149,6 +152,52 @@ public class CartService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    @Transactional(readOnly = true)
+    public List<CartItemDTO> getSelectedCartItems(HttpSession session) {
+        List<CartItemDTO> items = getCartItems(session);
+        Set<Integer> selectedIds = syncSelectedIds(session, items);
+        return items.stream()
+                .filter(item -> selectedIds.contains(item.getId()))
+                .toList();
+    }
+
+    public Set<Integer> getSelectedIds(HttpSession session) {
+        Object raw = session.getAttribute(SELECTED_CART_ITEM_IDS);
+        if (raw instanceof Set<?> rawSet) {
+            return rawSet.stream()
+                    .filter(Integer.class::isInstance)
+                    .map(Integer.class::cast)
+                    .collect(Collectors.toCollection(HashSet::new));
+        }
+        return new HashSet<>();
+    }
+
+    public void setSelectedIds(HttpSession session, Set<Integer> selectedIds) {
+        session.setAttribute(SELECTED_CART_ITEM_IDS, new HashSet<>(selectedIds));
+    }
+
+    public Set<Integer> syncSelectedIds(HttpSession session, List<CartItemDTO> items) {
+        Set<Integer> currentItemIds = items.stream()
+                .map(CartItemDTO::getId)
+                .collect(Collectors.toCollection(HashSet::new));
+        Set<Integer> selectedIds = getSelectedIds(session);
+
+        if (session.getAttribute(SELECTED_CART_ITEM_IDS) == null) {
+            selectedIds = new HashSet<>(currentItemIds);
+        } else {
+            selectedIds.retainAll(currentItemIds);
+        }
+
+        setSelectedIds(session, selectedIds);
+        return selectedIds;
+    }
+
+    public void removeSelectedId(HttpSession session, Integer itemId) {
+        Set<Integer> selectedIds = getSelectedIds(session);
+        selectedIds.remove(itemId);
+        setSelectedIds(session, selectedIds);
+    }
+
     // Tổng số lượng sản phẩm (theo từng đơn vị) đang có trong giỏ
     @Transactional(readOnly = true)
     public int getTotalWeightGram(HttpSession session) {
@@ -161,6 +210,24 @@ public class CartService {
                 })
                 .sum();
         return total > 0 ? total : 100;
+    }
+
+    @Transactional(readOnly = true)
+    public int getSelectedTotalWeightGram(HttpSession session) {
+        Set<Integer> selectedIds = getSelectedIds(session);
+        if (selectedIds.isEmpty()) {
+            return 0;
+        }
+        GioHang gioHang = getOrCreateCart(session);
+        int total = gioHang.getChiTiets().stream()
+                .filter(item -> selectedIds.contains(item.getId()))
+                .mapToInt(item -> {
+                    Integer gram = item.getBienTheSanPham().getKhoiLuongGram();
+                    int safeGram = (gram == null || gram <= 0) ? 100 : gram;
+                    return safeGram * item.getSoLuong();
+                })
+                .sum();
+        return total > 0 ? total : 0;
     }
 
     @Transactional(readOnly = true)

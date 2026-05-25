@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Đơn hàng của tôi - Hancos Shop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/hancos-home.css}">
@@ -41,7 +45,8 @@
 </nav>
 
 <main class="orders-wrap"
-    th:with="pendingCount=${#lists.size(orders.?[trangThai == 'CHO_XAC_NHAN' or trangThai == 'DA_XAC_NHAN' or trangThai == 'PENDING' or trangThai == 'CONFIRMED'])},
+    th:with="pendingCount=${#lists.size(orders.?[trangThai == 'CHO_XAC_NHAN' or trangThai == 'PENDING'])},
+           confirmedCount=${#lists.size(orders.?[trangThai == 'DA_XAC_NHAN' or trangThai == 'CONFIRMED'])},
            completedCount=${#lists.size(orders.?[trangThai == 'HOAN_THANH' or trangThai == 'DELIVERED' or trangThai == 'COMPLETED'])},
            cancelledCount=${#lists.size(orders.?[trangThai == 'DA_HUY' or trangThai == 'CANCELLED'])},
                totalSpent=${#aggregates.sum(orders.![tongTien])}">
@@ -53,6 +58,10 @@
         <div class="stats-item">
             <div class="stats-label">Chờ xác nhận</div>
             <div class="stats-value pending" th:text="${pendingCount}">0</div>
+        </div>
+        <div class="stats-item">
+            <div class="stats-label">Đã xác nhận</div>
+            <div class="stats-value confirmed" th:text="${confirmedCount}">0</div>
         </div>
         <div class="stats-item">
             <div class="stats-label">Hoàn thành</div>
@@ -78,6 +87,7 @@
         <div class="filter-tabs" id="filterTabs">
             <a class="filter-btn" th:classappend="${activeFilter == 'ALL' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='ALL')}">Tất cả</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'CHO_XAC_NHAN' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='CHO_XAC_NHAN')}">Chờ xác nhận</a>
+            <a class="filter-btn" th:classappend="${activeFilter == 'DA_XAC_NHAN' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='DA_XAC_NHAN')}">Đã xác nhận</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'HOAN_THANH' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='HOAN_THANH')}">Hoàn thành</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'TRA_HANG' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='TRA_HANG')}">Trả hàng</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'DA_HUY' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='DA_HUY')}">Đã hủy</a>
@@ -109,6 +119,11 @@
                                (order.trangThai == 'TRA_HANG' or order.trangThai == 'RETURN_REQUESTED' or order.trangThai == 'RETURNED' ? 'Trả hàng' : 'Đã hủy'))))}">
                     Trạng thái
                 </span>
+                <div class="payment-countdown"
+                     th:if="${paymentDeadlines[order.id] != null}"
+                     th:attr="data-expire-at=${paymentDeadlines[order.id]}">
+                    Còn lại <strong>--:--</strong> để thanh toán
+                </div>
             </div>
             <div class="order-money" th:text="${#numbers.formatDecimal(order.tongTien, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</div>
             <div class="action-group">

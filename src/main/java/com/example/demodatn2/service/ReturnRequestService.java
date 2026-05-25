@@ -27,6 +27,7 @@ public class ReturnRequestService {
     public static final String STATUS_CHO_KIEM_DINH = "CHO_KIEM_DINH";
     public static final String STATUS_DA_HOAN_TIEN = "DA_HOAN_TIEN";
     public static final String STATUS_HOAN_TAT = "HOAN_TAT";
+    public static final String STATUS_KHACH_HUY = "KHACH_HUY";
 
     public static final String INSPECTION_PENDING = "PENDING_INSPECTION";
     public static final String INSPECTION_PASSED = "PASSED";
@@ -34,7 +35,8 @@ public class ReturnRequestService {
 
     private static final Set<String> VALID_STATUSES = Set.of(
             STATUS_CHO_DUYET, STATUS_DA_DUYET, STATUS_TU_CHOI,
-            STATUS_CHO_KIEM_DINH, STATUS_DA_HOAN_TIEN, STATUS_HOAN_TAT
+            STATUS_CHO_KIEM_DINH, STATUS_DA_HOAN_TIEN, STATUS_HOAN_TAT,
+            STATUS_KHACH_HUY
     );
 
     private final DonHangRepository donHangRepository;
@@ -161,9 +163,39 @@ public class ReturnRequestService {
             case STATUS_DA_DUYET -> List.of(STATUS_CHO_KIEM_DINH);
             case STATUS_CHO_KIEM_DINH -> List.of(STATUS_DA_HOAN_TIEN);
             case STATUS_DA_HOAN_TIEN -> List.of(STATUS_HOAN_TAT);
-            case STATUS_TU_CHOI, STATUS_HOAN_TAT -> List.of();
+            case STATUS_TU_CHOI, STATUS_HOAN_TAT, STATUS_KHACH_HUY -> List.of();
             default -> List.of();
         };
+    }
+
+    @Transactional
+    public YeuCauDoiTra cancelByCustomer(Integer requestId, Integer customerId, String reason) {
+        YeuCauDoiTra request = getById(requestId);
+        if (request.getTaiKhoan() == null || !request.getTaiKhoan().getId().equals(customerId)) {
+            throw new RuntimeException("Bạn không có quyền hủy yêu cầu trả hàng này.");
+        }
+
+        String currentStatus = normalizeExistingStatus(request.getTrangThai());
+        if (!STATUS_CHO_DUYET.equals(currentStatus)) {
+            throw new RuntimeException("Chỉ có thể hủy yêu cầu trả hàng khi đang chờ duyệt.");
+        }
+
+        String cleanReason = clean(reason);
+        request.setTrangThai(STATUS_KHACH_HUY);
+        request.setGhiChuXuLy(cleanReason);
+        request.setNgayCapNhat(Instant.now());
+        yeuCauDoiTraRepository.save(request);
+
+        DonHang order = request.getDonHang();
+        if (order != null && "TRA_HANG".equalsIgnoreCase(order.getTrangThai())) {
+            order.setTrangThai("HOAN_THANH");
+            order.setNgayCapNhat(Instant.now());
+            donHangRepository.save(order);
+        }
+
+        addHistory(request, request.getTaiKhoan(), STATUS_KHACH_HUY,
+                cleanReason != null ? cleanReason : "Khách hàng hủy yêu cầu trả hàng.");
+        return request;
     }
 
     @Transactional
@@ -292,9 +324,8 @@ public class ReturnRequestService {
     private DonHang getOwnedCompletedOrder(Integer orderId, Integer customerId) {
         DonHang order = donHangRepository.findOwnedCompletedForReturn(orderId, customerId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng."));
-        Instant returnStart = order.getNgayCapNhat() != null ? order.getNgayCapNhat() : order.getNgayDat();
-        if (returnStart != null && returnStart.plus(7, ChronoUnit.DAYS).isBefore(Instant.now())) {
-            throw new RuntimeException("Đã quá 7 ngày kể từ ngày hoàn thành đơn, không thể yêu cầu trả hàng.");
+        if (order.getNgayDat() != null && order.getNgayDat().plus(7, ChronoUnit.DAYS).isBefore(Instant.now())) {
+            throw new RuntimeException("Đã quá 7 ngày kể từ ngày đặt hàng, không thể yêu cầu trả hàng.");
         }
         return order;
     }
@@ -328,6 +359,7 @@ public class ReturnRequestService {
             case "PENDING" -> STATUS_CHO_DUYET;
             case "APPROVED" -> STATUS_DA_DUYET;
             case "REJECTED" -> STATUS_TU_CHOI;
+            case "CUSTOMER_CANCELLED", "CUSTOMER_CANCELED" -> STATUS_KHACH_HUY;
             default -> normalized;
         };
     }
@@ -405,6 +437,7 @@ public class ReturnRequestService {
             case STATUS_CHO_KIEM_DINH -> "Chờ kiểm định";
             case STATUS_DA_HOAN_TIEN -> "Đã hoàn tiền";
             case STATUS_HOAN_TAT -> "Hoàn tất";
+            case STATUS_KHACH_HUY -> "Khách hủy";
             default -> status;
         };
     }

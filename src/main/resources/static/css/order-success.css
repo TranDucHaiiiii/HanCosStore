@@ -54,3 +54,32 @@
     border: 1px solid #eee;
     border-radius: 0 !important;
 }
+
+.payment-countdown {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid #f0d5b4;
+    background: #fff8ee;
+    color: #9b6a00;
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.payment-countdown strong {
+    color: #b42318;
+    font-variant-numeric: tabular-nums;
+}
+
+.payment-countdown.is-expired {
+    border-color: #efb3b3;
+    background: #fff1f1;
+    color: #b42318;
+}
+
+.payment-expire-note {
+    line-height: 1.45;
+}
