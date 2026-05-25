@@ -23,8 +23,6 @@ public class DoanhThuDTO {
     private Long soDonChuaXuLy;
     private Long soYeuCauTraHangCanXuLy;
     private Long soSanPhamSapHetHang;
-    private Long soDonBiHuyHomNay;
-    private BigDecimal tyLeHuyHomNay;
     private List<LowStockVariantAlertDTO> bienTheSapHetHang;
     private List<TopSellingProductDTO> topSanPhamBanChay;
     private List<PotentialCustomerDTO> khachHangTiemNang;

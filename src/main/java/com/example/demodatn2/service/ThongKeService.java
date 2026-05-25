@@ -67,10 +67,6 @@ public class ThongKeService {
             "CHO_DUYET", "PENDING", "DA_DUYET", "APPROVED", "CHO_KIEM_DINH"
         ));
         Long soSanPhamSapHetHang = bienTheSanPhamRepository.countActiveLowStock(LOW_STOCK_THRESHOLD);
-        Long soDonBiHuyHomNay = donHangRepository.demTheoTrangThaiVaNgayDatTu(
-            List.of("DA_HUY", "CANCELLED"), dauNgay);
-        Long tongDonHomNay = donHangRepository.demTheoTrangThaiVaNgayDatTu(
-            List.of("HOAN_THANH", "COMPLETED", "DELIVERED"), dauNgay);
         List<BienTheSanPham> lowStockVariants = bienTheSanPhamRepository.findLowStockActiveVariants(
             LOW_STOCK_THRESHOLD,
             PageRequest.of(0, LOW_STOCK_ALERT_LIMIT)
@@ -89,12 +85,6 @@ public class ThongKeService {
                     .orElse("/images/no-image.png"))
                 .build())
             .toList();
-        BigDecimal tyLeHuyHomNay = BigDecimal.ZERO;
-        if (tongDonHomNay != null && tongDonHomNay > 0) {
-            tyLeHuyHomNay = BigDecimal.valueOf(soDonBiHuyHomNay != null ? soDonBiHuyHomNay : 0L)
-                .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(tongDonHomNay), 1, java.math.RoundingMode.HALF_UP);
-        }
 
         List<TopSellingProductDTO> topSanPhamBanChay = chiTietDonHangRepository
             .findTopSellingProducts(PageRequest.of(0, TOP_PRODUCT_LIMIT))
@@ -140,8 +130,6 @@ public class ThongKeService {
             .soDonChuaXuLy(soDonChuaXuLy != null ? soDonChuaXuLy : 0L)
             .soYeuCauTraHangCanXuLy(soYeuCauTraHangCanXuLy != null ? soYeuCauTraHangCanXuLy : 0L)
             .soSanPhamSapHetHang(soSanPhamSapHetHang != null ? soSanPhamSapHetHang : 0L)
-            .soDonBiHuyHomNay(soDonBiHuyHomNay != null ? soDonBiHuyHomNay : 0L)
-            .tyLeHuyHomNay(tyLeHuyHomNay)
             .bienTheSapHetHang(bienTheSapHetHang)
             .topSanPhamBanChay(topSanPhamBanChay)
             .khachHangTiemNang(khachHangTiemNang)
