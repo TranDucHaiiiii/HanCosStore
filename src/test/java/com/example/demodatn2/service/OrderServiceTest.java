@@ -4,6 +4,8 @@ import com.example.demodatn2.entity.BienTheSanPham;
 import com.example.demodatn2.entity.ChiTietGioHang;
 import com.example.demodatn2.entity.DonHang;
 import com.example.demodatn2.entity.GioHang;
+import com.example.demodatn2.entity.KichCo;
+import com.example.demodatn2.entity.MauSac;
 import com.example.demodatn2.entity.SanPham;
 import com.example.demodatn2.repository.*;
 import jakarta.servlet.http.HttpSession;
@@ -72,8 +74,18 @@ class OrderServiceTest {
 
         BienTheSanPham bienThe = new BienTheSanPham();
         bienThe.setId(11);
-        bienThe.setMauSac("Den");
-        bienThe.setKichCo("L");
+        MauSac mauSac = new MauSac();
+        mauSac.setId(1);
+        mauSac.setTenMau("Den");
+        mauSac.setMaMau("#000000");
+
+        KichCo kichCo = new KichCo();
+        kichCo.setId(1);
+        kichCo.setTenKichCo("L");
+        kichCo.setLoai("AO");
+
+        bienThe.setMauSac(mauSac);
+        bienThe.setKichCo(kichCo);
         bienThe.setGia(new BigDecimal("40000"));
         bienThe.setSoLuongTon(10);
         bienThe.setSanPham(sanPham);
