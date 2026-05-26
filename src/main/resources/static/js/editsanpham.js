@@ -4,12 +4,19 @@ const pendingUploads = new Set();
 let activeGalleryImageIndex = null;
 let activeColorImageIndex = null;
 
-const COLORS = ["Đen","Trắng","Đỏ","Xanh dương","Xanh lá","Vàng","Cam","Tím","Hồng","Nâu","Xám","Be"];
+let COLORS = ["Đen","Trắng","Đỏ","Xanh dương","Xanh lá","Vàng","Cam","Tím","Hồng","Nâu","Xám","Be"];
 const SIZE_LETTERS = ["XS","S","M","L","XL","XXL"];
 const SIZE_PANTS = ["28","29","30","31","32","33","34","35","36","37","38"];
+let ALL_SIZE_OPTIONS = [...new Set([...SIZE_PANTS, ...SIZE_LETTERS])];
+let SIZE_OPTIONS_BY_TYPE = {
+    AO: [...SIZE_LETTERS],
+    QUAN: [...SIZE_PANTS],
+    CHUNG: []
+};
 
 // Khởi tạo dữ liệu form sửa sản phẩm, biến thể, gallery và sự kiện UI.
 document.addEventListener('DOMContentLoaded', async () => {
+    await loadVariantOptions();
     // Load danh mục con
     if (document.getElementById('parentDanhMucId').value) {
         await loadChildren();
@@ -173,20 +180,61 @@ function isPantsCategoryName(name) {
         || normalized.includes('pants');
 }
 
-// Chọn danh sách size phù hợp theo danh mục sản phẩm.
-function getSizeOptions() {
+function getSelectedSizeType() {
     const parentName = getSelectedParentName();
     const childName = getSelectedChildName();
-    if (isPantsCategoryName(parentName) || isPantsCategoryName(childName)) {
-        return SIZE_PANTS;
-    }
-
     const mergedName = normalizeCategoryName(childName || parentName || getSelectedCategoryName());
+
+    if (isPantsCategoryName(parentName) || isPantsCategoryName(childName) || isPantsCategoryName(mergedName)) {
+        return 'QUAN';
+    }
     if (mergedName.includes('ao')) {
-        return SIZE_LETTERS;
+        return 'AO';
+    }
+    return mergedName ? 'AO' : null;
+}
+
+// Chọn danh sách size phù hợp theo danh mục sản phẩm.
+function getSizeOptions() {
+    const sizeType = getSelectedSizeType();
+    if (!sizeType) {
+        return ALL_SIZE_OPTIONS.length ? ALL_SIZE_OPTIONS : SIZE_LETTERS;
     }
 
-    return SIZE_LETTERS;
+    const typedSizes = SIZE_OPTIONS_BY_TYPE[sizeType] || [];
+    const commonSizes = SIZE_OPTIONS_BY_TYPE.CHUNG || [];
+    const merged = [...new Set([...typedSizes, ...commonSizes])];
+    return merged.length ? merged : (sizeType === 'QUAN' ? SIZE_PANTS : SIZE_LETTERS);
+}
+
+async function loadVariantOptions() {
+    try {
+        const [colorsRes, sizesRes, sizesByTypeRes] = await Promise.all([
+            fetch('/api/san-pham/options/colors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }),
+            fetch('/api/san-pham/options/sizes', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }),
+            fetch('/api/san-pham/options/sizes-by-type', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        ]);
+        if (colorsRes.ok) {
+            const colors = await colorsRes.json();
+            if (Array.isArray(colors) && colors.length) COLORS = colors;
+        }
+        if (sizesRes.ok) {
+            const sizes = await sizesRes.json();
+            if (Array.isArray(sizes) && sizes.length) ALL_SIZE_OPTIONS = sizes;
+        }
+        if (sizesByTypeRes.ok) {
+            const sizesByType = await sizesByTypeRes.json();
+            if (sizesByType && typeof sizesByType === 'object') {
+                SIZE_OPTIONS_BY_TYPE = {
+                    AO: Array.isArray(sizesByType.AO) ? sizesByType.AO : SIZE_OPTIONS_BY_TYPE.AO,
+                    QUAN: Array.isArray(sizesByType.QUAN) ? sizesByType.QUAN : SIZE_OPTIONS_BY_TYPE.QUAN,
+                    CHUNG: Array.isArray(sizesByType.CHUNG) ? sizesByType.CHUNG : SIZE_OPTIONS_BY_TYPE.CHUNG
+                };
+            }
+        }
+    } catch (e) {
+        // Giữ fallback hard-code nếu API option chưa sẵn sàng.
+    }
 }
 
 // Cập nhật option size cho một select và giữ lại giá trị cũ nếu còn hợp lệ.

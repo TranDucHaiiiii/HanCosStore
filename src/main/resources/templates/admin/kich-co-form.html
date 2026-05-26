@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${kichCo.id == null ? 'Thêm kích cỡ' : 'Sửa kích cỡ'} + ' - HANCOS'">Kích cỡ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-sidebar.css}">
+    <link rel="stylesheet" th:href="@{/css/admin/category-form.css}">
+</head>
+<body>
+
+<div th:replace="~{admin/fragments/sidebar :: sidebar('kich-co')}"></div>
+
+<div class="main-content">
+    <header class="top-header">
+        <div class="d-flex align-items-center">
+            <a th:href="@{/admin/kich-co}" class="btn-action me-3" aria-label="Quay lại">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h4 class="fw-800 mb-0 text-uppercase letter-spacing-1"
+                th:text="${kichCo.id == null ? 'Thêm kích cỡ' : 'Sửa kích cỡ'}">Kích cỡ</h4>
+        </div>
+        <div class="rounded-circle bg-soft-primary d-flex align-items-center justify-content-center"
+             style="width: 45px; height: 45px;">
+            <i class="fas fa-ruler-combined"></i>
+        </div>
+    </header>
+
+    <div th:if="${errorMessage}" class="alert alert-danger border-0 rounded-0 small mb-4"
+         th:text="${errorMessage}"></div>
+
+    <div class="card">
+        <div class="card-body p-4">
+            <form id="kichCoForm" th:action="@{/admin/kich-co/save}" th:object="${kichCo}" method="post" class="row g-3" novalidate>
+                <input type="hidden" th:field="*{id}">
+
+                <div class="col-md-5">
+                    <label class="form-label fw-700">Tên kích cỡ <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" th:field="*{tenKichCo}" required maxlength="20"
+                           placeholder="VD: M hoặc 38">
+                    <div class="form-text">Tên kích cỡ không được vượt quá 20 ký tự.</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-700">Loại size</label>
+                    <select class="form-select" th:field="*{loai}">
+                        <option value="AO">Áo</option>
+                        <option value="QUAN">Quần</option>
+                        <option value="CHUNG">Dùng chung</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-700">Trạng thái</label>
+                    <select class="form-select" th:field="*{trangThai}">
+                        <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+                        <option value="INACTIVE">Ngưng hoạt động (INACTIVE)</option>
+                    </select>
+                </div>
+
+                <div class="col-12 mt-3 pt-3 border-top">
+                    <button type="submit" class="btn btn-primary px-5 py-2 fw-700">
+                        <i class="fas fa-save me-2"></i> Lưu size
+                    </button>
+                    <a th:href="@{/admin/kich-co}" class="btn btn-outline-secondary px-4 py-2 ms-2">Hủy bỏ</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.getElementById('kichCoForm').addEventListener('submit', (event) => {
+        const form = event.currentTarget;
+        const ten = form.querySelector('[name="tenKichCo"]');
+        const loai = form.querySelector('[name="loai"]');
+        const trangThai = form.querySelector('[name="trangThai"]');
+        const name = ten.value.trim();
+        const type = (loai.value || '').trim().toUpperCase();
+        const status = (trangThai.value || '').trim().toUpperCase();
+
+        if (name.length === 0 || name.length > 20) {
+            event.preventDefault();
+            Swal.fire('Lỗi', 'Tên kích cỡ không được để trống và không vượt quá 20 ký tự.', 'error');
+            ten.focus();
+            return;
+        }
+        if (type !== 'AO' && type !== 'QUAN' && type !== 'CHUNG') {
+            event.preventDefault();
+            Swal.fire('Lỗi', 'Loại kích cỡ không hợp lệ.', 'error');
+            loai.focus();
+            return;
+        }
+        if (status !== 'ACTIVE' && status !== 'INACTIVE') {
+            event.preventDefault();
+            Swal.fire('Lỗi', 'Trạng thái kích cỡ không hợp lệ.', 'error');
+            trangThai.focus();
+            return;
+        }
+
+        ten.value = name;
+        loai.value = type;
+        trangThai.value = status;
+    });
+</script>
+</body>
+</html>

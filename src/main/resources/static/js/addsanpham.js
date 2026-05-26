@@ -1,12 +1,60 @@
 const API_URL = '/api';
 const SIZE_LETTERS = ["XS", "S", "M", "L", "XL", "XXL"];
 const SIZE_PANTS = ["28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38"];
-const COLORS = [
+let COLORS = [
     "\u0110en", "Tr\u1eafng", "\u0110\u1ecf", "Xanh d\u01b0\u01a1ng", "Xanh l\u00e1", "V\u00e0ng",
     "Cam", "T\u00edm", "H\u1ed3ng", "N\u00e2u", "X\u00e1m", "Be"
 ];
+let COLOR_HEX_BY_NAME = {
+    "\u0110en": "#000000", "Tr\u1eafng": "#ffffff", "\u0110\u1ecf": "#ff0000",
+    "Xanh d\u01b0\u01a1ng": "#0066ff", "Xanh l\u00e1": "#00aa00", "V\u00e0ng": "#ffff00",
+    "Cam": "#ff8800", "T\u00edm": "#aa00ff", "H\u1ed3ng": "#ff66cc",
+    "N\u00e2u": "#8b4513", "X\u00e1m": "#888888", "Be": "#d4a574"
+};
+if (Array.isArray(window.INITIAL_COLOR_OPTIONS) && window.INITIAL_COLOR_OPTIONS.length) {
+    COLORS = window.INITIAL_COLOR_OPTIONS;
+}
+applyColorDetails(window.INITIAL_COLOR_DETAILS);
+let ALL_SIZE_OPTIONS = [...new Set([...SIZE_PANTS, ...SIZE_LETTERS])];
+let SIZE_OPTIONS_BY_TYPE = {
+    AO: [...SIZE_LETTERS],
+    QUAN: [...SIZE_PANTS],
+    CHUNG: []
+};
 const PARENT_DANH_MUC_TREE = window.PARENT_DANH_MUC_TREE || [];
 const skuPreviewCache = new Map();
+
+function isValidColorCode(value) {
+    return typeof value === 'string'
+        && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
+}
+
+function applyColorDetails(details) {
+    if (!Array.isArray(details) || details.length === 0) {
+        return;
+    }
+
+    const names = [];
+    details.forEach(item => {
+        const name = (item?.tenMau || item?.name || '').trim();
+        const hex = (item?.maMau || item?.hex || '').trim();
+        if (!name) {
+            return;
+        }
+        names.push(name);
+        if (isValidColorCode(hex)) {
+            COLOR_HEX_BY_NAME[name] = hex;
+        }
+    });
+
+    if (names.length) {
+        COLORS = names;
+    }
+}
+
+function getColorHex(color) {
+    return COLOR_HEX_BY_NAME[color] || '#ccc';
+}
 // Đảm bảo mã sản phẩm có giá trị, tự gọi backend sinh mã nếu người dùng chưa nhập.
 async function ensureMaSanPham() {
     const input = document.getElementById('maSanPham');
@@ -78,6 +126,20 @@ function isPantsCategoryName(name) {
         || normalized.includes('pants');
 }
 
+function getSelectedSizeType() {
+    const parentName = getSelectedParentName();
+    const childName = getSelectedChildName();
+    const mergedName = normalizeCategoryName(childName || parentName || getSelectedCategoryName());
+
+    if (isPantsCategoryName(parentName) || isPantsCategoryName(childName) || isPantsCategoryName(mergedName)) {
+        return 'QUAN';
+    }
+    if (mergedName.includes('ao')) {
+        return 'AO';
+    }
+    return mergedName ? 'AO' : null;
+}
+
 // Ghi danh mục cuối cùng được chọn vào hidden input gửi lên form.
 function updateSelectedDanhMucId() {
     const child = document.getElementById('danhMucId');
@@ -96,18 +158,54 @@ function updateSelectedDanhMucId() {
 
 // Chọn danh sách size phù hợp theo danh mục sản phẩm.
 function getSizeOptions() {
-    const parentName = getSelectedParentName();
-    const childName = getSelectedChildName();
-    if (isPantsCategoryName(parentName) || isPantsCategoryName(childName)) {
-        return SIZE_PANTS;
+    const sizeType = getSelectedSizeType();
+    if (!sizeType) {
+        return ALL_SIZE_OPTIONS.length ? ALL_SIZE_OPTIONS : SIZE_LETTERS;
     }
 
-    const mergedName = normalizeCategoryName(childName || parentName || getSelectedCategoryName());
-    if (mergedName.includes('ao')) {
-        return SIZE_LETTERS;
-    }
+    const typedSizes = SIZE_OPTIONS_BY_TYPE[sizeType] || [];
+    const commonSizes = SIZE_OPTIONS_BY_TYPE.CHUNG || [];
+    const merged = [...new Set([...typedSizes, ...commonSizes])];
+    return merged.length ? merged : (sizeType === 'QUAN' ? SIZE_PANTS : SIZE_LETTERS);
+}
 
-    return SIZE_LETTERS;
+async function loadVariantOptions() {
+    try {
+        const [colorsRes, colorDetailsRes, sizesRes, sizesByTypeRes] = await Promise.all([
+            fetch('/api/san-pham/options/colors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }),
+            fetch('/api/san-pham/options/color-details', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }),
+            fetch('/api/san-pham/options/sizes', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }),
+            fetch('/api/san-pham/options/sizes-by-type', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        ]);
+        if (colorsRes.ok) {
+            const colors = await colorsRes.json();
+            if (Array.isArray(colors) && colors.length) COLORS = colors;
+        }
+        if (colorDetailsRes.ok) {
+            applyColorDetails(await colorDetailsRes.json());
+        }
+        if (sizesRes.ok) {
+            const sizes = await sizesRes.json();
+            if (Array.isArray(sizes) && sizes.length) ALL_SIZE_OPTIONS = sizes;
+        }
+        if (sizesByTypeRes.ok) {
+            const sizesByType = await sizesByTypeRes.json();
+            if (sizesByType && typeof sizesByType === 'object') {
+                SIZE_OPTIONS_BY_TYPE = {
+                    AO: Array.isArray(sizesByType.AO) ? sizesByType.AO : SIZE_OPTIONS_BY_TYPE.AO,
+                    QUAN: Array.isArray(sizesByType.QUAN) ? sizesByType.QUAN : SIZE_OPTIONS_BY_TYPE.QUAN,
+                    CHUNG: Array.isArray(sizesByType.CHUNG) ? sizesByType.CHUNG : SIZE_OPTIONS_BY_TYPE.CHUNG
+                };
+            }
+        }
+    } catch (e) {
+        // Giữ fallback hard-code nếu API option chưa sẵn sàng.
+    }
+}
+
+function buildColorOptionsHtml(selected = '') {
+    const optionHtml = COLORS.map(color => `<option value="${color}" ${selected === color ? 'selected' : ''}>${color}</option>`).join('');
+    return `<option value="">-- Chon mau --</option>${optionHtml}`;
 }
 
 // Tạo HTML option size và đánh dấu size đang chọn nếu có.
@@ -221,19 +319,7 @@ function addVariant(data = null) {
             <div class="form-group variant-field variant-color-field">
                 <label>Mau Sac <span class="required">*</span></label>
                 <select name="bienThes[${index}].mauSac" required onchange="updateSKUFromEl(this)">
-                    <option value="">-- Chon mau --</option>
-                    <option value="\u0110en" ${seed && seed.mauSac === '\u0110en' ? 'selected' : ''}>\u0110en</option>
-                    <option value="Tr\u1eafng" ${seed && seed.mauSac === 'Tr\u1eafng' ? 'selected' : ''}>Tr\u1eafng</option>
-                    <option value="\u0110\u1ecf" ${seed && seed.mauSac === '\u0110\u1ecf' ? 'selected' : ''}>\u0110\u1ecf</option>
-                    <option value="Xanh d\u01b0\u01a1ng" ${seed && seed.mauSac === 'Xanh d\u01b0\u01a1ng' ? 'selected' : ''}>Xanh d\u01b0\u01a1ng</option>
-                    <option value="Xanh l\u00e1" ${seed && seed.mauSac === 'Xanh l\u00e1' ? 'selected' : ''}>Xanh l\u00e1</option>
-                    <option value="V\u00e0ng" ${seed && seed.mauSac === 'V\u00e0ng' ? 'selected' : ''}>V\u00e0ng</option>
-                    <option value="Cam" ${seed && seed.mauSac === 'Cam' ? 'selected' : ''}>Cam</option>
-                    <option value="T\u00edm" ${seed && seed.mauSac === 'T\u00edm' ? 'selected' : ''}>T\u00edm</option>
-                    <option value="H\u1ed3ng" ${seed && seed.mauSac === 'H\u1ed3ng' ? 'selected' : ''}>H\u1ed3ng</option>
-                    <option value="N\u00e2u" ${seed && seed.mauSac === 'N\u00e2u' ? 'selected' : ''}>N\u00e2u</option>
-                    <option value="X\u00e1m" ${seed && seed.mauSac === 'X\u00e1m' ? 'selected' : ''}>X\u00e1m</option>
-                    <option value="Be" ${seed && seed.mauSac === 'Be' ? 'selected' : ''}>Be</option>
+                    ${buildColorOptionsHtml(seed ? seed.mauSac : '')}
                 </select>
             </div>
             <div class="form-group variant-field variant-size-field">
@@ -353,19 +439,12 @@ async function requestSkuPreview(maSanPham, mauSac, kichCo) {
 function updateVariantBadge(item) {
     if (!item) return;
 
-    const colorMap = {
-        "\u0110en": "#000000", "Tr\u1eafng": "#ffffff", "\u0110\u1ecf": "#ff0000",
-        "Xanh d\u01b0\u01a1ng": "#0066ff", "Xanh l\u00e1": "#00aa00", "V\u00e0ng": "#ffff00",
-        "Cam": "#ff8800", "T\u00edm": "#aa00ff", "H\u1ed3ng": "#ff66cc",
-        "N\u00e2u": "#8b4513", "X\u00e1m": "#888888", "Be": "#d4a574"
-    };
-
     const mauSac = item.querySelector('select[name*=".mauSac"]')?.value || '';
     const kichCo = item.querySelector('select[name*=".kichCo"]')?.value || '';
     const colorBadge = item.querySelector('.color-badge');
     const sizeBadge = item.querySelector('.size-badge');
 
-    if (colorBadge) colorBadge.style.backgroundColor = colorMap[mauSac] || '#ccc';
+    if (colorBadge) colorBadge.style.backgroundColor = getColorHex(mauSac);
     if (sizeBadge) sizeBadge.textContent = kichCo || '-';
 }
 
@@ -420,7 +499,7 @@ function updateAllSKUs() {
 
 // Lấy tên màu đang khai báo trên một dòng ảnh theo màu.
 function getColorImageValue(item) {
-    return (item?.querySelector('input[name*=".mauSac"]')?.value || '').trim();
+    return (item?.querySelector('[name*=".mauSac"]')?.value || '').trim();
 }
 
 // Tự thêm ảnh màu theo các màu đã có trong biến thể, chỉ bổ sung màu còn thiếu.
@@ -450,8 +529,8 @@ function syncColors() {
 
         const reusableItem = emptyItems.shift();
         if (reusableItem) {
-            const input = reusableItem.querySelector('input[name*=".mauSac"]');
-            if (input) input.value = color;
+            const colorField = reusableItem.querySelector('[name*=".mauSac"]');
+            if (colorField) colorField.value = color;
         } else {
             addColorImageWithColor(color);
         }
@@ -553,13 +632,6 @@ function dongBoMau() {
 function initQuickVariantDropdowns() {
     const colorList = document.getElementById('colorCheckboxList');
     if (colorList && colorList.children.length === 0) {
-        const colorMap = {
-            "\u0110en": "#000000", "Tr\u1eafng": "#ffffff", "\u0110\u1ecf": "#ff0000",
-            "Xanh d\u01b0\u01a1ng": "#0066ff", "Xanh l\u00e1": "#00aa00", "V\u00e0ng": "#ffff00",
-            "Cam": "#ff8800", "T\u00edm": "#aa00ff", "H\u1ed3ng": "#ff66cc",
-            "N\u00e2u": "#8b4513", "X\u00e1m": "#888888", "Be": "#d4a574"
-        };
-
         COLORS.forEach(color => {
             const label = document.createElement('label');
             label.style.cssText = 'display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:8px; background:#fff; border:1px solid #ddd; transition:all 0.2s;';
@@ -570,7 +642,7 @@ function initQuickVariantDropdowns() {
             checkbox.className = 'color-checkbox';
 
             const dot = document.createElement('span');
-            dot.style.cssText = `width:16px; height:16px; border-radius:50%; background-color:${colorMap[color]}; border:1px solid rgba(0,0,0,0.2); flex-shrink:0;`;
+            dot.style.cssText = `width:16px; height:16px; border-radius:50%; background-color:${getColorHex(color)}; border:1px solid rgba(0,0,0,0.2); flex-shrink:0;`;
 
             const text = document.createElement('span');
             text.textContent = color;
@@ -717,7 +789,9 @@ function addColorImageWithColor(color) {
             <div class="form-row">
                 <div class="form-group">
                     <label>Màu Sắc <span class="required">*</span></label>
-                    <input type="text" name="hinhAnhMauSacs[${index}].mauSac" required value="${color}" placeholder="Đen">
+                    <select name="hinhAnhMauSacs[${index}].mauSac" required>
+                        ${buildColorOptionsHtml(color)}
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Chọn Ảnh <span class="required">*</span></label>
@@ -944,7 +1018,7 @@ function validateColorImages() {
     const seenColors = new Set();
     const colorsWithImages = new Set();
     for (const item of colorImages) {
-        const colorInput = item.querySelector('input[name*=".mauSac"]');
+        const colorInput = item.querySelector('[name*=".mauSac"]');
         const hiddenInput = item.querySelector('input[type="hidden"][name*=".duongDanAnh"]');
         const color = (colorInput?.value || '').trim();
         const imagePath = (hiddenInput?.value || '').trim();
@@ -1267,7 +1341,9 @@ function addColorImage() {
             <div class="form-row">
                 <div class="form-group">
                     <label>Màu Sắc <span class="required">*</span></label>
-                    <input type="text" name="hinhAnhMauSacs[${index}].mauSac" required placeholder="Đen">
+                    <select name="hinhAnhMauSacs[${index}].mauSac" required>
+                        ${buildColorOptionsHtml()}
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Chọn Ảnh <span class="required">*</span></label>
@@ -1302,7 +1378,7 @@ function updateColorImageNumbers() {
     const colorImages = document.querySelectorAll('#colorImagesList .image-item');
     colorImages.forEach((image, idx) => {
         const removeBtn = image.querySelector('.item-header .btn-danger');
-        const mauSacInput = image.querySelector('input[name*=".mauSac"]');
+        const mauSacInput = image.querySelector('[name*=".mauSac"]');
         const fileInput = image.querySelector('input.file-upload');
         const hiddenInput = image.querySelector('input[type="hidden"][name*=".duongDanAnh"]');
         const previewImg = image.querySelector('img.preview-img');
@@ -1410,6 +1486,7 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
 
 // Khởi tạo form thêm sản phẩm, panel tạo nhanh, dòng biến thể và ảnh mặc định.
 window.addEventListener('DOMContentLoaded', async () => {
+    await loadVariantOptions();
     await ensureMaSanPham();
     initQuickVariantDropdowns();
     addVariant();

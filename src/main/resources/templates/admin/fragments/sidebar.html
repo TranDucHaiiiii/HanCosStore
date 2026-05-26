@@ -16,10 +16,10 @@
         </a>
 
         <details class="nav-group"
-                 th:attr="open=${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu'} ? 'open' : null"
-                 th:classappend="${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu'} ? ' active'">
+                 th:attr="open=${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu' or active == 'mau-sac' or active == 'kich-co'} ? 'open' : null"
+                 th:classappend="${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu' or active == 'mau-sac' or active == 'kich-co'} ? ' active'">
             <summary class="nav-link nav-link-parent"
-                     th:classappend="${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu'} ? ' active'">
+                     th:classappend="${active == 'products' or active == 'categories' or active == 'thuong-hieu' or active == 'chat-lieu' or active == 'mau-sac' or active == 'kich-co'} ? ' active'">
                 <i class="fas fa-box-open"></i>
                 <span class="nav-link-label">Quản lý sản phẩm</span>
                 <span class="nav-toggle" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
@@ -47,6 +47,18 @@
                    th:classappend="${active == 'chat-lieu'} ? ' active'"
                    th:href="@{/admin/chat-lieu}">
                     <i class="fas fa-circle"></i><span class="nav-link-label">Chất liệu</span>
+                </a>
+                <a class="nav-link nav-sub-link"
+                   th:if="${session.ROLES != null and #lists.contains(session.ROLES,'ADMIN')}"
+                   th:classappend="${active == 'mau-sac'} ? ' active'"
+                   th:href="@{/admin/mau-sac}">
+                    <i class="fas fa-circle"></i><span class="nav-link-label">Màu sắc</span>
+                </a>
+                <a class="nav-link nav-sub-link"
+                   th:if="${session.ROLES != null and #lists.contains(session.ROLES,'ADMIN')}"
+                   th:classappend="${active == 'kich-co'} ? ' active'"
+                   th:href="@{/admin/kich-co}">
+                    <i class="fas fa-circle"></i><span class="nav-link-label">Kích cỡ</span>
                 </a>
             </div>
         </details>

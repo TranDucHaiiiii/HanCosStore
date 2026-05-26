@@ -15,11 +15,26 @@ import java.util.Optional;
 public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, Integer> {
     List<BienTheSanPham> findBySanPham_Id(Integer SanPhamId);
 
-    List<BienTheSanPham> findBySanPham_IdAndMauSac(Integer idSanPham, String mauSac);
+    @Query("""
+        select v
+        from BienTheSanPham v
+        where v.sanPham.id = :idSanPham
+          and lower(v.mauSac.tenMau) = lower(:mauSac)
+    """)
+    List<BienTheSanPham> findBySanPham_IdAndMauSac(@Param("idSanPham") Integer idSanPham, @Param("mauSac") String mauSac);
 
     Optional<BienTheSanPham> findByMaSKU(String maSKU);
 
-    Optional<BienTheSanPham> findBySanPham_IdAndMauSacAndKichCo(Integer idSanPham, String mauSac, String kichCo);
+    @Query("""
+        select v
+        from BienTheSanPham v
+        where v.sanPham.id = :idSanPham
+          and lower(v.mauSac.tenMau) = lower(:mauSac)
+          and lower(v.kichCo.tenKichCo) = lower(:kichCo)
+    """)
+    Optional<BienTheSanPham> findBySanPham_IdAndMauSacAndKichCo(@Param("idSanPham") Integer idSanPham,
+                                                                @Param("mauSac") String mauSac,
+                                                                @Param("kichCo") String kichCo);
 
     interface PriceRange{
         BigDecimal getMinGia();
@@ -34,20 +49,20 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
     """)
     PriceRange findPriceRange(Integer sanPhamId);
     @Query("""
-        select distinct v.mauSac
+        select distinct v.mauSac.tenMau
         from BienTheSanPham v
         where v.sanPham.id = ?1
           and (v.trangThai is null or lower(v.trangThai) = 'active')
-        order by v.mauSac
+        order by v.mauSac.tenMau
     """)
     List<String> findDistinctMauSac(Integer sanPhamId);
 
         @Query("""
-                select distinct v.kichCo
+                select distinct v.kichCo.tenKichCo
                 from BienTheSanPham v
                 where v.sanPham.id = ?1
                     and (v.trangThai is null or lower(v.trangThai) = 'active')
-                order by v.kichCo
+                order by v.kichCo.tenKichCo
         """)
         List<String> findDistinctKichCo(Integer sanPhamId);
 
@@ -81,8 +96,8 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
                                 :keyword is null
                                 or lower(sp.ten) like lower(concat('%', :keyword, '%'))
                                 or lower(v.maSKU) like lower(concat('%', :keyword, '%'))
-                                or lower(v.mauSac) like lower(concat('%', :keyword, '%'))
-                                or lower(v.kichCo) like lower(concat('%', :keyword, '%'))
+                                or lower(v.mauSac.tenMau) like lower(concat('%', :keyword, '%'))
+                                or lower(v.kichCo.tenKichCo) like lower(concat('%', :keyword, '%'))
                     )
                 """,
                 countQuery = """
@@ -95,8 +110,8 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
                                 :keyword is null
                                 or lower(sp.ten) like lower(concat('%', :keyword, '%'))
                                 or lower(v.maSKU) like lower(concat('%', :keyword, '%'))
-                                or lower(v.mauSac) like lower(concat('%', :keyword, '%'))
-                                or lower(v.kichCo) like lower(concat('%', :keyword, '%'))
+                                or lower(v.mauSac.tenMau) like lower(concat('%', :keyword, '%'))
+                                or lower(v.kichCo.tenKichCo) like lower(concat('%', :keyword, '%'))
                     )
                 """)
         Page<BienTheSanPham> searchInventoryVariants(String keyword, Pageable pageable);

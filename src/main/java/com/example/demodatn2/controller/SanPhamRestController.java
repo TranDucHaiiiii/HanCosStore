@@ -4,6 +4,8 @@ import com.example.demodatn2.dto.BienTheRequestDTO;
 import com.example.demodatn2.dto.GenerateQuickVariantsRequest;
 import com.example.demodatn2.dto.SanPhamRequestDTO;
 import com.example.demodatn2.dto.SanPhamResponseDTO;
+import com.example.demodatn2.repository.KichCoRepository;
+import com.example.demodatn2.repository.MauSacRepository;
 import com.example.demodatn2.service.SanPhamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,103 @@ import java.util.Map;
 public class SanPhamRestController {
 
     private final SanPhamService sanPhamService;
+    private final MauSacRepository mauSacRepository;
+    private final KichCoRepository kichCoRepository;
+
+    @GetMapping("/options/colors")
+    public List<String> getColorOptions() {
+        return mauSacRepository.findAll().stream()
+                .filter(mau -> mau.getTrangThai() == null || "ACTIVE".equalsIgnoreCase(mau.getTrangThai()))
+                .map(mau -> mau.getTenMau())
+                .filter(ten -> ten != null && !ten.isBlank())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    @GetMapping("/options/color-details")
+    public List<Map<String, String>> getColorDetails() {
+        return mauSacRepository.findAll().stream()
+                .filter(mau -> mau.getTrangThai() == null || "ACTIVE".equalsIgnoreCase(mau.getTrangThai()))
+                .filter(mau -> mau.getTenMau() != null && !mau.getTenMau().isBlank())
+                .sorted((a, b) -> String.CASE_INSENSITIVE_ORDER.compare(a.getTenMau(), b.getTenMau()))
+                .map(mau -> {
+                    Map<String, String> option = new LinkedHashMap<>();
+                    option.put("tenMau", mau.getTenMau());
+                    option.put("maMau", mau.getMaMau());
+                    return option;
+                })
+                .toList();
+    }
+
+    @GetMapping("/options/sizes")
+    public List<String> getSizeOptions(@RequestParam(required = false) String loai) {
+        String normalizedType = normalizeSizeType(loai);
+        return kichCoRepository.findAll().stream()
+                .filter(size -> size.getTrangThai() == null || "ACTIVE".equalsIgnoreCase(size.getTrangThai()))
+                .filter(size -> normalizedType == null || normalizedType.equals(normalizeSizeType(size.getLoai())))
+                .map(size -> size.getTenKichCo())
+                .filter(ten -> ten != null && !ten.isBlank())
+                .sorted((a, b) -> compareSize(a, b))
+                .toList();
+    }
+
+    @GetMapping("/options/sizes-by-type")
+    public Map<String, List<String>> getSizeOptionsByType() {
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        result.put("AO", getSizeOptions("AO"));
+        result.put("QUAN", getSizeOptions("QUAN"));
+        result.put("CHUNG", getSizeOptions("CHUNG"));
+        return result;
+    }
+
+    private String normalizeSizeType(String loai) {
+        if (loai == null || loai.isBlank()) {
+            return null;
+        }
+        String normalized = loai.trim().toUpperCase();
+        if ("AO".equals(normalized) || "QUAN".equals(normalized) || "CHUNG".equals(normalized)) {
+            return normalized;
+        }
+        return null;
+    }
+
+    private int compareSize(String a, String b) {
+        Integer na = parseIntOrNull(a);
+        Integer nb = parseIntOrNull(b);
+        if (na != null && nb != null) {
+            return na.compareTo(nb);
+        }
+        if (na != null) {
+            return -1;
+        }
+        if (nb != null) {
+            return 1;
+        }
+        return Integer.compare(sizeRank(a), sizeRank(b));
+    }
+
+    private Integer parseIntOrNull(String value) {
+        try {
+            return Integer.valueOf(value);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private int sizeRank(String value) {
+        if (value == null) {
+            return 999;
+        }
+        return switch (value.trim().toUpperCase()) {
+            case "XS" -> 100;
+            case "S" -> 101;
+            case "M" -> 102;
+            case "L" -> 103;
+            case "XL" -> 104;
+            case "XXL" -> 105;
+            default -> 500;
+        };
+    }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateSanPham(@PathVariable Integer id, @RequestBody SanPhamRequestDTO requestDTO) {

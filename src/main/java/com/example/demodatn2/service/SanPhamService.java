@@ -16,6 +16,8 @@ import com.example.demodatn2.entity.DanhMuc;
 import com.example.demodatn2.entity.GiaoDichTonKho;
 import com.example.demodatn2.entity.HinhAnhMauSac;
 import com.example.demodatn2.entity.HinhAnhSanPham;
+import com.example.demodatn2.entity.KichCo;
+import com.example.demodatn2.entity.MauSac;
 import com.example.demodatn2.entity.SanPham;
 import com.example.demodatn2.entity.ThuongHieu;
 import com.example.demodatn2.repository.BienTheSanPhamRepository;
@@ -24,6 +26,8 @@ import com.example.demodatn2.repository.DanhMucRepository;
 import com.example.demodatn2.repository.GiaoDichTonKhoRepository;
 import com.example.demodatn2.repository.HinhAnhMauSacRepository;
 import com.example.demodatn2.repository.HinhAnhSanPhamRepository;
+import com.example.demodatn2.repository.KichCoRepository;
+import com.example.demodatn2.repository.MauSacRepository;
 import com.example.demodatn2.repository.SanPhamRepository;
 import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.repository.ThuongHieuRepository;
@@ -64,6 +68,8 @@ public class SanPhamService {
     private final TaiKhoanRepository taiKhoanRepository;
     private final ChatLieuRepository chatLieuRepository;
     private final ThuongHieuRepository thuongHieuRepository;
+    private final MauSacRepository mauSacRepository;
+    private final KichCoRepository kichCoRepository;
 
     @Transactional
     public SanPhamResponseDTO createSanPham(SanPhamRequestDTO requestDTO) {
@@ -170,8 +176,8 @@ public class SanPhamService {
             BienTheSanPham bienThe = new BienTheSanPham();
             bienThe.setSanPham(sanPham);
             bienThe.setMaSKU(dto.getMaSKU());
-            bienThe.setMauSac(dto.getMauSac());
-            bienThe.setKichCo(dto.getKichCo());
+            bienThe.setMauSac(resolveMauSac(dto.getMauSac()));
+            bienThe.setKichCo(resolveKichCo(dto.getKichCo()));
             bienThe.setGia(dto.getGia());
             bienThe.setGiaGoc(dto.getGiaGoc());
             bienThe.setSoLuongTon(dto.getSoLuongTon());
@@ -333,6 +339,24 @@ public class SanPhamService {
 
     private String getThuongHieuTen(SanPham sanPham) {
         return sanPham.getThuongHieu() != null ? sanPham.getThuongHieu().getTen() : null;
+    }
+
+    private MauSac resolveMauSac(String tenMau) {
+        String normalized = tenMau != null ? tenMau.trim() : "";
+        if (normalized.isEmpty()) {
+            throw new RuntimeException("Mau sac khong duoc de trong.");
+        }
+        return mauSacRepository.findByTenMauIgnoreCase(normalized)
+                .orElseThrow(() -> new RuntimeException("Mau sac khong ton tai: " + normalized));
+    }
+
+    private KichCo resolveKichCo(String tenKichCo) {
+        String normalized = tenKichCo != null ? tenKichCo.trim() : "";
+        if (normalized.isEmpty()) {
+            throw new RuntimeException("Kich co khong duoc de trong.");
+        }
+        return kichCoRepository.findByTenKichCoIgnoreCase(normalized)
+                .orElseThrow(() -> new RuntimeException("Kich co khong ton tai: " + normalized));
     }
 
     private BienTheResponseDTO convertBienTheToDTO(BienTheSanPham bienThe) {
@@ -507,8 +531,8 @@ public class SanPhamService {
                         .findFirst()
                         .orElseThrow(() -> new RuntimeException("Bien the khong ton tai: " + btDto.getId()));
                 bt.setMaSKU(btDto.getMaSKU());
-                bt.setMauSac(btDto.getMauSac());
-                bt.setKichCo(btDto.getKichCo());
+                bt.setMauSac(resolveMauSac(btDto.getMauSac()));
+                bt.setKichCo(resolveKichCo(btDto.getKichCo()));
                 bt.setGia(btDto.getGia());
                 bt.setGiaGoc(btDto.getGiaGoc());
                 bt.setSoLuongTon(btDto.getSoLuongTon());
@@ -528,8 +552,8 @@ public class SanPhamService {
                 BienTheSanPham target = reuse != null ? reuse : new BienTheSanPham();
                 target.setSanPham(sanPham);
                 target.setMaSKU(btDto.getMaSKU());
-                target.setMauSac(btDto.getMauSac());
-                target.setKichCo(btDto.getKichCo());
+                target.setMauSac(resolveMauSac(btDto.getMauSac()));
+                target.setKichCo(resolveKichCo(btDto.getKichCo()));
                 target.setGia(btDto.getGia());
                 target.setGiaGoc(btDto.getGiaGoc());
                 target.setSoLuongTon(btDto.getSoLuongTon());

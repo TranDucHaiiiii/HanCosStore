@@ -19,6 +19,23 @@ public class ReturnWorkflowDatabaseMigration implements CommandLineRunner {
             """);
 
         execute("""
+            IF OBJECT_ID('dbo.KICH_CO', 'U') IS NOT NULL
+               AND COL_LENGTH('dbo.KICH_CO', 'Loai') IS NULL
+                ALTER TABLE dbo.KICH_CO ADD Loai NVARCHAR(20) NOT NULL CONSTRAINT DF_KICH_CO_Loai DEFAULT (N'CHUNG')
+            """);
+
+        execute("""
+            IF OBJECT_ID('dbo.KICH_CO', 'U') IS NOT NULL
+                UPDATE dbo.KICH_CO
+                SET Loai = CASE
+                    WHEN TRY_CONVERT(INT, TenKichCo) IS NOT NULL THEN N'QUAN'
+                    WHEN UPPER(LTRIM(RTRIM(TenKichCo))) IN (N'XS', N'S', N'M', N'L', N'XL', N'XXL') THEN N'AO'
+                    ELSE N'CHUNG'
+                END
+                WHERE Loai IS NULL OR Loai = N'CHUNG'
+            """);
+
+        execute("""
             IF COL_LENGTH('dbo.YEU_CAU_DOI_TRA', 'AnhMinhChung') IS NULL
                 ALTER TABLE dbo.YEU_CAU_DOI_TRA ADD AnhMinhChung NVARCHAR(255) NULL
             """);

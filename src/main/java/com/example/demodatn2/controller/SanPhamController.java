@@ -4,8 +4,10 @@ import com.example.demodatn2.dto.SanPhamRequestDTO;
 import com.example.demodatn2.dto.SanPhamResponseDTO;
 import com.example.demodatn2.dto.TaiKhoanDTO;
 import com.example.demodatn2.entity.ChatLieu;
+import com.example.demodatn2.entity.MauSac;
 import com.example.demodatn2.entity.ThuongHieu;
 import com.example.demodatn2.repository.ChatLieuRepository;
+import com.example.demodatn2.repository.MauSacRepository;
 import com.example.demodatn2.repository.ThuongHieuRepository;
 import com.example.demodatn2.service.DanhMucService;
 import com.example.demodatn2.service.SanPhamService;
@@ -23,7 +25,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
@@ -34,6 +38,7 @@ public class SanPhamController {
     private final DanhMucService danhMucService;
     private final ChatLieuRepository chatLieuRepository;
     private final ThuongHieuRepository thuongHieuRepository;
+    private final MauSacRepository mauSacRepository;
 
     @GetMapping("/them-san-pham")
     public String showAddProductPage(Model model) {
@@ -41,6 +46,8 @@ public class SanPhamController {
         model.addAttribute("parentDanhMucTree", danhMucService.getAllDTOs());
         model.addAttribute("chatLieus", getActiveChatLieus());
         model.addAttribute("thuongHieus", getThuongHieus());
+        model.addAttribute("mauSacs", getActiveMauSacs());
+        model.addAttribute("mauSacOptions", getActiveMauSacOptions());
         return "addsanpham";
     }
 
@@ -120,6 +127,31 @@ public class SanPhamController {
                 .filter(chatLieu -> chatLieu.getTrangThai() == null
                         || "ACTIVE".equalsIgnoreCase(chatLieu.getTrangThai()))
                 .sorted(Comparator.comparing(ChatLieu::getTenChatLieu, String.CASE_INSENSITIVE_ORDER))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> getActiveMauSacs() {
+        return mauSacRepository.findAll().stream()
+                .filter(mauSac -> mauSac.getTrangThai() == null
+                        || "ACTIVE".equalsIgnoreCase(mauSac.getTrangThai()))
+                .map(MauSac::getTenMau)
+                .filter(tenMau -> tenMau != null && !tenMau.isBlank())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .collect(Collectors.toList());
+    }
+
+    private List<Map<String, String>> getActiveMauSacOptions() {
+        return mauSacRepository.findAll().stream()
+                .filter(mauSac -> mauSac.getTrangThai() == null
+                        || "ACTIVE".equalsIgnoreCase(mauSac.getTrangThai()))
+                .filter(mauSac -> mauSac.getTenMau() != null && !mauSac.getTenMau().isBlank())
+                .sorted(Comparator.comparing(MauSac::getTenMau, String.CASE_INSENSITIVE_ORDER))
+                .map(mauSac -> {
+                    Map<String, String> option = new LinkedHashMap<>();
+                    option.put("tenMau", mauSac.getTenMau());
+                    option.put("maMau", mauSac.getMaMau());
+                    return option;
+                })
                 .collect(Collectors.toList());
     }
 

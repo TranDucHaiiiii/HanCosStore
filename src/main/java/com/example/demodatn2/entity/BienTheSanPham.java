@@ -3,6 +3,7 @@ package com.example.demodatn2.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.AccessLevel;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
@@ -23,13 +24,17 @@ public class BienTheSanPham {
     @Column(name = "MaSKU", nullable = false, length = 80)
     private String maSKU;
 
-    @Nationalized
-    @Column(name = "MauSac", nullable = false, length = 50)
-    private String mauSac;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "MauSacId", nullable = false)
+    private MauSac mauSac;
 
-    @Nationalized
-    @Column(name = "KichCo", nullable = false, length = 20)
-    private String kichCo;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "KichCoId", nullable = false)
+    private KichCo kichCo;
 
     @Column(name = "Gia", nullable = false, precision = 18, scale = 2)
     private BigDecimal gia;
@@ -66,4 +71,28 @@ public class BienTheSanPham {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "SanPhamId", nullable = false)
     private SanPham sanPham;
+
+    public String getMauSac() {
+        return mauSac != null ? mauSac.getTen() : null;
+    }
+
+    public void setMauSac(MauSac mauSac) {
+        this.mauSac = mauSac;
+    }
+
+    public MauSac getMauSacEntity() {
+        return mauSac;
+    }
+
+    public String getKichCo() {
+        return kichCo != null ? kichCo.getTen() : null;
+    }
+
+    public void setKichCo(KichCo kichCo) {
+        this.kichCo = kichCo;
+    }
+
+    public KichCo getKichCoEntity() {
+        return kichCo;
+    }
 }
