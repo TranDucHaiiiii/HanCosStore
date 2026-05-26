@@ -16,12 +16,15 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, Integer> {
     @Query("SELECT COUNT(DISTINCT t.id) FROM TaiKhoan t JOIN t.vaiTros v WHERE v.ma = 'CUSTOMER'")
     Long countCustomers();
 
-    @Query("SELECT t FROM TaiKhoan t WHERE " +
+    @Query("SELECT DISTINCT t FROM TaiKhoan t LEFT JOIN t.vaiTros v WHERE " +
            "(:keyword IS NULL OR :keyword = '' OR " +
            " LOWER(t.tenDangNhap) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(t.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(t.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(t.soDienThoai) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND (:trangThai IS NULL OR :trangThai = '' OR t.trangThai = :trangThai)")
-    List<TaiKhoan> search(@Param("keyword") String keyword, @Param("trangThai") String trangThai);
+           "AND (:trangThai IS NULL OR :trangThai = '' OR t.trangThai = :trangThai) " +
+           "AND (:vaiTro IS NULL OR :vaiTro = '' OR v.ma = :vaiTro)")
+    List<TaiKhoan> search(@Param("keyword") String keyword,
+                          @Param("trangThai") String trangThai,
+                          @Param("vaiTro") String vaiTro);
 }

@@ -35,13 +35,13 @@
     <div class="card mb-4">
         <div class="card-body p-4">
             <form th:action="@{/admin/users}" method="get" class="row g-3 align-items-center">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
                         <input type="text" name="keyword" class="form-control border-start-0 ps-0" th:value="${keyword}" placeholder="Tên, Email, SĐT, Username...">
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <select name="trangThai" class="form-select" onchange="this.form.submit()">
                         <option value="">Tất cả trạng thái</option>
                         <option value="ACTIVE" th:selected="${selectedTrangThai == 'ACTIVE'}">ACTIVE</option>
@@ -50,6 +50,15 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <select name="vaiTro" class="form-select" onchange="this.form.submit()">
+                        <option value="">Tất cả vai trò</option>
+                        <option th:each="role : ${allRoles}"
+                                th:value="${role.ma}"
+                                th:text="${role.ten + ' (' + role.ma + ')'}"
+                                th:selected="${selectedVaiTro == role.ma}">Vai trò</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <button type="submit" class="btn btn-outline-dark w-100 fw-700 rounded-0 text-uppercase small letter-spacing-1">Tìm kiếm</button>
                 </div>
             </form>
@@ -114,7 +123,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(users)}">
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="fas fa-users-slash fa-3x mb-3 d-block opacity-20"></i>
                                 Không tìm thấy tài khoản nào.
                             </td>

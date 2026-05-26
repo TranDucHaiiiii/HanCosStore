@@ -29,14 +29,28 @@ public class TaiKhoanService {
 
     @Transactional(readOnly = true)
     public List<TaiKhoanDTO> getAllTaiKhoans() {
-        return searchTaiKhoans(null, null);
+        return searchTaiKhoans(null, null, null);
     }
 
     @Transactional(readOnly = true)
     public List<TaiKhoanDTO> searchTaiKhoans(String keyword, String trangThai) {
+        return searchTaiKhoans(keyword, trangThai, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TaiKhoanDTO> searchTaiKhoans(String keyword, String trangThai, String vaiTro) {
+        String normalizedRole = normalizeRoleMa(vaiTro != null ? vaiTro.trim().toUpperCase() : null);
+        if (normalizedRole != null && normalizedRole.isBlank()) {
+            normalizedRole = null;
+        }
+        if (normalizedRole != null && !isStandardRole(normalizedRole)) {
+            normalizedRole = null;
+        }
+
         List<TaiKhoan> users = taiKhoanRepository.search(
                 (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null,
-                (trangThai != null && !trangThai.trim().isEmpty()) ? trangThai.trim() : null
+                (trangThai != null && !trangThai.trim().isEmpty()) ? trangThai.trim() : null,
+                normalizedRole
         );
         return users.stream()
                 .map(this::convertToDTO)

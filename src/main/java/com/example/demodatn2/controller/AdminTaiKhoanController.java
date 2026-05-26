@@ -18,10 +18,13 @@ public class AdminTaiKhoanController {
     @GetMapping
     public String listUsers(@RequestParam(required = false) String keyword, 
                            @RequestParam(required = false) String trangThai,
+                           @RequestParam(required = false) String vaiTro,
                            Model model) {
-        model.addAttribute("users", taiKhoanService.searchTaiKhoans(keyword, trangThai));
+        model.addAttribute("users", taiKhoanService.searchTaiKhoans(keyword, trangThai, vaiTro));
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedTrangThai", trangThai);
+        model.addAttribute("selectedVaiTro", vaiTro);
+        model.addAttribute("allRoles", taiKhoanService.getStandardRoles());
         return "admin/users";
     }
 
