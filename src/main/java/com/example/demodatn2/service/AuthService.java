@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthService {
 
+    public static class AccountLockedException extends RuntimeException {
+    }
+
     private final TaiKhoanRepository taiKhoanRepository;
     private final VaiTroRepository vaiTroRepository;
 
@@ -80,6 +83,9 @@ public class AuthService {
         if (optUser.isPresent()) {
             TaiKhoan user = optUser.get();
 
+            if ("LOCKED".equals(user.getTrangThai())) {
+                throw new AccountLockedException();
+            }
             if (!"ACTIVE".equals(user.getTrangThai())) {
                 return false;
             }
@@ -104,6 +110,7 @@ public class AuthService {
                         .hoTen(user.getHoTen())
                         .email(user.getEmail())
                         .soDienThoai(user.getSoDienThoai())
+                        .trangThai(user.getTrangThai())
                         .build();
 
                 List<String> roles = user.getVaiTros().stream()

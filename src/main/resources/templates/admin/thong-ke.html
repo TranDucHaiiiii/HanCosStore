@@ -75,13 +75,93 @@
     </div>
 </div>
 
-    <div class="card mt-4">
-        <div class="card-header bg-white fw-bold d-flex justify-content-between">
-            <span>Biểu đồ doanh thu theo ngày</span>
-            <span id="chartLabel" class="text-muted small">Tất cả thời gian</span>
+    <div class="row g-4 mt-2">
+        <div class="col-xl-5">
+            <div class="card h-100">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                    <span>Biểu đồ thanh toán theo loại</span>
+                    <span class="text-muted small">Theo khoảng ngày đang lọc</span>
+                </div>
+                <div class="card-body">
+                    <div class="payment-chart-wrap">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                    <div class="payment-empty text-center text-muted py-4" id="paymentStatsEmpty" style="display:none">
+                        Chưa có đơn hàng trong khoảng thời gian này.
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <canvas id="doanhThuChart" height="100"></canvas>
+
+        <div class="col-xl-7">
+            <div class="card h-100">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between">
+                    <span>Biểu đồ doanh thu theo ngày</span>
+                    <span id="chartLabel" class="text-muted small">Tất cả thời gian</span>
+                </div>
+                <div class="card-body">
+                    <div class="revenue-chart-wrap">
+                        <canvas id="doanhThuChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            <span>Đơn hàng vừa đặt gần nhất</span>
+            <a th:href="@{/admin/orders}" class="btn btn-sm btn-outline-dark rounded-0 fw-700">Xem tất cả</a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table recent-orders-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Ngày đặt</th>
+                            <th>Khách hàng</th>
+                            <th>Thanh toán</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Tổng tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="order : ${donHangGanDay}">
+                            <td class="fw-800" th:text="${order.maDonHang}">DH-ABC</td>
+                            <td class="text-muted" th:text="${#temporals.format(order.ngayDat, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</td>
+                            <td>
+                                <div class="fw-700" th:text="${order.hoTenNhan}">Khách hàng</div>
+                                <small class="text-muted" th:text="${order.soDienThoaiNhan}">0900000000</small>
+                            </td>
+                            <td>
+                                <span class="payment-pill"
+                                      th:text="${order.diaChiNhan != null and #strings.equalsIgnoreCase(order.diaChiNhan, 'Mua tại quầy')
+                                                ? (#strings.containsIgnoreCase(order.phuongThucThanhToan ?: '', 'transfer') or #strings.containsIgnoreCase(order.phuongThucThanhToan ?: '', 'sepay') or #strings.containsIgnoreCase(order.phuongThucThanhToan ?: '', 'chuyen') ? 'CK tại quầy' : 'Tiền mặt')
+                                                : (order.phuongThucThanhToan == 'COD' ? 'COD' : 'CK online')}">COD</span>
+                            </td>
+                            <td>
+                                <span class="order-status-pill"
+                                      th:classappend="${order.trangThai == 'CHO_XAC_NHAN' or order.trangThai == 'PENDING' ? ' status-pending' :
+                                                      (order.trangThai == 'DA_XAC_NHAN' or order.trangThai == 'CONFIRMED' or order.trangThai == 'PAID' ? ' status-confirmed' :
+                                                      (order.trangThai == 'DANG_GIAO' or order.trangThai == 'SHIPPING' ? ' status-shipping' :
+                                                      (order.trangThai == 'HOAN_THANH' or order.trangThai == 'COMPLETED' or order.trangThai == 'DELIVERED' ? ' status-done' :
+                                                      (order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED' ? ' status-cancelled' : ' status-other'))))}"
+                                      th:text="${order.trangThai == 'CHO_XAC_NHAN' or order.trangThai == 'PENDING' ? 'Chờ xác nhận' :
+                                               (order.trangThai == 'DA_XAC_NHAN' or order.trangThai == 'CONFIRMED' or order.trangThai == 'PAID' ? 'Đã xác nhận' :
+                                               (order.trangThai == 'DANG_GIAO' or order.trangThai == 'SHIPPING' ? 'Đang giao' :
+                                               (order.trangThai == 'HOAN_THANH' or order.trangThai == 'COMPLETED' or order.trangThai == 'DELIVERED' ? 'Hoàn thành' :
+                                               (order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED' ? 'Đã hủy' : order.trangThai))))}">Trạng thái</span>
+                            </td>
+                            <td class="text-end fw-800"
+                                th:text="${#numbers.formatDecimal(order.tongTien ?: 0, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(donHangGanDay)}">
+                            <td colspan="6" class="text-center text-muted py-4">Chưa có đơn hàng nào.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

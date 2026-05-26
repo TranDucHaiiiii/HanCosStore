@@ -47,6 +47,7 @@
 <main class="orders-wrap"
     th:with="pendingCount=${#lists.size(orders.?[trangThai == 'CHO_XAC_NHAN' or trangThai == 'PENDING'])},
            confirmedCount=${#lists.size(orders.?[trangThai == 'DA_XAC_NHAN' or trangThai == 'CONFIRMED'])},
+           shippingCount=${#lists.size(orders.?[trangThai == 'DANG_GIAO' or trangThai == 'SHIPPING'])},
            completedCount=${#lists.size(orders.?[trangThai == 'HOAN_THANH' or trangThai == 'DELIVERED' or trangThai == 'COMPLETED'])},
            cancelledCount=${#lists.size(orders.?[trangThai == 'DA_HUY' or trangThai == 'CANCELLED'])},
                totalSpent=${#aggregates.sum(orders.![tongTien])}">
@@ -62,6 +63,10 @@
         <div class="stats-item">
             <div class="stats-label">Đã xác nhận</div>
             <div class="stats-value confirmed" th:text="${confirmedCount}">0</div>
+        </div>
+        <div class="stats-item">
+            <div class="stats-label">Đang giao hàng</div>
+            <div class="stats-value shipping" th:text="${shippingCount}">0</div>
         </div>
         <div class="stats-item">
             <div class="stats-label">Hoàn thành</div>
@@ -88,6 +93,7 @@
             <a class="filter-btn" th:classappend="${activeFilter == 'ALL' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='ALL')}">Tất cả</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'CHO_XAC_NHAN' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='CHO_XAC_NHAN')}">Chờ xác nhận</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'DA_XAC_NHAN' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='DA_XAC_NHAN')}">Đã xác nhận</a>
+            <a class="filter-btn" th:classappend="${activeFilter == 'DANG_GIAO' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='DANG_GIAO')}">Đang giao hàng</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'HOAN_THANH' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='HOAN_THANH')}">Hoàn thành</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'TRA_HANG' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='TRA_HANG')}">Trả hàng</a>
             <a class="filter-btn" th:classappend="${activeFilter == 'DA_HUY' ? ' is-active' : ''}" th:href="@{/order/my-orders(status='DA_HUY')}">Đã hủy</a>
@@ -114,7 +120,7 @@
                                        (order.trangThai == 'TRA_HANG' or order.trangThai == 'RETURN_REQUESTED' or order.trangThai == 'RETURNED' ? 'status-return' : 'status-cancelled'))))}"
                       th:text="${order.trangThai == 'CHO_XAC_NHAN' or order.trangThai == 'PENDING' ? 'Chờ xác nhận' :
                                (order.trangThai == 'DA_XAC_NHAN' or order.trangThai == 'CONFIRMED' ? 'Đã xác nhận' :
-                               (order.trangThai == 'DANG_GIAO' or order.trangThai == 'SHIPPING' ? 'Đang giao' :
+                               (order.trangThai == 'DANG_GIAO' or order.trangThai == 'SHIPPING' ? 'Đang giao hàng' :
                                (order.trangThai == 'HOAN_THANH' or order.trangThai == 'DELIVERED' or order.trangThai == 'COMPLETED' ? 'Hoàn thành' :
                                (order.trangThai == 'TRA_HANG' or order.trangThai == 'RETURN_REQUESTED' or order.trangThai == 'RETURNED' ? 'Trả hàng' : 'Đã hủy'))))}">
                     Trạng thái

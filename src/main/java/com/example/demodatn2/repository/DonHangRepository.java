@@ -22,6 +22,9 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     // Lay toan bo don hang, sap xep moi nhat truoc.
     List<DonHang> findAllByOrderByNgayDatDesc();
 
+    // Lay cac don hang moi nhat.
+    List<DonHang> findByOrderByNgayDatDesc(Pageable pageable);
+
     // Lay don theo trang thai, sap xep moi nhat truoc.
     List<DonHang> findByTrangThaiOrderByNgayDatDesc(String trangThai);
 
@@ -76,6 +79,20 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             "AND (:tuNgay IS NULL OR d.ngayDat >= :tuNgay) " +
             "AND (:denNgay IS NULL OR d.ngayDat <= :denNgay)")
         Long demDonHangTrongKhoang(@Param("tuNgay") Instant tuNgay, @Param("denNgay") Instant denNgay);
+
+    // Thong ke so don va tong tien theo phuong thuc thanh toan + kenh don hang trong khoang loc.
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT COALESCE(d.phuongThucThanhToan, 'KHAC'),
+                   COALESCE(d.diaChiNhan, ''),
+                   COUNT(d.id),
+                   COALESCE(SUM(d.tongTien), 0)
+            FROM DonHang d
+            WHERE (:tuNgay IS NULL OR d.ngayDat >= :tuNgay)
+              AND (:denNgay IS NULL OR d.ngayDat <= :denNgay)
+            GROUP BY COALESCE(d.phuongThucThanhToan, 'KHAC'), COALESCE(d.diaChiNhan, '')
+            ORDER BY COUNT(d.id) DESC, COALESCE(SUM(d.tongTien), 0) DESC
+            """)
+        List<Object[]> thongKeThanhToanTrongKhoang(@Param("tuNgay") Instant tuNgay, @Param("denNgay") Instant denNgay);
 
     // Lay danh sach don da hoan thanh trong khoang loc.
     @org.springframework.data.jpa.repository.Query("SELECT d FROM DonHang d WHERE d.trangThai IN ('HOAN_THANH', 'COMPLETED', 'DELIVERED') " +

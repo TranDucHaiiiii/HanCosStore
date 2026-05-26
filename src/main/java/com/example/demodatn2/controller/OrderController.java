@@ -206,6 +206,9 @@ public class OrderController {
             case "DA_XAC_NHAN" -> orders.stream()
                     .filter(o -> "DA_XAC_NHAN".equals(normalizeOrderStatus(o.getTrangThai())))
                     .toList();
+            case "DANG_GIAO" -> orders.stream()
+                    .filter(o -> "DANG_GIAO".equals(normalizeOrderStatus(o.getTrangThai())))
+                    .toList();
             case "HOAN_THANH" -> orders.stream()
                     .filter(o -> "HOAN_THANH".equals(normalizeOrderStatus(o.getTrangThai())))
                     .toList();

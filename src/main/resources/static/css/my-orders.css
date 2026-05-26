@@ -122,6 +122,7 @@ body {
 
 .stats-value.pending { color: #c09316; }
 .stats-value.confirmed { color: #1f77bf; }
+.stats-value.shipping { color: #2f60b8; }
 .stats-value.completed { color: #3f8e42; }
 .stats-value.cancelled { color: #9b9b9b; }
 .stats-value.total { color: #1f1f1f; font-size: 1.7rem; }

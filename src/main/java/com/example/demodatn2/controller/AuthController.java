@@ -24,8 +24,13 @@ public class AuthController {
      * @param model Đối tượng truyền dữ liệu sang giao diện Thymeleaf.
      */
     @GetMapping("/login")
-    public String loginPage(@RequestParam(required = false) String next, Model model) {
+    public String loginPage(@RequestParam(required = false) String next,
+                            @RequestParam(required = false) String locked,
+                            Model model) {
         model.addAttribute("next", next);
+        if ("1".equals(locked)) {
+            model.addAttribute("errorMessage", "Tài khoản đã bị khóa!");
+        }
         return "login";
     }
 
@@ -45,18 +50,23 @@ public class AuthController {
                         RedirectAttributes redirectAttributes) {
 
         // Gọi service kiểm tra thông tin đăng nhập
-        if (authService.login(tenDangNhap, matKhau, session)) {
-            redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
-            // Nếu có trang đích (next) thì chuyển hướng đến đó, ngược lại về trang chủ
-            if (next != null && !next.isEmpty()) {
-                return "redirect:" + next;
+        try {
+            if (authService.login(tenDangNhap, matKhau, session)) {
+                redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
+                // Nếu có trang đích (next) thì chuyển hướng đến đó, ngược lại về trang chủ
+                if (next != null && !next.isEmpty()) {
+                    return "redirect:" + next;
+                }
+                return "redirect:/";
             }
-            return "redirect:/";
-        } else {
-            // Nếu đăng nhập thất bại, thêm thông báo lỗi và quay lại trang đăng nhập.
-            redirectAttributes.addFlashAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
+        } catch (AuthService.AccountLockedException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản đã bị khóa!");
             return "redirect:/login" + (next != null ? "?next=" + next : "");
         }
+
+        // Nếu đăng nhập thất bại, thêm thông báo lỗi và quay lại trang đăng nhập.
+        redirectAttributes.addFlashAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
+        return "redirect:/login" + (next != null ? "?next=" + next : "");
     }
 // trang dang ki
     @GetMapping("/register")

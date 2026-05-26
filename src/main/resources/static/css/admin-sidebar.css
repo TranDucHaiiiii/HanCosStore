@@ -17,12 +17,12 @@
 
 .sidebar:hover,
 .sidebar:focus-within {
-    width: 230px;
+    width: 280px;
     padding: 1rem 0.75rem;
 }
 
 .sidebar.sidebar-expanded {
-    width: 230px;
+    width: 280px;
     padding: 1rem 0.75rem;
 }
 
@@ -63,12 +63,12 @@
 
 .sidebar:hover .sidebar-brand span,
 .sidebar:focus-within .sidebar-brand span {
-    max-width: 140px;
+    max-width: 190px;
     opacity: 1;
 }
 
 .sidebar.sidebar-expanded .sidebar-brand span {
-    max-width: 140px;
+    max-width: 190px;
     opacity: 1;
 }
 
@@ -118,12 +118,12 @@
 
 .sidebar:hover .nav-link-label,
 .sidebar:focus-within .nav-link-label {
-    max-width: 140px;
+    max-width: 190px;
     opacity: 1;
 }
 
 .sidebar.sidebar-expanded .nav-link-label {
-    max-width: 140px;
+    max-width: 190px;
     opacity: 1;
 }
 
@@ -290,7 +290,7 @@
     }
 
     .sidebar.sidebar-expanded {
-        width: 230px;
+        width: 280px;
         padding: 1rem 0.75rem;
     }
 }

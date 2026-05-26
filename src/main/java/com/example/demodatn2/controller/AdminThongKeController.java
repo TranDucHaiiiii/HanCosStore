@@ -38,6 +38,8 @@ public class AdminThongKeController {
         Map<String, Object> tongHop = thongKeService.getDoanhThuTrongKhoang(tu, den);
         model.addAttribute("doanhThuThucTe", tongHop.get("doanhThuThucTe"));
         model.addAttribute("soDonTrongKy", tongHop.get("soDon"));
+        model.addAttribute("thanhToanTheoLoai", tongHop.get("thanhToanTheoLoai"));
+        model.addAttribute("donHangGanDay", thongKeService.getDonHangGanDay());
 
         return "admin/thong-ke";
     }

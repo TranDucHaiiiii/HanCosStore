@@ -14,6 +14,8 @@ let transferOrder = null;
 let transferPollTimer = null;
 const invoiceMetas = {};
 const MAX_PENDING_INVOICES = 5;
+const POS_META_STORAGE_KEY = 'HANCOS_POS_INVOICE_METAS';
+let lastVoucherRevalidateAt = 0;
 
 /* ══════════════════════════════════════════
    FORMAT
@@ -24,9 +26,13 @@ function fmt(n) {
 }
 
 function getCartTotal() {
-    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const subtotal = getCartSubtotal();
     const discount = appliedVoucher ? appliedVoucher.discount : 0;
     return Math.max(0, subtotal - discount);
+}
+
+function getCartSubtotal() {
+    return cart.reduce((s, i) => s + i.price * i.qty, 0);
 }
 
 function stopTransferPolling() {
@@ -135,6 +141,27 @@ function renderInvoiceTabs() {
     `).join('') + `<button class="pos-invoice-add${canAddInvoice ? '' : ' disabled'}" onclick="addInvoice()" title="${canAddInvoice ? 'Them hoa don moi' : 'Toi da 5 hoa don cho'}"><i class="fas fa-plus"></i></button>`;
 }
 // Lưu tạm thông tin khách hàng, voucher và thanh toán của hóa đơn đang mở.
+function loadInvoiceMetas() {
+    try {
+        const raw = sessionStorage.getItem(POS_META_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+            Object.assign(invoiceMetas, parsed);
+        }
+    } catch (e) {
+        sessionStorage.removeItem(POS_META_STORAGE_KEY);
+    }
+}
+
+function persistInvoiceMetas() {
+    try {
+        sessionStorage.setItem(POS_META_STORAGE_KEY, JSON.stringify(invoiceMetas));
+    } catch (e) {
+        // Không chặn thao tác bán hàng nếu trình duyệt không cho lưu sessionStorage.
+    }
+}
+
 function saveCurrentMeta() {
     if (!activeInvoiceId) return;
     invoiceMetas[activeInvoiceId] = {
@@ -147,6 +174,7 @@ function saveCurrentMeta() {
         note: document.getElementById('orderNote').value,
         cashGiven: document.getElementById('cashGiven').value
     };
+    persistInvoiceMetas();
 }
 
 // Khôi phục thông tin khách hàng, voucher và thanh toán khi chuyển hóa đơn.
@@ -169,15 +197,7 @@ function restoreMeta(invoiceId) {
     }
 
     appliedVoucher = meta ? meta.appliedVoucher : null;
-    if (appliedVoucher) {
-        document.getElementById('voucherInputArea').style.display = 'none';
-        document.getElementById('voucherApplied').style.display = '';
-        document.getElementById('voucherLabel').textContent = appliedVoucher.code + ' (-' + fmt(appliedVoucher.discount) + ')';
-    } else {
-        document.getElementById('voucherInputArea').style.display = '';
-        document.getElementById('voucherApplied').style.display = 'none';
-        document.getElementById('voucherCode').value = '';
-    }
+    updateVoucherUi();
 
     paymentMethod = meta ? (meta.paymentMethod || 'cash') : 'cash';
     document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.toggle('active', b.dataset.method === paymentMethod));
@@ -247,6 +267,7 @@ async function removeInvoice(invoiceId) {
     }
     const switching = invoiceId === activeInvoiceId;
     delete invoiceMetas[invoiceId];
+    persistInvoiceMetas();
     if (switching) resetTransferState();
     const res = await fetch('/admin/pos/api/invoices/' + invoiceId, { method: 'DELETE' });
     const data = await res.json();
@@ -657,26 +678,41 @@ function clearCustomer() {
 /* ══════════════════════════════════════════
    VOUCHER
    ══════════════════════════════════════════ */
+function updateVoucherUi() {
+    if (appliedVoucher) {
+        document.getElementById('voucherInputArea').style.display = 'none';
+        document.getElementById('voucherApplied').style.display = '';
+        document.getElementById('voucherLabel').textContent = appliedVoucher.code + ' (-' + fmt(appliedVoucher.discount) + ')';
+    } else {
+        document.getElementById('voucherInputArea').style.display = '';
+        document.getElementById('voucherApplied').style.display = 'none';
+        document.getElementById('voucherCode').value = '';
+    }
+}
+
+async function validateVoucherCode(code, subtotal) {
+    const res = await fetch('/admin/pos/api/voucher/validate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code, amount: subtotal})
+    });
+    return res.json();
+}
+
 // Kiểm tra và áp dụng mã giảm giá cho giỏ hàng hiện tại.
 async function applyVoucher() {
     const code = document.getElementById('voucherCode').value.trim();
     if (!code) { showToast('Vui lòng nhập mã giảm giá', 'error'); return; }
 
-    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const subtotal = getCartSubtotal();
     if (subtotal === 0) { showToast('Giỏ hàng trống', 'error'); return; }
 
     try {
-        const res = await fetch('/admin/pos/api/voucher/validate', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({code, amount: subtotal})
-        });
-        const data = await res.json();
+        const data = await validateVoucherCode(code, subtotal);
         if (data.success) {
             appliedVoucher = {code: data.code, discount: Number(data.discount)};
-            document.getElementById('voucherInputArea').style.display = 'none';
-            document.getElementById('voucherApplied').style.display = '';
-            document.getElementById('voucherLabel').textContent = data.code + ' (-' + fmt(data.discount) + ')';
+            updateVoucherUi();
+            saveCurrentMeta();
             recalc();
             showToast('Áp dụng mã giảm giá thành công!', 'success');
         } else {
@@ -690,10 +726,61 @@ async function applyVoucher() {
 // Gỡ mã giảm giá đang áp dụng và tính lại tổng tiền.
 function removeVoucher() {
     appliedVoucher = null;
-    document.getElementById('voucherInputArea').style.display = '';
-    document.getElementById('voucherApplied').style.display = 'none';
-    document.getElementById('voucherCode').value = '';
+    updateVoucherUi();
+    saveCurrentMeta();
     recalc();
+}
+
+// Kiểm tra lại voucher đang dùng khi quay lại màn POS để bắt các thay đổi từ trang quản lý voucher.
+async function revalidateAppliedVoucher(showChangedNotice) {
+    if (!appliedVoucher || !appliedVoucher.code) return;
+
+    const subtotal = getCartSubtotal();
+    if (subtotal <= 0) {
+        appliedVoucher = null;
+        updateVoucherUi();
+        saveCurrentMeta();
+        recalc();
+        return;
+    }
+
+    const oldCode = appliedVoucher.code;
+    const oldDiscount = Number(appliedVoucher.discount || 0);
+    try {
+        const data = await validateVoucherCode(oldCode, subtotal);
+        if (!data.success) {
+            appliedVoucher = null;
+            updateVoucherUi();
+            saveCurrentMeta();
+            recalc();
+            if (showChangedNotice) {
+                showToast('Voucher không còn hợp lệ, hệ thống đã gỡ voucher và cập nhật lại giá.', 'error');
+            }
+            return;
+        }
+
+        const newDiscount = Number(data.discount || 0);
+        const changed = data.code !== oldCode || Math.abs(newDiscount - oldDiscount) >= 1;
+        appliedVoucher = {code: data.code, discount: newDiscount};
+        updateVoucherUi();
+        saveCurrentMeta();
+        recalc();
+        if (changed && showChangedNotice) {
+            showToast('Voucher đã thay đổi, hệ thống đã cập nhật lại giá.', 'success');
+        }
+    } catch (e) {
+        if (showChangedNotice) {
+            showToast('Không thể kiểm tra lại voucher đang áp dụng.', 'error');
+        }
+    }
+}
+
+function revalidateVoucherWhenReturning() {
+    if (document.hidden || !appliedVoucher) return;
+    const now = Date.now();
+    if (now - lastVoucherRevalidateAt < 1000) return;
+    lastVoucherRevalidateAt = now;
+    revalidateAppliedVoucher(true);
 }
 
 // Hiển thị các mã giảm giá gợi ý phù hợp với giá trị giỏ hàng.
@@ -728,7 +815,7 @@ function applySuggestedVoucher(code) {
 
 // Tải danh sách voucher đủ điều kiện từ server theo tổng tiền giỏ hàng.
 async function loadVoucherSuggestions() {
-    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const subtotal = getCartSubtotal();
     if (subtotal <= 0) {
         renderVoucherSuggestions([]);
         return;
@@ -750,7 +837,7 @@ async function loadVoucherSuggestions() {
    ══════════════════════════════════════════ */
 // Tính lại tạm tính, giảm giá, tổng thanh toán và các trạng thái liên quan.
 function recalc() {
-    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const subtotal = getCartSubtotal();
     const discount = appliedVoucher ? appliedVoucher.discount : 0;
     const total = Math.max(0, subtotal - discount);
 
@@ -994,7 +1081,7 @@ function copySTK() {
 
 // Tính tiền thừa hoặc thiếu khi khách thanh toán bằng tiền mặt.
 function calcChange() {
-    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const subtotal = getCartSubtotal();
     const discount = appliedVoucher ? appliedVoucher.discount : 0;
     const total = Math.max(0, subtotal - discount);
     const given = parseFloat(document.getElementById('cashGiven').value.replace(/[^0-9]/g, '')) || 0;
@@ -1156,6 +1243,7 @@ async function newOrder() {
 
     document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('[data-method="cash"]').classList.add('active');
+    saveCurrentMeta();
 
     renderCart();
     recalc();
@@ -1184,13 +1272,20 @@ function showToast(msg, type) {
 
 // Khởi tạo màn hình bán hàng tại quầy sau khi DOM đã sẵn sàng.
 document.addEventListener('DOMContentLoaded', async function() {
+    loadInvoiceMetas();
     renderInvoiceTabs();
+    restoreMeta(activeInvoiceId);
     renderCart();
     recalc();
     filterProducts();
     loadVoucherSuggestions();
     await syncPosCart(true);
+    await revalidateAppliedVoucher(true);
 });
+
+window.addEventListener('focus', revalidateVoucherWhenReturning);
+window.addEventListener('pageshow', revalidateVoucherWhenReturning);
+document.addEventListener('visibilitychange', revalidateVoucherWhenReturning);
 
 
 

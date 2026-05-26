@@ -18,6 +18,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,6 +42,7 @@ public class ThongKeService {
     private static final int TOP_PRODUCT_LIMIT = 5;
     private static final int POTENTIAL_CUSTOMER_LIMIT = 5;
     private static final int POTENTIAL_CUSTOMER_DAYS = 90;
+    private static final int RECENT_ORDER_LIMIT = 8;
 
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
@@ -147,6 +149,11 @@ public class ThongKeService {
             .orElse("/images/no-image.png");
     }
 
+    @Transactional(readOnly = true)
+    public List<DonHang> getDonHangGanDay() {
+        return donHangRepository.findByOrderByNgayDatDesc(PageRequest.of(0, RECENT_ORDER_LIMIT));
+    }
+
     public List<Map<String, Object>> getDoanhThuTheoNgay(Instant tuNgay, Instant denNgay) {
         List<Object[]> results = donHangRepository.layDoanhThuTheoNgay(tuNgay, denNgay);
         List<Map<String, Object>> data = new ArrayList<>();
@@ -173,7 +180,95 @@ public class ThongKeService {
 //        stats.put("doanhThuTamTinh", doanhThuTamTinh != null ? doanhThuTamTinh : BigDecimal.ZERO);
 //        stats.put("doanhThuThatThoat", doanhThuThatThoat != null ? doanhThuThatThoat : BigDecimal.ZERO);
         stats.put("soDon", soDon != null ? soDon : 0L);
+        stats.put("thanhToanTheoLoai", getThongKeThanhToanTrongKhoang(tuNgay, denNgay));
         return stats;
+    }
+
+    public List<Map<String, Object>> getThongKeThanhToanTrongKhoang(Instant tuNgay, Instant denNgay) {
+        Map<String, Map<String, Object>> grouped = new java.util.LinkedHashMap<>();
+        addPaymentGroup(grouped, "COD", "COD");
+        addPaymentGroup(grouped, "ONLINE_TRANSFER", "Chuyển khoản online");
+        addPaymentGroup(grouped, "POS_CASH", "Tiền mặt tại quầy");
+        addPaymentGroup(grouped, "POS_TRANSFER", "Chuyển khoản mua hàng tại quầy");
+
+        for (Object[] row : donHangRepository.thongKeThanhToanTrongKhoang(tuNgay, denNgay)) {
+            String rawMethod = row[0] != null ? String.valueOf(row[0]) : "KHAC";
+            String address = row[1] != null ? String.valueOf(row[1]) : "";
+            String method = normalizePaymentCategory(rawMethod, address);
+            Long orderCount = row[2] != null ? ((Number) row[2]).longValue() : 0L;
+            BigDecimal totalAmount = row[3] != null ? (BigDecimal) row[3] : BigDecimal.ZERO;
+
+            Map<String, Object> item = grouped.get(method);
+            if (item == null) {
+                continue;
+            }
+
+            item.put("orderCount", (Long) item.get("orderCount") + orderCount);
+            item.put("totalAmount", ((BigDecimal) item.get("totalAmount")).add(totalAmount));
+        }
+
+        return grouped.values().stream()
+            .toList();
+    }
+
+    private void addPaymentGroup(Map<String, Map<String, Object>> grouped, String method, String label) {
+        Map<String, Object> item = new HashMap<>();
+        item.put("method", method);
+        item.put("label", label);
+        item.put("orderCount", 0L);
+        item.put("totalAmount", BigDecimal.ZERO);
+        grouped.put(method, item);
+    }
+
+    private String normalizePaymentCategory(String method, String address) {
+        if (method == null || method.trim().isEmpty()) {
+            return "KHAC";
+        }
+
+        String normalized = method.trim().toUpperCase();
+        boolean posOrder = address != null && "MUA TẠI QUẦY".equalsIgnoreCase(address.trim());
+        boolean transfer = normalized.contains("TRANSFER")
+            || normalized.contains("CHUYEN_KHOAN")
+            || normalized.contains("CHUYENKHOAN")
+            || normalized.contains("CHUYEN KHOAN")
+            || normalized.contains("SEPAY")
+            || normalized.contains("VNPAY")
+            || normalized.contains("VIETQR");
+
+        if (posOrder && transfer) {
+            return "POS_TRANSFER";
+        }
+        if (posOrder) {
+            return "POS_CASH";
+        }
+        if ("COD".equals(normalized)) {
+            return "COD";
+        }
+        if (transfer) {
+            return "ONLINE_TRANSFER";
+        }
+
+        return switch (normalized) {
+            case "CASH", "TIEN_MAT", "TIENMAT" -> "POS_CASH";
+            case "COD" -> "COD";
+            default -> normalized;
+        };
+    }
+
+    private String getPaymentMethodLabel(String method) {
+        if (method == null || method.trim().isEmpty()) {
+            return "Khác";
+        }
+
+        String normalized = method.trim().toUpperCase();
+        return switch (normalized) {
+            case "COD" -> "Thanh toán khi nhận hàng";
+            case "CASH" -> "Tiền mặt tại quầy";
+            case "TRANSFER", "BANK_TRANSFER", "CHUYEN_KHOAN", "CHUYENKHOAN", "CHUYEN KHOAN", "SEPAY" -> "Chuyển khoản";
+            case "VNPAY" -> "VNPay";
+            case "MOMO" -> "MoMo";
+            default -> method;
+        };
     }
 
     public byte[] exportDoanhThuToExcel(Instant tu, Instant den) throws IOException {

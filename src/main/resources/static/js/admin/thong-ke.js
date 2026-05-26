@@ -1,4 +1,5 @@
 let myChart = null;
+let paymentChart = null;
 
 // Khởi tạo bộ lọc mặc định 30 ngày gần nhất và tải dữ liệu thống kê.
 document.addEventListener('DOMContentLoaded', function() {
@@ -86,6 +87,7 @@ function updateStatistics() {
         document.getElementById('doanhThuThucTe').innerText = new Intl.NumberFormat('vi-VN').format(data.doanhThuThucTe) + '₫';
         
         document.getElementById('soDonTrongKy').innerText = data.soDon;
+        renderPaymentStats(data.thanhToanTheoLoai || []);
     });
 
     // Tải dữ liệu biểu đồ
@@ -117,6 +119,8 @@ function updateStatistics() {
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
@@ -138,6 +142,91 @@ function updateStatistics() {
                 }
             }
         });
+    });
+}
+
+function renderPaymentStats(items) {
+    const canvas = document.getElementById('paymentChart');
+    const empty = document.getElementById('paymentStatsEmpty');
+    if (!canvas || !empty) return;
+
+    const data = Array.isArray(items) ? items : [];
+    if (data.length === 0) {
+        empty.style.display = '';
+        canvas.style.display = 'none';
+        if (paymentChart) {
+            paymentChart.destroy();
+            paymentChart = null;
+        }
+        return;
+    }
+
+    empty.style.display = 'none';
+    canvas.style.display = '';
+
+    const labels = data.map(item => item.label || item.method || 'Khác');
+    const orderCounts = data.map(item => Number(item.orderCount || 0));
+    const totalAmounts = data.map(item => Number(item.totalAmount || 0));
+
+    if (paymentChart) {
+        paymentChart.destroy();
+    }
+
+    paymentChart = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Số đơn',
+                data: orderCounts,
+                totalAmounts,
+                backgroundColor: [
+                    '#111827',
+                    '#1f77bf',
+                    '#3f8e42',
+                    '#8b4d4d'
+                ],
+                borderColor: '#fff',
+                borderWidth: 3,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '58%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 14,
+                        boxHeight: 14,
+                        generateLabels: function(chart) {
+                            const dataset = chart.data.datasets[0];
+                            return chart.data.labels.map((label, index) => ({
+                                text: `${label}: ${orderCounts[index]} đơn - ${new Intl.NumberFormat('vi-VN').format(totalAmounts[index])}₫`,
+                                fillStyle: dataset.backgroundColor[index],
+                                strokeStyle: dataset.borderColor,
+                                lineWidth: dataset.borderWidth,
+                                hidden: !chart.getDataVisibility(index),
+                                index
+                            }));
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const index = context.dataIndex;
+                            return [
+                                'Số đơn: ' + orderCounts[index],
+                                'Tổng tiền: ' + new Intl.NumberFormat('vi-VN').format(totalAmounts[index]) + '₫'
+                            ];
+                        }
+                    }
+                }
+            }
+        }
     });
 }
 
