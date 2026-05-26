@@ -81,6 +81,10 @@ body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; color: #333;
     border-color: #d9d9d9;
 }
 
+.role-item .form-check-input[type="radio"] {
+    border-radius: 50%;
+}
+
 .role-item .form-check-input:checked {
     background-color: var(--primary-color);
     border-color: var(--primary-color);

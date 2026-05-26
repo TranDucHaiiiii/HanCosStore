@@ -60,28 +60,27 @@ public class TaiKhoanService {
         taiKhoan.setSoDienThoai(dto.getSoDienThoai());
         taiKhoan.setTrangThai(dto.getTrangThai());
 
-        // Cập nhật vai trò
         if (dto.getVaiTroIds() == null || dto.getVaiTroIds().isEmpty()) {
-            taiKhoan.setVaiTros(new HashSet<>());
-        } else {
-            Set<Integer> uniqueIds = new HashSet<>(dto.getVaiTroIds());
-            if (uniqueIds.size() != dto.getVaiTroIds().size()) {
-                throw new RuntimeException("Vai trò bị trùng lặp trong yêu cầu cập nhật.");
-            }
-
-            List<VaiTro> roles = vaiTroRepository.findAllById(uniqueIds);
-            if (roles.size() != uniqueIds.size()) {
-                throw new RuntimeException("Có vai trò không tồn tại trong danh sách chuẩn.");
-            }
-
-            boolean invalidRole = roles.stream()
-                    .anyMatch(role -> !Set.of("ADMIN", "STAFF", "CUSTOMER").contains(role.getMa()));
-            if (invalidRole) {
-                throw new RuntimeException("Không cho phép gán role ngoài danh sách chuẩn (ADMIN/STAFF/CUSTOMER)." );
-            }
-
-            taiKhoan.setVaiTros(new HashSet<>(roles));
+            throw new RuntimeException("Mỗi tài khoản phải có đúng 1 vai trò.");
         }
+        if (dto.getVaiTroIds().size() != 1) {
+            throw new RuntimeException("Mỗi tài khoản chỉ được chọn 1 vai trò.");
+        }
+
+        Integer roleId = dto.getVaiTroIds().get(0);
+        VaiTro role = vaiTroRepository.findById(roleId)
+                .orElseThrow(() -> new RuntimeException("Vai trò không tồn tại."));
+        String normalizedRole = normalizeRoleMa(role.getMa());
+        if (!isStandardRole(normalizedRole)) {
+            throw new RuntimeException("Không cho phép gán role ngoài danh sách chuẩn (ADMIN/STAFF/CUSTOMER).");
+        }
+
+        if (!role.getMa().equals(normalizedRole)) {
+            role = vaiTroRepository.findByMa(normalizedRole)
+                    .orElseThrow(() -> new RuntimeException("Vai trò chuẩn không tồn tại: " + normalizedRole));
+        }
+
+        taiKhoan.setVaiTros(new HashSet<>(Set.of(role)));
         
         taiKhoanRepository.save(taiKhoan);
     }

@@ -74,7 +74,7 @@
                     <div class="col-12">
                         <div class="section-title d-flex align-items-center justify-content-between mb-3">
                             <label class="form-label fw-600 small text-uppercase mb-0">Vai trò hệ thống</label>
-                            <span class="text-muted small">Chọn 1 hoặc nhiều vai trò</span>
+                            <span class="text-muted small">Chọn đúng 1 vai trò</span>
                         </div>
                         
                         <!-- Cảnh báo nếu đang sửa chính tài khoản mình -->
@@ -85,10 +85,11 @@
 
                         <div class="role-grid">
                             <div th:each="role : ${allRoles}" class="form-check role-item">
-                                <input class="form-check-input" type="checkbox" 
+                                <input class="form-check-input" type="radio"
+                                       name="vaiTroIds"
                                        th:value="${role.id}" 
-                                       th:field="*{vaiTroIds}"
                                        th:id="'role-' + ${role.id}"
+                                       th:checked="${#lists.contains(user.vaiTroIds, role.id)}"
                                        th:disabled="${session.LOGIN_USER.id == user.id}">
                                 <label class="form-check-label fw-600" th:for="'role-' + ${role.id}">
                                     <span th:text="${role.ten}">Vai trò</span>
@@ -99,12 +100,13 @@
                         
                         <!-- Hidden fields to preserve roles if disabled -->
                         <th:block th:if="${session.LOGIN_USER.id == user.id}">
-                            <input type="hidden" th:each="rId : ${user.vaiTroIds}" name="vaiTroIds" th:value="${rId}">
+                            <input type="hidden" th:if="${user.vaiTroIds != null and !#lists.isEmpty(user.vaiTroIds)}"
+                                   name="vaiTroIds" th:value="${user.vaiTroIds[0]}">
                         </th:block>
 
                         <div class="alert alert-info border-0 rounded-0 mt-3 small">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Lưu ý:</strong> Thay đổi vai trò sẽ ảnh hưởng trực tiếp đến quyền hạn truy cập các tính năng của người dùng này.
+                            <strong>Lưu ý:</strong> Mỗi tài khoản chỉ có một vai trò. Thay đổi vai trò sẽ ảnh hưởng trực tiếp đến quyền hạn truy cập các tính năng của người dùng này.
                         </div>
                     </div>
                 </div>

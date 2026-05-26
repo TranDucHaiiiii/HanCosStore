@@ -14,7 +14,7 @@
     <i class="fas fa-arrow-left"></i> Trở về trang chủ
 </a>
 
-<div class="login-container" id="container">
+<div class="login-container" id="container" th:classappend="${authMode == 'register'} ? ' active'">
     <!-- Sign Up Form -->
     <div class="form-container sign-up">
         <form th:action="@{/register}" method="post">

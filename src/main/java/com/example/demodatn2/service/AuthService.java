@@ -26,6 +26,9 @@ public class AuthService {
     public static class AccountLockedException extends RuntimeException {
     }
 
+    public static class AccountInactiveException extends RuntimeException {
+    }
+
     private final TaiKhoanRepository taiKhoanRepository;
     private final VaiTroRepository vaiTroRepository;
 
@@ -87,7 +90,7 @@ public class AuthService {
                 throw new AccountLockedException();
             }
             if (!"ACTIVE".equals(user.getTrangThai())) {
-                return false;
+                throw new AccountInactiveException();
             }
 
             boolean isMatch;

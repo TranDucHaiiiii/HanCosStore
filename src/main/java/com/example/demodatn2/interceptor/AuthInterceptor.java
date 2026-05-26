@@ -26,15 +26,20 @@ public class AuthInterceptor implements HandlerInterceptor {
         Object user = session != null ? session.getAttribute("LOGIN_USER") : null;
         List<String> roles = session != null ? (List<String>) session.getAttribute("ROLES") : null;
 
-        if (isLoggedInAccountLocked(user)) {
+        AccountStatusState accountStatusState = getLoggedInAccountStatusState(user);
+        if (accountStatusState != AccountStatusState.ACTIVE) {
             session.invalidate();
             if (isAjaxOrApiRequest(request, uri)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write("{\"message\": \"Tài khoản đã bị khóa.\"}");
+                response.getWriter().write(accountStatusState == AccountStatusState.LOCKED
+                        ? "{\"message\": \"Tài khoản đã bị khóa.\"}"
+                        : "{\"message\": \"Tài khoản đã ngừng hoạt động.\"}");
                 return false;
             }
-            response.sendRedirect("/login?locked=1");
+            response.sendRedirect(accountStatusState == AccountStatusState.LOCKED
+                    ? "/login?locked=1"
+                    : "/login?inactive=1");
             return false;
         }
 
@@ -141,16 +146,31 @@ public class AuthInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private boolean isLoggedInAccountLocked(Object user) {
+    private AccountStatusState getLoggedInAccountStatusState(Object user) {
         if (!(user instanceof TaiKhoanDTO loginUser) || loginUser.getId() == null) {
-            return false;
+            return AccountStatusState.ACTIVE;
         }
         return taiKhoanRepository.findById(loginUser.getId())
-                .map(taiKhoan -> "LOCKED".equals(taiKhoan.getTrangThai()))
-                .orElse(true);
+                .map(taiKhoan -> {
+                    String status = taiKhoan.getTrangThai();
+                    if ("ACTIVE".equals(status)) {
+                        return AccountStatusState.ACTIVE;
+                    }
+                    if ("LOCKED".equals(status)) {
+                        return AccountStatusState.LOCKED;
+                    }
+                    return AccountStatusState.INACTIVE;
+                })
+                .orElse(AccountStatusState.INACTIVE);
     }
 
     private boolean isAjaxOrApiRequest(HttpServletRequest request, String uri) {
         return "XMLHttpRequest".equals(request.getHeader("X-Requested-With")) || uri.startsWith("/api/");
+    }
+
+    private enum AccountStatusState {
+        ACTIVE,
+        INACTIVE,
+        LOCKED
     }
 }

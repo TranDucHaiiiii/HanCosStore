@@ -26,10 +26,15 @@ public class AuthController {
     @GetMapping("/login")
     public String loginPage(@RequestParam(required = false) String next,
                             @RequestParam(required = false) String locked,
+                            @RequestParam(required = false) String inactive,
+                            @RequestParam(required = false) String mode,
                             Model model) {
         model.addAttribute("next", next);
+        model.addAttribute("authMode", mode);
         if ("1".equals(locked)) {
             model.addAttribute("errorMessage", "Tài khoản đã bị khóa!");
+        } else if ("1".equals(inactive)) {
+            model.addAttribute("errorMessage", "Tài khoản đã ngừng hoạt động!");
         }
         return "login";
     }
@@ -62,6 +67,9 @@ public class AuthController {
         } catch (AuthService.AccountLockedException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản đã bị khóa!");
             return "redirect:/login" + (next != null ? "?next=" + next : "");
+        } catch (AuthService.AccountInactiveException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản đã ngừng hoạt động!");
+            return "redirect:/login" + (next != null ? "?next=" + next : "");
         }
 
         // Nếu đăng nhập thất bại, thêm thông báo lỗi và quay lại trang đăng nhập.
@@ -70,9 +78,8 @@ public class AuthController {
     }
 // trang dang ki
     @GetMapping("/register")
-    public String registerPage(Model model) {
-        model.addAttribute("registerRequest", new RegisterRequestDTO());
-        return "register";
+    public String registerPage() {
+        return "redirect:/login?mode=register";
     }
 // trang quen mat khau
     @GetMapping("/forgot-password")
@@ -99,7 +106,7 @@ public class AuthController {
             return "redirect:/login";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Đăng ký thất bại: " + e.getMessage());
-            return "redirect:/register";
+            return "redirect:/login?mode=register";
         }
     }
 
