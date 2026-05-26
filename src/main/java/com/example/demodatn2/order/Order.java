@@ -24,9 +24,6 @@ public class Order {
     @Column(name = "TrangThai", nullable = false, length = 30)
     private OrderStatus trangThai = OrderStatus.CHO_XAC_NHAN;
 
-    @Column(name = "LyDoLoiVanChuyen", length = 500)
-    private String lyDoLoiVanChuyen;
-
     @Column(name = "LyDoHuy", length = 500)
     private String lyDoHuy;
 

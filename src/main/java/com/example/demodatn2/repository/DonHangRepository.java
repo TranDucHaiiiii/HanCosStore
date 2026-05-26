@@ -138,8 +138,6 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             "WHEN 'CONFIRMED' THEN 2 " +
             "WHEN 'DANG_GIAO' THEN 3 " +
             "WHEN 'SHIPPING' THEN 3 " +
-            "WHEN 'LOI_VAN_CHUYEN' THEN 4 " +
-            "WHEN 'LOST' THEN 4 " +
             "WHEN 'HOAN_THANH' THEN 5 " +
             "WHEN 'COMPLETED' THEN 5 " +
             "WHEN 'DELIVERED' THEN 5 " +

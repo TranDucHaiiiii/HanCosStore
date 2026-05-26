@@ -2,6 +2,8 @@ package com.example.demodatn2.controller;
 
 import com.example.demodatn2.dto.RegisterRequestDTO;
 import com.example.demodatn2.service.AuthService;
+import com.example.demodatn2.service.CsrfTokenService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -17,6 +19,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AuthController {
 
     private final AuthService authService;
+    private final CsrfTokenService csrfTokenService;
 
     /**
      * Hiển thị trang đăng nhập.
@@ -51,30 +54,37 @@ public class AuthController {
     public String login(@RequestParam String tenDangNhap,
                         @RequestParam String matKhau,
                         @RequestParam(required = false) String next,
+                        @RequestParam(name = "_csrf", required = false) String csrfToken,
+                        HttpServletRequest request,
                         HttpSession session,
                         RedirectAttributes redirectAttributes) {
+        if (!csrfTokenService.isValidToken(session, csrfToken)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Phiên bảo mật không hợp lệ. Vui lòng thử lại.");
+            return redirectToLogin(next, redirectAttributes);
+        }
 
         // Gọi service kiểm tra thông tin đăng nhập
         try {
             if (authService.login(tenDangNhap, matKhau, session)) {
+                request.changeSessionId();
                 redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
                 // Nếu có trang đích (next) thì chuyển hướng đến đó, ngược lại về trang chủ
-                if (next != null && !next.isEmpty()) {
+                if (isSafeLocalRedirect(next)) {
                     return "redirect:" + next;
                 }
                 return "redirect:/";
             }
         } catch (AuthService.AccountLockedException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản đã bị khóa!");
-            return "redirect:/login" + (next != null ? "?next=" + next : "");
+            return redirectToLogin(next, redirectAttributes);
         } catch (AuthService.AccountInactiveException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản đã ngừng hoạt động!");
-            return "redirect:/login" + (next != null ? "?next=" + next : "");
+            return redirectToLogin(next, redirectAttributes);
         }
 
         // Nếu đăng nhập thất bại, thêm thông báo lỗi và quay lại trang đăng nhập.
         redirectAttributes.addFlashAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
-        return "redirect:/login" + (next != null ? "?next=" + next : "");
+        return redirectToLogin(next, redirectAttributes);
     }
 // trang dang ki
     @GetMapping("/register")
@@ -99,7 +109,14 @@ public class AuthController {
      */
     @PostMapping("/register")
     public String register(@ModelAttribute RegisterRequestDTO registerRequest,
+                           @RequestParam(name = "_csrf", required = false) String csrfToken,
+                           HttpSession session,
                            RedirectAttributes redirectAttributes) {
+        if (!csrfTokenService.isValidToken(session, csrfToken)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Phiên bảo mật không hợp lệ. Vui lòng thử lại.");
+            return "redirect:/login?mode=register";
+        }
+
         try {
             authService.register(registerRequest);
             redirectAttributes.addFlashAttribute("successMessage", "Đăng ký thành công! Vui lòng đăng nhập.");
@@ -114,10 +131,22 @@ public class AuthController {
      * Xử lý đăng xuất.
      * Hủy bỏ session hiện tại và chuyển hướng về trang đăng nhập.
      */
-    @GetMapping("/logout")
-    public String logout(HttpSession session) {
+    @PostMapping("/logout")
+    public String logout(@RequestParam(name = "_csrf", required = false) String csrfToken,
+                         HttpSession session,
+                         RedirectAttributes redirectAttributes) {
+        if (!csrfTokenService.isValidToken(session, csrfToken)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Phiên bảo mật không hợp lệ. Vui lòng thử lại.");
+            return "redirect:/";
+        }
+
         authService.logout(session);
         return "redirect:/login";
+    }
+
+    @GetMapping("/logout")
+    public String legacyLogout(HttpSession session) {
+        return "redirect:/";
     }
 
     /**
@@ -126,5 +155,16 @@ public class AuthController {
     @GetMapping("/403")
     public String accessDenied() {
         return "403";
+    }
+
+    private String redirectToLogin(String next, RedirectAttributes redirectAttributes) {
+        if (isSafeLocalRedirect(next)) {
+            redirectAttributes.addAttribute("next", next);
+        }
+        return "redirect:/login";
+    }
+
+    private boolean isSafeLocalRedirect(String next) {
+        return next != null && !next.isBlank() && next.startsWith("/") && !next.startsWith("//");
     }
 }

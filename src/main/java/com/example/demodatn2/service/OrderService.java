@@ -7,6 +7,9 @@ import com.example.demodatn2.repository.*;
 import jakarta.servlet.http.HttpSession;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +37,7 @@ public class OrderService {
     private final LichSuSuDungMaGiamGiaRepository lichSuSuDungMaGiamGiaRepository;
     private final YeuCauDoiTraRepository yeuCauDoiTraRepository;
     private final GiaoDichTonKhoRepository giaoDichTonKhoRepository;
+    private final GiaoDichThanhToanRepository giaoDichThanhToanRepository;
     private final OrderConfirmationEmailService orderConfirmationEmailService;
     @Getter
     private final VoucherService voucherService;
@@ -57,7 +61,13 @@ public class OrderService {
 
         List<DonHang> statusFiltered = filterOrdersByStatus(sourceOrders, normalizedStatus);
         List<DonHang> channelFiltered = filterOrdersByChannel(statusFiltered, normalizedChannel);
-        return filterReturnOrdersByApprovalStatus(channelFiltered);
+        return filterOrdersForDefaultAdminView(channelFiltered, normalizedStatus);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DonHang> searchOrdersPage(String keyword, String status, String channel, int page, int size) {
+        List<DonHang> filtered = searchOrders(keyword, status, channel);
+        return paginateOrders(filtered, page, size);
     }
 
     @Transactional(readOnly = true)
@@ -72,13 +82,14 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Map<String, Long> getOrderStatusCounts() {
-        List<DonHang> orders = filterReturnOrdersByApprovalStatus(getAllOrders());
+        List<DonHang> orders = getAllOrders();
         Map<String, Long> counts = new LinkedHashMap<>();
-        counts.put("ALL", (long) orders.size());
+        counts.put("ALL", orders.stream()
+                .filter(order -> !isCancelledPosTransferOrder(order))
+                .count());
         counts.put("CHO_XAC_NHAN", 0L);
         counts.put("DA_XAC_NHAN", 0L);
         counts.put("DANG_GIAO", 0L);
-        counts.put("LOI_VAN_CHUYEN", 0L);
         counts.put("HOAN_THANH", 0L);
         counts.put("DA_HUY", 0L);
         counts.put("TRA_HANG", 0L);
@@ -90,6 +101,15 @@ public class OrderService {
             }
         }
         return counts;
+    }
+
+    private List<DonHang> filterOrdersForDefaultAdminView(List<DonHang> orders, String normalizedStatus) {
+        if (!"ALL".equals(normalizedStatus)) {
+            return orders;
+        }
+        return orders.stream()
+                .filter(order -> !isCancelledPosTransferOrder(order))
+                .toList();
     }
 
     private List<DonHang> filterOrdersByStatus(List<DonHang> orders, String normalizedStatus) {
@@ -131,26 +151,11 @@ public class OrderService {
                 && "Mua tại quầy".equalsIgnoreCase(order.getDiaChiNhan().trim());
     }
 
-    private List<DonHang> filterReturnOrdersByApprovalStatus(List<DonHang> orders) {
-        return orders.stream()
-                .filter(order -> {
-                    String normalized = normalizeStatus(order.getTrangThai());
-                    if (!"TRA_HANG".equals(normalized)) {
-                        return true;
-                    }
-                    return isReturnRequestPendingApproval(order);
-                })
-                .toList();
-    }
-
-    private boolean isReturnRequestPendingApproval(DonHang order) {
-        if (order == null || order.getId() == null) {
-            return false;
-        }
-        return yeuCauDoiTraRepository.existsByDonHangIdAndTrangThai(
-                order.getId(),
-                ReturnRequestService.STATUS_CHO_DUYET
-        );
+    private boolean isCancelledPosTransferOrder(DonHang order) {
+        return order != null
+                && "DA_HUY".equals(normalizeStatus(order.getTrangThai()))
+                && isPosCounterOrder(order)
+                && isBankTransferPayment(order.getPhuongThucThanhToan());
     }
 
     private String normalizeStatus(String status) {
@@ -164,12 +169,20 @@ public class OrderService {
             case "PAID" -> "DA_XAC_NHAN";
             case "CONFIRMED" -> "DA_XAC_NHAN";
             case "SHIPPING" -> "DANG_GIAO";
-            case "LOST" -> "LOI_VAN_CHUYEN";
+            case "LOI_VAN_CHUYEN", "LOST" -> "DA_HUY";
             case "DELIVERED", "COMPLETED" -> "HOAN_THANH";
             case "CANCELLED" -> "DA_HUY";
             case "RETURN_REQUESTED", "RETURNED" -> "TRA_HANG";
             default -> normalized;
         };
+    }
+
+    private Page<DonHang> paginateOrders(List<DonHang> items, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : size;
+        int start = Math.min(safePage * safeSize, items.size());
+        int end = Math.min(start + safeSize, items.size());
+        return new PageImpl<>(items.subList(start, end), PageRequest.of(safePage, safeSize), items.size());
     }
 
     @Transactional(readOnly = true)
@@ -197,8 +210,7 @@ public class OrderService {
         return switch (normalized) {
             case "CHO_XAC_NHAN" -> List.of("DA_XAC_NHAN", "DA_HUY");
             case "DA_XAC_NHAN" -> List.of("DANG_GIAO", "DA_HUY");
-            case "DANG_GIAO" -> List.of("HOAN_THANH", "LOI_VAN_CHUYEN");
-            case "LOI_VAN_CHUYEN" -> List.of();  // Locked - no transitions
+            case "DANG_GIAO" -> List.of("HOAN_THANH");
             case "HOAN_THANH" -> List.of();      // Locked - no transitions
             case "DA_HUY" -> List.of();          // Locked - no transitions
             case "TRA_HANG" -> List.of();        // Locked - no transitions
@@ -218,7 +230,6 @@ public class OrderService {
             case "HOAN_THANH", "COMPLETED", "DELIVERED" -> "Hoàn thành";
             case "DA_HUY", "CANCELLED" -> "Đã hủy";
             case "TRA_HANG", "RETURN_REQUESTED", "RETURNED" -> "Trả hàng";
-            case "LOI_VAN_CHUYEN", "LOST" -> "Lỗi vận chuyển";
             default -> status;
         };
     }
@@ -248,12 +259,15 @@ public class OrderService {
                     "' sang '" + newStatus + "'. Các trạng thái hợp lệ: " + validNextStatuses);
         }
 
-        if ("DA_HUY".equals(newStatus)) {
-            restoreStock(donHang);
+        if ("DA_XAC_NHAN".equals(newStatus)
+                && isBankTransferPayment(donHang.getPhuongThucThanhToan())
+                && !hasPaidTransaction(donHang)) {
+            throw new RuntimeException("Đơn chuyển khoản chưa được SePay xác nhận thanh toán.");
         }
 
-        if ("LOI_VAN_CHUYEN".equals(newStatus) && !"LOI_VAN_CHUYEN".equals(currentStatus)) {
-            logShippingErrorStockEvent(donHang);
+        if ("DA_HUY".equals(newStatus)) {
+            restoreStock(donHang);
+            restoreVoucherUsage(donHang);
         }
 
         donHang.setTrangThai(newStatus);
@@ -273,19 +287,16 @@ public class OrderService {
             throw new RuntimeException("Không thể hủy đơn hàng đã kết thúc.");
         }
 
-        if (!isAdmin) {
-            // Khách hàng chỉ được hủy khi chờ xác nhận hoặc đã xác nhận.
-            if (!"CHO_XAC_NHAN".equals(currentStatus) && !"DA_XAC_NHAN".equals(currentStatus)) {
-                throw new RuntimeException("Bạn không thể hủy đơn hàng ở trạng thái: " + currentStatus);
-            }
+        if (!"CHO_XAC_NHAN".equals(currentStatus) && !"DA_XAC_NHAN".equals(currentStatus)) {
+            throw new RuntimeException("Không thể hủy đơn hàng ở trạng thái: " + currentStatus);
         }
-        // Admin được hủy mọi trạng thái chưa kết thúc (đã check ở trên).
 
         donHang.setTrangThai("DA_HUY");
         donHang.setLyDoHuy(reason);
         donHang.setNgayCapNhat(Instant.now());
         
         restoreStock(donHang);
+        restoreVoucherUsage(donHang);
         donHangRepository.save(donHang);
     }
 
@@ -388,35 +399,6 @@ public class OrderService {
         giaoDichTonKhoRepository.save(giaoDich);
     }
 
-    private void logShippingErrorStockEvent(DonHang donHang) {
-        List<ChiTietDonHang> items = chiTietDonHangRepository.findByDonHang(donHang);
-        for (ChiTietDonHang item : items) {
-            BienTheSanPham bt = item.getBienTheSanPham();
-            if (bt == null) {
-                continue;
-            }
-
-            boolean existed = giaoDichTonKhoRepository
-                    .existsByBienTheSanPham_IdAndThamChieuLoaiAndThamChieuIdAndGhiChuContaining(
-                            bt.getId(),
-                            "DON_HANG",
-                            donHang.getId(),
-                            "LOI_VAN_CHUYEN"
-                    );
-            if (existed) {
-                continue;
-            }
-
-            logStockTransaction(
-                    bt,
-                    "XUAT",
-                    item.getSoLuong(),
-                    donHang,
-                    "LOI_VAN_CHUYEN - Don " + donHang.getMaDonHang() + " gap su co van chuyen"
-            );
-        }
-    }
-
     @Transactional
     public void updateOrderAddress(Integer orderId, String hoTen, String soDienThoai, String diaChi) {
         updateOrderAddress(orderId, hoTen, soDienThoai, diaChi, null);
@@ -460,6 +442,13 @@ public class OrderService {
                 || normalized.contains("CHUYENKHOAN")
                 || normalized.contains("CHUYEN KHOAN")
                 || normalized.contains("SEPAY");
+    }
+
+    private boolean hasPaidTransaction(DonHang donHang) {
+        return giaoDichThanhToanRepository
+                .findFirstByDonHangAndNhaCungCapOrderByNgayTaoDesc(donHang, "SEPAY")
+                .filter(tx -> "PAID".equalsIgnoreCase(tx.getTrangThai()))
+                .isPresent();
     }
 
     @Transactional
@@ -539,8 +528,6 @@ public class OrderService {
             ? shippingFeeFromForm
             : BigDecimal.ZERO;
         donHang.setPhiVanChuyen(phiVanChuyen);
-        System.out.println("DEBUG: tamTinh=" + tamTinh + ", phiVanChuyen=" + phiVanChuyen + " (from form: " + shippingFeeFromForm + ")");
-
         // Áp dụng voucher từ session nếu có
         BigDecimal giamGiaAmount = BigDecimal.ZERO;
         MaGiamGia appliedVoucher = null;
@@ -557,8 +544,6 @@ public class OrderService {
         donHang.setGiamGia(giamGiaAmount);
         donHang.setMaGiamGia(appliedVoucher);
         donHang.setTongTien(tamTinh.subtract(giamGiaAmount).add(donHang.getPhiVanChuyen()));
-
-        System.out.println("DEBUG: giamGia=" + giamGiaAmount + ", tongTien=" + donHang.getTongTien() + ", phiVanChuyen=" + donHang.getPhiVanChuyen());
 
         donHang = donHangRepository.save(donHang);
 
@@ -635,6 +620,10 @@ public class OrderService {
      */
     @Transactional
     public DonHang createPosOrder(PosOrderRequestDTO req, TaiKhoanDTO staffUser) {
+        DonHang convertedOrder = convertPendingTransferToCashCheckout(req);
+        if (convertedOrder != null) {
+            return convertedOrder;
+        }
         return buildPosOrder(req, staffUser, "HOAN_THANH", null);
     }
 
@@ -650,6 +639,87 @@ public class OrderService {
         req.setOrderCode(orderCode);
         req.setPaymentMethod("transfer");
         return buildPosOrder(req, staffUser, "PENDING", orderCode);
+    }
+
+    @Transactional
+    public boolean cancelPendingPosTransferOrder(String orderCode, String reason) {
+        if (orderCode == null || orderCode.trim().isEmpty()) {
+            return false;
+        }
+
+        DonHang donHang = donHangRepository.findByMaDonHangIgnoreCase(orderCode.trim())
+                .orElse(null);
+        if (donHang == null) {
+            return false;
+        }
+
+        String currentStatus = normalizeStatus(donHang.getTrangThai());
+        if ("DA_HUY".equals(currentStatus) || "CANCELLED".equals(currentStatus)) {
+            return false;
+        }
+        if (!"PENDING".equals(currentStatus) && !"CHO_XAC_NHAN".equals(currentStatus)) {
+            throw new RuntimeException("Đơn chuyển khoản đã được xử lý, không thể hủy.");
+        }
+        if (!isBankTransferPayment(donHang.getPhuongThucThanhToan())) {
+            return false;
+        }
+        if (hasPaidTransaction(donHang)) {
+            throw new RuntimeException("Đơn chuyển khoản đã được SePay xác nhận thanh toán.");
+        }
+
+        donHang.setTrangThai("DA_HUY");
+        donHang.setLyDoHuy(reason != null && !reason.isBlank()
+                ? reason.trim()
+                : "Hủy đơn POS chuyển khoản chờ thanh toán");
+        donHang.setNgayCapNhat(Instant.now());
+        restoreStock(donHang);
+        restoreVoucherUsage(donHang);
+        donHangRepository.save(donHang);
+        return true;
+    }
+
+    private DonHang convertPendingTransferToCashCheckout(PosOrderRequestDTO req) {
+        if (req == null || req.getPendingTransferOrderCode() == null || req.getPendingTransferOrderCode().isBlank()) {
+            return null;
+        }
+        String paymentMethod = req.getPaymentMethod() != null ? req.getPaymentMethod().trim().toLowerCase() : "cash";
+        if (!"cash".equals(paymentMethod)) {
+            return null;
+        }
+
+        DonHang donHang = donHangRepository.findByMaDonHangIgnoreCase(req.getPendingTransferOrderCode().trim())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn chuyển khoản cần đổi sang tiền mặt"));
+        String currentStatus = normalizeStatus(donHang.getTrangThai());
+        if (!"PENDING".equals(currentStatus) && !"CHO_XAC_NHAN".equals(currentStatus)) {
+            throw new RuntimeException("Đơn chuyển khoản đã được xử lý, không thể đổi sang tiền mặt.");
+        }
+        if (!isBankTransferPayment(donHang.getPhuongThucThanhToan())) {
+            throw new RuntimeException("Đơn cần đổi không phải đơn chuyển khoản.");
+        }
+        if (hasPaidTransaction(donHang)) {
+            throw new RuntimeException("Đơn chuyển khoản đã được SePay xác nhận thanh toán.");
+        }
+
+        BigDecimal cashGiven = req.getCashGiven() != null ? req.getCashGiven() : BigDecimal.ZERO;
+        BigDecimal total = donHang.getTongTien() != null ? donHang.getTongTien() : BigDecimal.ZERO;
+        if (cashGiven.compareTo(total) < 0) {
+            throw new RuntimeException("Tiền khách đưa chưa đủ!");
+        }
+
+        TaiKhoan customer = null;
+        if (req.getCustomerId() != null) {
+            customer = taiKhoanRepository.findById(req.getCustomerId()).orElse(null);
+        }
+        donHang.setTaiKhoan(customer);
+        donHang.setHoTenNhan(req.getCustomerName().trim());
+        donHang.setSoDienThoaiNhan(req.getCustomerPhone().trim());
+        donHang.setEmailNhan(customer != null ? customer.getEmail() : donHang.getEmailNhan());
+        donHang.setGhiChu(req.getNote());
+        donHang.setPhuongThucThanhToan("cash");
+        donHang.setTrangThai("HOAN_THANH");
+        donHang.setLyDoHuy(null);
+        donHang.setNgayCapNhat(Instant.now());
+        return donHangRepository.save(donHang);
     }
 
     private DonHang buildPosOrder(PosOrderRequestDTO req, TaiKhoanDTO staffUser, String trangThai, String orderCode) {
@@ -689,13 +759,18 @@ public class OrderService {
 
         // Validate & tính tạm tính
         for (PosOrderRequestDTO.PosItemDTO item : req.getItems()) {
+            if (item.getVariantId() == null || item.getQty() == null || item.getQty() <= 0) {
+                throw new RuntimeException("Sản phẩm hoặc số lượng không hợp lệ");
+            }
             BienTheSanPham bt = bienTheSanPhamRepository.findById(item.getVariantId())
                     .orElseThrow(() -> new RuntimeException("Biến thể không tồn tại: " + item.getVariantId()));
             if (bt.getSoLuongTon() < item.getQty()) {
                 throw new RuntimeException("Sản phẩm " + bt.getSanPham().getTen() +
                         " (" + bt.getMauSac() + "/" + bt.getKichCo() + ") chỉ còn " + bt.getSoLuongTon());
             }
-            tamTinh = tamTinh.add(item.getPrice().multiply(new BigDecimal(item.getQty())));
+            BigDecimal currentPrice = bt.getGia() != null ? bt.getGia() : BigDecimal.ZERO;
+            item.setPrice(currentPrice);
+            tamTinh = tamTinh.add(currentPrice.multiply(new BigDecimal(item.getQty())));
         }
         donHang.setTamTinh(tamTinh);
 
@@ -747,8 +822,9 @@ public class OrderService {
             ctdh.setMauSac(bt.getMauSac());
             ctdh.setKichCo(bt.getKichCo());
             ctdh.setSoLuong(item.getQty());
-            ctdh.setDonGia(item.getPrice());
-            ctdh.setThanhTien(item.getPrice().multiply(new BigDecimal(item.getQty())));
+            BigDecimal currentPrice = bt.getGia() != null ? bt.getGia() : BigDecimal.ZERO;
+            ctdh.setDonGia(currentPrice);
+            ctdh.setThanhTien(currentPrice.multiply(new BigDecimal(item.getQty())));
             chiTietDonHangRepository.save(ctdh);
 
             logStockTransaction(bt, "XUAT", item.getQty(), donHang,

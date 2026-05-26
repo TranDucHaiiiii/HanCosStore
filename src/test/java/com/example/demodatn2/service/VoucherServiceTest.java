@@ -67,6 +67,31 @@ class VoucherServiceTest {
     }
 
     @Test
+    void save_preservesUsedQuantityWhenEditingVoucher() {
+        VoucherService voucherService = new VoucherService(voucherRepository);
+        MaGiamGia existing = voucher("SAVE10", "PERCENT", "10", "30000", "100000");
+        existing.setId(5);
+        existing.setSoLuongToiDa(100);
+        existing.setSoLuongDaDung(12);
+
+        MaGiamGia edited = voucher("SAVE10", "PERCENT", "15", "30000", "100000");
+        edited.setId(5);
+        edited.setSoLuongToiDa(100);
+        edited.setTrangThai("ACTIVE");
+        edited.setBatDauLuc(Instant.now().minus(1, ChronoUnit.DAYS));
+        edited.setKetThucLuc(Instant.now().plus(1, ChronoUnit.DAYS));
+
+        when(voucherRepository.findById(5)).thenReturn(Optional.of(existing));
+        when(voucherRepository.findByMa("SAVE10")).thenReturn(Optional.of(existing));
+        when(voucherRepository.save(edited)).thenReturn(edited);
+
+        MaGiamGia saved = voucherService.save(edited);
+
+        assertThat(saved.getSoLuongDaDung()).isEqualTo(12);
+        verify(voucherRepository).save(edited);
+    }
+
+    @Test
     void search_filtersByKeywordStatusTypeAndValidity() {
         VoucherService voucherService = new VoucherService(voucherRepository);
         MaGiamGia validPercent = voucher("SUMMER10", "PERCENT", "10", "30000", "100000");

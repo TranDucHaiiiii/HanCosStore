@@ -57,10 +57,12 @@
                         </select>
                     </div>
                     <input type="hidden" name="status" th:value="${currentStatus}">
+                    <input type="hidden" name="page" value="1">
+                    <input type="hidden" name="size" th:value="${pageSize}">
                     <div class="col-md-5">
                         <div class="d-flex gap-2 flex-wrap justify-content-end">
                             <a th:each="filter : ${statusFilters}"
-                                th:href="@{/admin/orders(status=${filter.key}, keyword=${keyword}, channel=${currentChannel})}" class="filter-btn"
+                                th:href="@{/admin/orders(status=${filter.key}, keyword=${keyword}, channel=${currentChannel}, page=1, size=${pageSize})}" class="filter-btn"
                                 th:classappend="${currentStatus == filter.key ? 'active' : ''}"
                                 th:text="${filter.label + ' (' + filter.count + ')'}">
                             </a>
@@ -112,14 +114,12 @@
                                         th:classappend="${st == 'CHO_XAC_NHAN' or st == 'PENDING' ? 'badge-pending' :
                                             st == 'DA_XAC_NHAN' or st == 'CONFIRMED' ? 'badge-confirmed' :
                                             st == 'DANG_GIAO' or st == 'SHIPPING' ? 'badge-shipping' :
-                                            st == 'LOI_VAN_CHUYEN' or st == 'LOST' ? 'badge-cancelled' :
                                             st == 'HOAN_THANH' or st == 'COMPLETED' or st == 'DELIVERED' ? 'badge-delivered' :
                                             st == 'TRA_HANG' or st == 'RETURN_REQUESTED' or st == 'RETURNED' ? 'badge-cancelled' :
                                             st == 'DA_HUY' or st == 'CANCELLED' ? 'badge-cancelled' : 'badge-cancelled'}"
                                         th:text="${st == 'CHO_XAC_NHAN' or st == 'PENDING' ? 'Chờ xác nhận' :
                                             st == 'DA_XAC_NHAN' or st == 'CONFIRMED' ? 'Đã xác nhận' :
                                             st == 'DANG_GIAO' or st == 'SHIPPING' ? 'Đang giao' :
-                                            st == 'LOI_VAN_CHUYEN' or st == 'LOST' ? 'Lỗi vận chuyển' :
                                             st == 'HOAN_THANH' or st == 'COMPLETED' or st == 'DELIVERED' ? 'Hoàn thành' :
                                             st == 'TRA_HANG' or st == 'RETURN_REQUESTED' or st == 'RETURNED' ? 'Trả hàng' :
                                             st == 'DA_HUY' or st == 'CANCELLED' ? 'Đã hủy' : 'Đã hủy'}">
@@ -142,6 +142,42 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-3"
+             th:if="${totalElements > 0}">
+            <div class="small text-muted">
+                Hiển thị
+                <span th:text="${fromItem}">1</span>
+                -
+                <span th:text="${toItem}">10</span>
+                /
+                <span th:text="${totalElements}">0</span>
+                đơn hàng
+            </div>
+            <nav th:if="${totalPages > 1}">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${currentPage <= 1 ? 'disabled' : ''}">
+                        <a class="page-link"
+                           th:href="@{/admin/orders(status=${currentStatus}, keyword=${keyword}, channel=${currentChannel}, page=${currentPage - 1}, size=${pageSize})}">
+                            Trước
+                        </a>
+                    </li>
+                    <li class="page-item"
+                        th:each="i : ${#numbers.sequence(1, totalPages)}"
+                        th:classappend="${i == currentPage ? 'active' : ''}">
+                        <a class="page-link"
+                           th:href="@{/admin/orders(status=${currentStatus}, keyword=${keyword}, channel=${currentChannel}, page=${i}, size=${pageSize})}"
+                           th:text="${i}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${currentPage >= totalPages ? 'disabled' : ''}">
+                        <a class="page-link"
+                           th:href="@{/admin/orders(status=${currentStatus}, keyword=${keyword}, channel=${currentChannel}, page=${currentPage + 1}, size=${pageSize})}">
+                            Sau
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 

@@ -12,6 +12,7 @@ let activeInvoiceId = window.POS_ACTIVE_INVOICE || '';
 let tempOrderCode = null; // Mã đơn hàng tạm cho transfer QR
 let transferOrder = null;
 let transferPollTimer = null;
+let pendingTransferOrderCodeToConvert = null;
 const invoiceMetas = {};
 const MAX_PENDING_INVOICES = 5;
 const POS_META_STORAGE_KEY = 'HANCOS_POS_INVOICE_METAS';
@@ -64,8 +65,9 @@ function resetTransferState() {
 // Gọi API giỏ hàng POS, đồng bộ lại state giỏ hàng và cập nhật giao diện.
 async function requestPosCart(url, options, silent) {
     const method = (options && options.method ? options.method : 'GET').toUpperCase();
-    if (tempOrderCode && method !== 'GET') {
-        showToast('Đơn chuyển khoản ' + tempOrderCode + ' đã được tạo. Vui lòng chờ SePay xác nhận hoặc tạo đơn mới.', 'error');
+    const lockedTransferCode = tempOrderCode || pendingTransferOrderCodeToConvert;
+    if (lockedTransferCode && method !== 'GET') {
+        showToast('Đơn chuyển khoản ' + lockedTransferCode + ' đã được tạo. Vui lòng thanh toán hoặc tạo đơn mới.', 'error');
         return {success: false, message: 'Transfer order is locked'};
     }
     try {
@@ -214,8 +216,9 @@ function restoreMeta(invoiceId) {
 
 // Tạo hóa đơn chờ mới nếu chưa vượt quá giới hạn.
 async function addInvoice() {
-    if (tempOrderCode) {
-        showToast('Đơn chuyển khoản ' + tempOrderCode + ' đang chờ SePay xác nhận.', 'error');
+    const lockedTransferCode = tempOrderCode || pendingTransferOrderCodeToConvert;
+    if (lockedTransferCode) {
+        showToast('Đơn chuyển khoản ' + lockedTransferCode + ' đang chờ thanh toán.', 'error');
         return;
     }
     if (invoices.length >= MAX_PENDING_INVOICES) {
@@ -240,8 +243,9 @@ async function addInvoice() {
 // Chuyển sang hóa đơn chờ được chọn và tải lại giỏ tương ứng.
 async function activateInvoice(invoiceId) {
     if (invoiceId === activeInvoiceId) return;
-    if (tempOrderCode) {
-        showToast('Đơn chuyển khoản ' + tempOrderCode + ' đang chờ SePay xác nhận.', 'error');
+    const lockedTransferCode = tempOrderCode || pendingTransferOrderCodeToConvert;
+    if (lockedTransferCode) {
+        showToast('Đơn chuyển khoản ' + lockedTransferCode + ' đang chờ thanh toán.', 'error');
         return;
     }
     saveCurrentMeta();
@@ -261,8 +265,9 @@ async function activateInvoice(invoiceId) {
 
 // Xóa một hóa đơn chờ và chuyển giao diện sang hóa đơn còn hoạt động.
 async function removeInvoice(invoiceId) {
-    if (tempOrderCode && invoiceId === activeInvoiceId) {
-        showToast('Đơn chuyển khoản ' + tempOrderCode + ' đang chờ SePay xác nhận.', 'error');
+    const lockedTransferCode = tempOrderCode || pendingTransferOrderCodeToConvert;
+    if (lockedTransferCode && invoiceId === activeInvoiceId) {
+        showToast('Đơn chuyển khoản ' + lockedTransferCode + ' đang chờ thanh toán.', 'error');
         return;
     }
     const switching = invoiceId === activeInvoiceId;
@@ -897,7 +902,16 @@ let bankInfo = null;
 // Chọn phương thức thanh toán và cập nhật vùng nhập tiền hoặc QR chuyển khoản.
 async function selectPayment(method, el) {
     if (tempOrderCode && method === 'cash') {
+        const orderCode = tempOrderCode;
+        pendingTransferOrderCodeToConvert = orderCode;
         resetTransferState();
+        showToast('Đơn chuyển khoản ' + orderCode + ' sẽ được chuyển sang thanh toán tiền mặt khi hoàn tất.', 'success');
+    } else if (pendingTransferOrderCodeToConvert && method === 'transfer') {
+        tempOrderCode = pendingTransferOrderCodeToConvert;
+        pendingTransferOrderCodeToConvert = null;
+        transferOrder = {orderCode: tempOrderCode, total: getCartTotal()};
+        updateTransferQR();
+        startTransferPolling();
     }
     paymentMethod = method;
     document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('active'));
@@ -909,7 +923,7 @@ async function selectPayment(method, el) {
     document.getElementById('transferRow').style.display = isCash ? 'none' : '';
 
     if (isCash) {
-        resetTransferState();
+        if (!pendingTransferOrderCodeToConvert) resetTransferState();
         document.getElementById('btnCheckout').innerHTML = '<i class="fas fa-check-circle me-2"></i>Thanh toán';
         calcChange();
     } else {
@@ -977,6 +991,12 @@ function buildPosPayload() {
 
 async function ensureTransferOrder() {
     if (cart.length === 0) { showToast('Giỏ hàng trống', 'error'); return false; }
+    if (tempOrderCode && !transferOrder) {
+        transferOrder = {orderCode: tempOrderCode, total: getCartTotal()};
+        updateTransferQR();
+        startTransferPolling();
+        return true;
+    }
     if (transferOrder && tempOrderCode) {
         updateTransferQR();
         return true;
@@ -1178,6 +1198,9 @@ async function checkout() {
     const payload = buildPosPayload();
     if (!payload) return;
     payload.cashGiven = parseFloat(document.getElementById('cashGiven').value.replace(/[^0-9]/g, '')) || 0;
+    if (pendingTransferOrderCodeToConvert) {
+        payload.pendingTransferOrderCode = pendingTransferOrderCodeToConvert;
+    }
 
     document.getElementById('btnCheckout').disabled = true;
     document.getElementById('btnCheckout').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý...';
@@ -1193,6 +1216,7 @@ async function checkout() {
         if (data.success) {
             applySoldItemsToProductCards(soldItems);
             cart = [];
+            pendingTransferOrderCodeToConvert = null;
             if (Array.isArray(data.invoices)) { invoices = data.invoices; renderInvoiceTabs(); }
             showCheckoutSuccess(data, false);
         } else {
@@ -1216,6 +1240,8 @@ async function newOrder() {
     selectedCustomer = null;
     appliedVoucher = null;
     paymentMethod = 'cash';
+    pendingTransferOrderCodeToConvert = null;
+    resetTransferState();
 
     document.getElementById('successOverlay').classList.remove('show');
     // Reset customer to guest mode

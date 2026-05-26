@@ -324,8 +324,9 @@ public class ReturnRequestService {
     private DonHang getOwnedCompletedOrder(Integer orderId, Integer customerId) {
         DonHang order = donHangRepository.findOwnedCompletedForReturn(orderId, customerId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng."));
-        if (order.getNgayDat() != null && order.getNgayDat().plus(7, ChronoUnit.DAYS).isBefore(Instant.now())) {
-            throw new RuntimeException("Đã quá 7 ngày kể từ ngày đặt hàng, không thể yêu cầu trả hàng.");
+        Instant returnWindowStart = order.getNgayCapNhat() != null ? order.getNgayCapNhat() : order.getNgayDat();
+        if (returnWindowStart != null && returnWindowStart.plus(7, ChronoUnit.DAYS).isBefore(Instant.now())) {
+            throw new RuntimeException("Đã quá 7 ngày kể từ ngày hoàn thành đơn hàng, không thể yêu cầu trả hàng.");
         }
         return order;
     }

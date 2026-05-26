@@ -113,7 +113,10 @@ public class DanhMucServiceImpl implements DanhMucService {
     @Override
     @Transactional
     public void deleteById(Integer id) {
-        danhMucRepository.deleteById(id);
+        DanhMuc target = danhMucRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Danh mục không tồn tại: " + id));
+        markInactive(target);
+        danhMucRepository.save(target);
     }
 
     @Override
@@ -248,6 +251,18 @@ public class DanhMucServiceImpl implements DanhMucService {
         clone.setDanhMucCon(new ArrayList<>());
         clone.setSanPhams(new ArrayList<>());
         return clone;
+    }
+
+    private void markInactive(DanhMuc danhMuc) {
+        if (danhMuc == null) {
+            return;
+        }
+        danhMuc.setTrangThai("INACTIVE");
+        if (danhMuc.getDanhMucCon() != null) {
+            for (DanhMuc child : danhMuc.getDanhMucCon()) {
+                markInactive(child);
+            }
+        }
     }
 
     private Page<DanhMuc> paginate(List<DanhMuc> items, int page, int size) {

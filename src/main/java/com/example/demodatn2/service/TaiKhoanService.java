@@ -66,13 +66,23 @@ public class TaiKhoanService {
 
     @Transactional
     public void updateTaiKhoan(Integer id, TaiKhoanDTO dto) {
+        updateTaiKhoan(id, dto, null);
+    }
+
+    @Transactional
+    public void updateTaiKhoan(Integer id, TaiKhoanDTO dto, Integer currentUserId) {
         TaiKhoan taiKhoan = taiKhoanRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với ID: " + id));
-        
+
+        boolean editingSelf = currentUserId != null && currentUserId.equals(id);
+        if (editingSelf && dto.getTrangThai() != null && !"ACTIVE".equalsIgnoreCase(dto.getTrangThai())) {
+            throw new RuntimeException("Admin không được tự khóa hoặc ngừng hoạt động tài khoản của mình.");
+        }
+
         taiKhoan.setHoTen(dto.getHoTen());
         taiKhoan.setEmail(dto.getEmail());
         taiKhoan.setSoDienThoai(dto.getSoDienThoai());
-        taiKhoan.setTrangThai(dto.getTrangThai());
+        taiKhoan.setTrangThai(dto.getTrangThai() != null ? dto.getTrangThai().trim().toUpperCase() : "ACTIVE");
 
         if (dto.getVaiTroIds() == null || dto.getVaiTroIds().isEmpty()) {
             throw new RuntimeException("Mỗi tài khoản phải có đúng 1 vai trò.");
@@ -94,6 +104,14 @@ public class TaiKhoanService {
                     .orElseThrow(() -> new RuntimeException("Vai trò chuẩn không tồn tại: " + normalizedRole));
         }
 
+        boolean currentlyAdmin = taiKhoan.getVaiTros().stream()
+                .map(VaiTro::getMa)
+                .map(this::normalizeRoleMa)
+                .anyMatch("ADMIN"::equals);
+        if (editingSelf && currentlyAdmin && !"ADMIN".equals(normalizedRole)) {
+            throw new RuntimeException("Admin không được tự hạ quyền chính mình. Cần admin khác thực hiện xác nhận.");
+        }
+
         taiKhoan.setVaiTros(new HashSet<>(Set.of(role)));
         
         taiKhoanRepository.save(taiKhoan);
@@ -101,6 +119,14 @@ public class TaiKhoanService {
 
     @Transactional
     public void deleteTaiKhoan(Integer id) {
+        deleteTaiKhoan(id, null);
+    }
+
+    @Transactional
+    public void deleteTaiKhoan(Integer id, Integer currentUserId) {
+        if (currentUserId != null && currentUserId.equals(id)) {
+            throw new RuntimeException("Admin không được tự xóa tài khoản của mình.");
+        }
 
         TaiKhoan taiKhoan = taiKhoanRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với ID: " + id));

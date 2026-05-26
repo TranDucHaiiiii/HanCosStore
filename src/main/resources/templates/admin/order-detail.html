@@ -180,7 +180,7 @@
             <div class="card">
                 <div class="card-header">Cập nhật trạng thái</div>
                 <div class="card-body p-4">
-                    <div th:if="${order.trangThai != 'HOAN_THANH' and order.trangThai != 'COMPLETED' and order.trangThai != 'DELIVERED' and order.trangThai != 'DA_HUY' and order.trangThai != 'CANCELLED' and order.trangThai != 'TRA_HANG' and order.trangThai != 'RETURN_REQUESTED' and order.trangThai != 'RETURNED'}">
+                    <div th:if="${order.trangThai != 'HOAN_THANH' and order.trangThai != 'COMPLETED' and order.trangThai != 'DELIVERED' and order.trangThai != 'DA_HUY' and order.trangThai != 'CANCELLED' and order.trangThai != 'LOI_VAN_CHUYEN' and order.trangThai != 'LOST' and order.trangThai != 'TRA_HANG' and order.trangThai != 'RETURN_REQUESTED' and order.trangThai != 'RETURNED'}">
                         <form th:action="@{/admin/orders/{id}/update-status(id=${order.id})}" method="post" id="statusForm">
                             <div class="mb-4">
                                 <label class="order-info-label">Trạng thái mới</label>
@@ -198,10 +198,12 @@
                             </div>
                             <button type="submit" class="btn btn-primary w-100 mb-3" th:disabled="${#lists.isEmpty(nextValidStatuses)}">Cập nhật ngay</button>
                         </form>
-                        <hr>
-                        <button type="button" class="btn btn-outline-danger w-100 fw-bold" onclick="adminCancelOrder()">Hủy đơn hàng này</button>
+                        <div th:if="${order.trangThai == 'CHO_XAC_NHAN' or order.trangThai == 'PENDING' or order.trangThai == 'DA_XAC_NHAN' or order.trangThai == 'CONFIRMED'}">
+                            <hr>
+                            <button type="button" class="btn btn-outline-danger w-100 fw-bold" onclick="adminCancelOrder()">Hủy đơn hàng này</button>
+                        </div>
                     </div>
-                    <div th:if="${order.trangThai == 'HOAN_THANH' or order.trangThai == 'COMPLETED' or order.trangThai == 'DELIVERED' or order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED' or order.trangThai == 'TRA_HANG' or order.trangThai == 'RETURN_REQUESTED' or order.trangThai == 'RETURNED'}" class="text-center py-3">
+                    <div th:if="${order.trangThai == 'HOAN_THANH' or order.trangThai == 'COMPLETED' or order.trangThai == 'DELIVERED' or order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED' or order.trangThai == 'LOI_VAN_CHUYEN' or order.trangThai == 'LOST' or order.trangThai == 'TRA_HANG' or order.trangThai == 'RETURN_REQUESTED' or order.trangThai == 'RETURNED'}" class="text-center py-3">
                         <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3 avatar-60">
                             <i class="fas fa-lock text-muted"></i>
                         </div>

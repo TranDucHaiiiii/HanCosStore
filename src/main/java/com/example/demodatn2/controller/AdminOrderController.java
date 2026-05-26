@@ -25,15 +25,19 @@ public class AdminOrderController {
     public String listOrders(@RequestParam(required = false) String status,
                              @RequestParam(required = false) String keyword,
                              @RequestParam(required = false) String channel,
+                             @RequestParam(defaultValue = "1") int page,
+                             @RequestParam(defaultValue = "10") int size,
                              Model model) {
-        List<DonHang> orders = orderService.searchOrders(keyword, status, channel);
+        int safePage = Math.max(page, 1);
+        int safeSize = size <= 0 ? 10 : Math.min(size, 100);
+        var orderPage = orderService.searchOrdersPage(keyword, status, channel, safePage - 1, safeSize);
+        List<DonHang> orders = orderPage.getContent();
         var counts = orderService.getOrderStatusCounts();
         var statusFilters = List.of(
                 Map.of("key", "ALL", "label", "Tất cả", "count", counts.getOrDefault("ALL", 0L)),
                 Map.of("key", "CHO_XAC_NHAN", "label", "Chờ xác nhận", "count", counts.getOrDefault("CHO_XAC_NHAN", 0L)),
                 Map.of("key", "DA_XAC_NHAN", "label", "Đã xác nhận", "count", counts.getOrDefault("DA_XAC_NHAN", 0L)),
                 Map.of("key", "DANG_GIAO", "label", "Đang giao", "count", counts.getOrDefault("DANG_GIAO", 0L)),
-                Map.of("key", "LOI_VAN_CHUYEN", "label", "Lỗi vận chuyển", "count", counts.getOrDefault("LOI_VAN_CHUYEN", 0L)),
                 Map.of("key", "HOAN_THANH", "label", "Hoàn thành", "count", counts.getOrDefault("HOAN_THANH", 0L)),
                 Map.of("key", "DA_HUY", "label", "Đã hủy", "count", counts.getOrDefault("DA_HUY", 0L))
         );
@@ -43,6 +47,14 @@ public class AdminOrderController {
         model.addAttribute("currentStatus", status != null ? status : "ALL");
         model.addAttribute("currentChannel", channel != null ? channel : "ALL");
         model.addAttribute("keyword", keyword);
+        model.addAttribute("currentPage", safePage);
+        model.addAttribute("totalPages", Math.max(orderPage.getTotalPages(), 1));
+        model.addAttribute("pageSize", safeSize);
+        model.addAttribute("totalElements", orderPage.getTotalElements());
+        long fromItem = orderPage.getTotalElements() == 0 ? 0 : (long) (safePage - 1) * safeSize + 1;
+        long toItem = Math.min((long) safePage * safeSize, orderPage.getTotalElements());
+        model.addAttribute("fromItem", fromItem);
+        model.addAttribute("toItem", toItem);
         return "admin/orders";
     }
 

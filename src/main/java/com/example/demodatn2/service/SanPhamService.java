@@ -714,8 +714,7 @@ public class SanPhamService {
             throw new RuntimeException("So luong phai lon hon 0.");
         }
 
-        if (actionType == null || (!"NHAP".equals(actionType) && !"TRU_LOI_VAN_CHUYEN".equals(actionType)
-                && !"XUAT".equals(actionType))) {
+        if (actionType == null || (!"NHAP".equals(actionType) && !"XUAT".equals(actionType))) {
             throw new RuntimeException("Loai giao dich khong hop le.");
         }
 
@@ -740,7 +739,7 @@ public class SanPhamService {
             }
             newStock = current - soLuong;
             if (ghiChu == null || ghiChu.isBlank()) {
-                ghiChu = "Tru ton kho do loi van chuyen";
+                ghiChu = "Tru ton kho";
             }
         }
 

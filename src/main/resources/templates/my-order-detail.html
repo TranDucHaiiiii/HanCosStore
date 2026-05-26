@@ -144,7 +144,7 @@
         </div>
     </div>
 
-    <div class="flat-alert alert" th:if="${order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED'}">
+    <div class="flat-alert alert" th:if="${order.trangThai == 'DA_HUY' or order.trangThai == 'CANCELLED' or order.trangThai == 'LOI_VAN_CHUYEN' or order.trangThai == 'LOST'}">
         <i class="fas fa-exclamation-circle me-2"></i>
         <strong>Đơn hàng đã bị hủy.</strong>
         <span th:if="${order.lyDoHuy != null}" th:text="'Lý do: ' + ${order.lyDoHuy}"></span>

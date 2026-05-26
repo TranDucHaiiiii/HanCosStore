@@ -65,7 +65,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 response.getWriter().write("{\"message\": \"Session expired. Please login again.\"}");
                 return false;
             }
-            response.sendRedirect("/login?next=" + URLEncoder.encode(uri, StandardCharsets.UTF_8));
+            response.sendRedirect("/login?next=" + URLEncoder.encode(getFullRequestPath(request, uri), StandardCharsets.UTF_8));
             return false;
         }
 
@@ -88,45 +88,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 
             // STAFF bị hạn chế
             if (isStaff) {
-                // Cho phép xem chi tiết sản phẩm
-                if (uri.startsWith("/admin/san-pham/view/")) {
+                if (isStaffAllowed(request, uri)) {
                     return true;
                 }
-                
-                // 1. Không được quản lý tài khoản
-                if (uri.startsWith("/admin/users")) {
-                    response.sendRedirect("/403");
-                    return false;
-                }
-                // 2. Không được quản lý danh mục (Controller + API)
-                if (uri.startsWith("/admin/categories") || uri.startsWith("/api/danh-muc/")) {
-                    response.sendRedirect("/403");
-                    return false;
-                }
-                // 3. Không được thêm/sửa sản phẩm mới
-                if (uri.equals("/them-san-pham") || uri.startsWith("/admin/san-pham/edit/")
-                        || (uri.startsWith("/api/san-pham") && (request.getMethod().equals("POST") || request.getMethod().equals("PUT")))) {
-                    response.sendRedirect("/403");
-                    return false;
-                }
-                // 4. Không được xóa sản phẩm
-                if (uri.startsWith("/api/san-pham") && request.getMethod().equals("DELETE")) {
-                    response.sendRedirect("/403");
-                    return false;
-                }
-                // 5. Không được xem báo cáo chi tiết (nếu có trang riêng)
-                if (uri.equals("/admin/thong-ke")) {
-                    response.sendRedirect("/403");
-                    return false;
-                }
-                
-                // 6. Không được quản lý Voucher
-                if (uri.startsWith("/admin/vouchers")) {
-                    response.sendRedirect("/403");
-                    return false;
-                }
-
-                return true;
+                response.sendRedirect("/403");
+                return false;
             }
 
             if (isCustomer) {
@@ -166,6 +132,47 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private boolean isAjaxOrApiRequest(HttpServletRequest request, String uri) {
         return "XMLHttpRequest".equals(request.getHeader("X-Requested-With")) || uri.startsWith("/api/");
+    }
+
+    private String getFullRequestPath(HttpServletRequest request, String uri) {
+        String queryString = request.getQueryString();
+        if (queryString == null || queryString.isBlank()) {
+            return uri;
+        }
+        return uri + "?" + queryString;
+    }
+
+    private boolean isStaffAllowed(HttpServletRequest request, String uri) {
+        String method = request.getMethod();
+
+        if ("GET".equals(method) && uri.equals("/admin/dashboard")) {
+            return true;
+        }
+        if (uri.startsWith("/admin/inventory")) {
+            return true;
+        }
+        if ("GET".equals(method) && (uri.equals("/admin/pos") || uri.equals("/admin/ban-hang-tai-quay"))) {
+            return true;
+        }
+        if (uri.startsWith("/admin/pos/api/")) {
+            return true;
+        }
+        if (uri.startsWith("/admin/orders")) {
+            return true;
+        }
+        if ("GET".equals(method) && uri.startsWith("/admin/returns")) {
+            return true;
+        }
+        if ("GET".equals(method) && uri.equals("/san-pham")) {
+            return true;
+        }
+        if ("GET".equals(method) && uri.startsWith("/admin/san-pham/view/")) {
+            return true;
+        }
+        if ("GET".equals(method) && uri.startsWith("/admin/san-pham/nhap-kho/")) {
+            return true;
+        }
+        return "POST".equals(method) && uri.matches("^/admin/san-pham/\\d+/them-so-luong$");
     }
 
     private enum AccountStatusState {

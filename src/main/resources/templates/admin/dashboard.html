@@ -63,7 +63,7 @@
                 <p class="text-muted small mb-0"><i class="fas fa-check-circle me-1"></i> Tổng đơn xử lý thành công</p>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-6 col-xl-3" th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
             <div class="stat-card">
                 <div class="stat-icon bg-soft-success">
                     <i class="fas fa-chart-bar"></i>
@@ -73,7 +73,7 @@
                 <p class="text-muted small mb-0"><i class="fas fa-shopping-basket me-1"></i> <span th:text="${stats.soDonHomNay}">0</span> đơn mới</p>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-6 col-xl-3" th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
             <div class="stat-card">
                 <div class="stat-icon bg-soft-info">
                     <i class="fas fa-box"></i>
@@ -93,7 +93,7 @@
                 <p class="text-muted small mb-0"><i class="fas fa-store me-1"></i> Sản phẩm đang quản lý</p>
             </div>
         </div>
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-6 col-xl-3" th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
             <div class="stat-card">
                 <div class="stat-icon bg-soft-warning">
                     <i class="fas fa-user-friends"></i>
@@ -245,7 +245,7 @@
 
         <div class="col-12 mt-2">
             <div class="row g-4">
-                <div class="col-lg-6">
+                <div class="col-lg-6" th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
                     <div class="insight-card">
                         <div class="insight-header">
                             <h5 class="mb-0"><i class="fas fa-fire-flame-curved me-2 text-danger"></i>Top sản phẩm bán chạy</h5>
@@ -270,7 +270,7 @@
                         <p class="text-muted mb-0" th:if="${stats.topSanPhamBanChay == null or #lists.isEmpty(stats.topSanPhamBanChay)}">Chưa có dữ liệu bán hàng thành công.</p>
                     </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-6" th:if="${session.ROLES != null and #lists.contains(session.ROLES, 'ADMIN')}">
                     <div class="insight-card">
                         <div class="insight-header">
                             <h5 class="mb-0"><i class="fas fa-user-star me-2 text-primary"></i>Khách hàng tiềm năng</h5>

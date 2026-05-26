@@ -7,6 +7,7 @@ import com.example.demodatn2.entity.HinhAnhMauSac;
 import com.example.demodatn2.entity.HinhAnhSanPham;
 import com.example.demodatn2.entity.SanPham;
 import com.example.demodatn2.repository.BienTheSanPhamRepository;
+import com.example.demodatn2.repository.DonHangRepository;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class PosCartService {
     private static final long INVOICE_TTL_MINUTES = 30;
 
     private final BienTheSanPhamRepository bienTheSanPhamRepository;
+    private final DonHangRepository donHangRepository;
 
     @Transactional(readOnly = true)
     public List<PosCartItemDTO> getCart(HttpSession session) {
@@ -115,6 +117,18 @@ public class PosCartService {
     public String ensureTransferReference(HttpSession session) {
         String activeId = getActiveInvoiceId(session);
         return getTransferRefs(session).computeIfAbsent(activeId, key -> generateTransferReference(session));
+    }
+
+    public void removeTransferReference(HttpSession session, String orderCode) {
+        if (orderCode == null || orderCode.isBlank()) {
+            return;
+        }
+        getTransferRefs(session).entrySet().removeIf(entry -> orderCode.equalsIgnoreCase(entry.getValue()));
+    }
+
+    public void resetTransferReference(HttpSession session) {
+        String activeId = getActiveInvoiceId(session);
+        getTransferRefs(session).remove(activeId);
     }
 
     // ─── Invoice management ───────────────────────────────────────────────────
@@ -284,7 +298,7 @@ public class PosCartService {
         if (getTransferRefs(session).containsValue(code)) {
             return true;
         }
-        return false;
+        return donHangRepository.findByMaDonHangIgnoreCase(code).isPresent();
     }
 
     private PosCartItemDTO toPosCartItem(BienTheSanPham variant, int qty) {

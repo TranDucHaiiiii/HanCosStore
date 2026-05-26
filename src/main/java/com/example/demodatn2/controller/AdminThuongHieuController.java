@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.Instant;
@@ -24,13 +25,45 @@ import java.util.List;
 public class AdminThuongHieuController {
 
     private final ThuongHieuRepository thuongHieuRepository;
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 100;
 
     @GetMapping
-    public String list(Model model) {
-        List<ThuongHieu> thuongHieus = thuongHieuRepository.findAll().stream()
+        public String list(@RequestParam(required = false) String q,
+                   @RequestParam(defaultValue = "1") int page,
+                   @RequestParam(defaultValue = "10") int size,
+                       Model model) {
+        int safePage = Math.max(page, 1);
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+
+        String keyword = q == null ? "" : q.trim().toLowerCase();
+
+        List<ThuongHieu> allThuongHieus = thuongHieuRepository.findAll().stream()
+            .filter(th -> keyword.isEmpty()
+                || (th.getTen() != null && th.getTen().toLowerCase().contains(keyword))
+                || (th.getMa() != null && th.getMa().toLowerCase().contains(keyword)))
                 .sorted(Comparator.comparing(ThuongHieu::getTen, String.CASE_INSENSITIVE_ORDER))
                 .toList();
-        model.addAttribute("thuongHieus", thuongHieus);
+
+        int totalElements = allThuongHieus.size();
+        int totalPages = Math.max((int) Math.ceil((double) totalElements / safeSize), 1);
+        if (safePage > totalPages) {
+            safePage = totalPages;
+        }
+
+        int start = Math.min((safePage - 1) * safeSize, totalElements);
+        int end = Math.min(start + safeSize, totalElements);
+        long fromItem = totalElements == 0 ? 0 : (long) start + 1;
+        long toItem = totalElements == 0 ? 0 : end;
+
+        model.addAttribute("thuongHieus", allThuongHieus.subList(start, end));
+        model.addAttribute("currentPage", safePage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("pageSize", safeSize);
+        model.addAttribute("totalElements", totalElements);
+        model.addAttribute("fromItem", fromItem);
+        model.addAttribute("toItem", toItem);
+        model.addAttribute("q", q);
         return "admin/thuong-hieu";
     }
 

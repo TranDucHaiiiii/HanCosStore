@@ -52,6 +52,7 @@ public class ThongKeService {
     private final YeuCauDoiTraRepository yeuCauDoiTraRepository;
     private final SanPhamRepository sanPhamRepository;
 
+    @Transactional(readOnly = true)
     public DoanhThuDTO getDoanhThuTongHop() {
         BigDecimal tongDoanhThu = donHangRepository.tinhTongDoanhThu();
         Long soDonHang = donHangRepository.demDonHangThanhCong();

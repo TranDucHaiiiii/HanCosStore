@@ -3,6 +3,7 @@ package com.example.demodatn2.controller;
 import com.example.demodatn2.entity.MaGiamGia;
 import com.example.demodatn2.service.VoucherService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,18 +26,42 @@ import java.time.format.DateTimeParseException;
 public class AdminVoucherController {
 
     private final VoucherService voucherService;
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 100;
 
     @GetMapping
     public String list(@RequestParam(required = false) String q,
                        @RequestParam(required = false) String status,
                        @RequestParam(required = false) String type,
                        @RequestParam(required = false) String validity,
+                       @RequestParam(defaultValue = "1") int page,
+                       @RequestParam(defaultValue = "10") int size,
                        Model model) {
-        model.addAttribute("vouchers", voucherService.search(q, status, type, validity));
+        int safePage = Math.max(page, 1);
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        Page<MaGiamGia> voucherPage = voucherService.search(q, status, type, validity, safePage - 1, safeSize);
+        int totalPages = Math.max(voucherPage.getTotalPages(), 1);
+        if (safePage > totalPages) {
+            safePage = totalPages;
+            voucherPage = voucherService.search(q, status, type, validity, safePage - 1, safeSize);
+        }
+
+        model.addAttribute("voucherPage", voucherPage);
+        model.addAttribute("vouchers", voucherPage.getContent());
         model.addAttribute("q", q);
         model.addAttribute("status", status);
         model.addAttribute("type", type);
         model.addAttribute("validity", validity);
+        model.addAttribute("currentPage", safePage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("pageSize", safeSize);
+        long totalElements = voucherPage.getTotalElements();
+        long fromItem = totalElements == 0 ? 0 : ((long) (safePage - 1) * safeSize + 1);
+        long toItem = Math.min((long) safePage * safeSize, totalElements);
+
+        model.addAttribute("totalElements", totalElements);
+        model.addAttribute("fromItem", fromItem);
+        model.addAttribute("toItem", toItem);
         return "admin/vouchers";
     }
 

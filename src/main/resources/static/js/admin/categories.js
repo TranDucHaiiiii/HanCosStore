@@ -1,12 +1,12 @@
 function deleteCategory(id) {
     Swal.fire({
-        title: 'Xác nhận xóa?',
-        text: "Nếu xóa danh mục cha, các danh mục con cũng sẽ bị ảnh hưởng! Bạn chắc chắn muốn xóa?",
+        title: 'Ngừng hoạt động danh mục?',
+        text: "Danh mục sẽ chuyển sang trạng thái INACTIVE và không hiển thị ở các form chọn.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
         cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Xóa ngay',
+        confirmButtonText: 'Ngừng hoạt động',
         cancelButtonText: 'Hủy'
     }).then((result) => {
         if (result.isConfirmed) {
@@ -15,11 +15,11 @@ function deleteCategory(id) {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             }).then(res => {
                 if (res.ok) {
-                    Swal.fire('Đã xóa!', 'Danh mục đã được xóa thành công.', 'success')
+                    Swal.fire('Đã cập nhật!', 'Danh mục đã chuyển sang INACTIVE.', 'success')
                         .then(() => location.reload());
                 } else {
                     res.text().then(text => {
-                        Swal.fire('Lỗi!', text || 'Không thể xóa danh mục này. Có thể danh mục đang chứa sản phẩm.', 'error');
+                        Swal.fire('Lỗi!', text || 'Không thể cập nhật danh mục này.', 'error');
                     });
                 }
             });

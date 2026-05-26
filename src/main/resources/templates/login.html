@@ -18,6 +18,7 @@
     <!-- Sign Up Form -->
     <div class="form-container sign-up">
         <form th:action="@{/register}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrfToken}">
             <div class="logo">
                 <i class="fas fa-cube"></i> HANCOS
             </div>
@@ -66,6 +67,7 @@
     <!-- Sign In Form -->
     <div class="form-container sign-in">
         <form th:action="@{/login}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrfToken}">
             <div class="logo">
                 <i class="fas fa-cube"></i> HANCOS
             </div>
@@ -104,12 +106,12 @@
             <div class="toggle-panel toggle-left">
                 <h1 class="welcome-title">Welcome Back!</h1>
                 <p class="welcome-text">Đăng nhập để mua sắm nào</p>
-                <button class="btn-signin" id="login">Sign In</button>
+                <button type="button" class="btn-signin" id="login">Sign In</button>
             </div>
             <div class="toggle-panel toggle-right">
                 <h1 class="welcome-title">Hello, Friend!</h1>
                 <p class="welcome-text">Hãy đăng ký để bắt đầu</p>
-                <button class="btn-signin" id="register">Sign Up</button>
+                <button type="button" class="btn-signin" id="register">Sign Up</button>
             </div>
         </div>
     </div>

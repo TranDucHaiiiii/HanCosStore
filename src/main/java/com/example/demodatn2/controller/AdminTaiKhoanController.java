@@ -2,6 +2,7 @@ package com.example.demodatn2.controller;
 
 import com.example.demodatn2.dto.TaiKhoanDTO;
 import com.example.demodatn2.service.TaiKhoanService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -36,9 +37,12 @@ public class AdminTaiKhoanController {
     }
 
     @PostMapping("/edit/{id}")
-    public String updateUser(@PathVariable Integer id, @ModelAttribute TaiKhoanDTO userDTO, RedirectAttributes redirectAttributes) {
+    public String updateUser(@PathVariable Integer id,
+                             @ModelAttribute TaiKhoanDTO userDTO,
+                             HttpSession session,
+                             RedirectAttributes redirectAttributes) {
         try {
-            taiKhoanService.updateTaiKhoan(id, userDTO);
+            taiKhoanService.updateTaiKhoan(id, userDTO, getCurrentUserId(session));
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật tài khoản thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
@@ -48,12 +52,17 @@ public class AdminTaiKhoanController {
 
     @DeleteMapping("/{id}")
     @ResponseBody
-    public String deleteUser(@PathVariable Integer id) {
+    public String deleteUser(@PathVariable Integer id, HttpSession session) {
         try {
-            taiKhoanService.deleteTaiKhoan(id);
+            taiKhoanService.deleteTaiKhoan(id, getCurrentUserId(session));
             return "SUCCESS";
         } catch (Exception e) {
             return "ERROR: " + e.getMessage();
         }
+    }
+
+    private Integer getCurrentUserId(HttpSession session) {
+        Object loginUser = session != null ? session.getAttribute("LOGIN_USER") : null;
+        return loginUser instanceof TaiKhoanDTO dto ? dto.getId() : null;
     }
 }

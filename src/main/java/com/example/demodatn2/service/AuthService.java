@@ -76,6 +76,9 @@ public class AuthService {
         if (tenDangNhap == null || tenDangNhap.trim().isEmpty()) {
             return false;
         }
+        if (matKhau == null) {
+            return false;
+        }
 
         String loginValue = tenDangNhap.trim();
         Optional<TaiKhoan> optUser = taiKhoanRepository.findByTenDangNhap(loginValue);
@@ -107,6 +110,11 @@ public class AuthService {
             }
 
             if (isMatch) {
+                if (hashed == null || !(hashed.startsWith("$2a$") || hashed.startsWith("$2b$"))) {
+                    user.setMatKhau(BCrypt.hashpw(matKhau, BCrypt.gensalt()));
+                    taiKhoanRepository.save(user);
+                }
+
                 TaiKhoanDTO dto = TaiKhoanDTO.builder()
                         .id(user.getId())
                         .tenDangNhap(user.getTenDangNhap())
@@ -118,7 +126,9 @@ public class AuthService {
 
                 List<String> roles = user.getVaiTros().stream()
                         .map(VaiTro::getMa)
+                        .map(this::normalizeRoleMa)
                         .filter(ma -> ma.equals("ADMIN") || ma.equals("STAFF") || ma.equals("CUSTOMER"))
+                        .distinct()
                         .collect(Collectors.toList());
 
                 session.setAttribute("LOGIN_USER", dto);
@@ -131,5 +141,16 @@ public class AuthService {
 
     public void logout(HttpSession session) {
         session.invalidate();
+    }
+
+    private String normalizeRoleMa(String ma) {
+        if (ma == null) {
+            return "";
+        }
+        return switch (ma.trim().toUpperCase()) {
+            case "USER", "KHACH_HANG" -> "CUSTOMER";
+            case "NHAN_VIEN" -> "STAFF";
+            default -> ma.trim().toUpperCase();
+        };
     }
 }

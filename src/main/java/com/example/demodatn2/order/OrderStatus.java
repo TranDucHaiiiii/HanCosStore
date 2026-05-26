@@ -6,6 +6,5 @@ public enum OrderStatus {
     DANG_GIAO,
     HOAN_THANH,
     DA_HUY,
-    TRA_HANG,
-    LOI_VAN_CHUYEN
+    TRA_HANG
 }

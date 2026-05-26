@@ -76,7 +76,12 @@
                         <li>
                             <hr class="dropdown-divider">
                         </li>
-                        <li><a class="dropdown-item text-muted" th:href="@{/logout}">Đăng xuất</a></li>
+                        <li>
+                            <form th:action="@{/logout}" method="post" class="m-0">
+                                <input type="hidden" name="_csrf" th:value="${csrfToken}">
+                                <button type="submit" class="dropdown-item text-muted">Đăng xuất</button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
                 <a class="nav-link p-0" th:if="${session.LOGIN_USER == null}" th:href="@{/login}">

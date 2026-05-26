@@ -127,9 +127,12 @@
 
         <div class="mt-auto pt-5">
             <hr class="text-white-50">
-            <a class="nav-link text-danger" th:href="@{/logout}">
-                <i class="fas fa-sign-out-alt"></i><span class="nav-link-label">Đăng xuất</span>
-            </a>
+            <form th:action="@{/logout}" method="post" class="m-0">
+                <input type="hidden" name="_csrf" th:value="${csrfToken}">
+                <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start">
+                    <i class="fas fa-sign-out-alt"></i><span class="nav-link-label">Đăng xuất</span>
+                </button>
+            </form>
         </div>
 
     </nav>

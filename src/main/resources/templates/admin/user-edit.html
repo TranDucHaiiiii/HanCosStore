@@ -64,11 +64,17 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-600 small text-uppercase">Trạng thái tài khoản</label>
-                        <select class="form-select" th:field="*{trangThai}">
+                        <select class="form-select" th:field="*{trangThai}"
+                                th:disabled="${session.LOGIN_USER.id == user.id}">
                             <option value="ACTIVE">Hoạt động (ACTIVE)</option>
                             <option value="INACTIVE">Ngừng hoạt động (INACTIVE)</option>
                             <option value="LOCKED">Bị khóa (LOCKED)</option>
                         </select>
+                        <input type="hidden" th:if="${session.LOGIN_USER.id == user.id}"
+                               name="trangThai" th:value="${user.trangThai}">
+                        <div th:if="${session.LOGIN_USER.id == user.id}" class="form-text text-warning fw-600">
+                            Không thể tự khóa hoặc ngừng hoạt động tài khoản của chính mình.
+                        </div>
                     </div>
 
                     <div class="col-12">

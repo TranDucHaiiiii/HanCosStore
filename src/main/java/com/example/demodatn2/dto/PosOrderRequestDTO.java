@@ -13,6 +13,7 @@ public class PosOrderRequestDTO {
     private String customerPhone;      // Bắt buộc
     private String paymentMethod;      // cash, card, qr, transfer
     private String orderCode;          // Mã đơn hàng đã reserve trước (optional)
+    private String pendingTransferOrderCode; // Mã đơn chuyển khoản cần hủy khi đổi sang tiền mặt
     private String voucherCode;        // Mã voucher (optional)
     private String note;               // Ghi chú (optional)
     private BigDecimal cashGiven;      // Số tiền khách đưa khi thanh toán tiền mặt

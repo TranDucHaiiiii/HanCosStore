@@ -315,7 +315,8 @@ public class OrderController {
             return false;
         }
 
-        return !order.getNgayDat().plus(7, ChronoUnit.DAYS).isBefore(now);
+        Instant returnWindowStart = order.getNgayCapNhat() != null ? order.getNgayCapNhat() : order.getNgayDat();
+        return !returnWindowStart.plus(7, ChronoUnit.DAYS).isBefore(now);
     }
 
     private Map<Integer, Long> buildPaymentDeadlineMap(List<DonHang> orders) {
@@ -371,7 +372,7 @@ public class OrderController {
             case "CONFIRMED" -> "DA_XAC_NHAN";
             case "SHIPPING" -> "DANG_GIAO";
             case "DELIVERED", "COMPLETED" -> "HOAN_THANH";
-            case "CANCELLED" -> "DA_HUY";
+            case "LOI_VAN_CHUYEN", "LOST", "CANCELLED" -> "DA_HUY";
             case "RETURN_REQUESTED", "RETURNED" -> "TRA_HANG";
             default -> normalized;
         };

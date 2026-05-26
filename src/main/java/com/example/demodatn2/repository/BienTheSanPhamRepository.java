@@ -81,6 +81,8 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
                 select v
                 from BienTheSanPham v
                 join fetch v.sanPham sp
+                join fetch v.mauSac ms
+                join fetch v.kichCo kc
                 where (v.trangThai is null or lower(v.trangThai) = 'active')
                     and v.soLuongTon >= 0
                     and v.soLuongTon <= ?1

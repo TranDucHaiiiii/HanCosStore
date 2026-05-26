@@ -52,46 +52,13 @@ public class OrderService {
         Order order = getById(id);
         ensureStatus(order, List.of(
                 OrderStatus.CHO_XAC_NHAN,
-                OrderStatus.DA_XAC_NHAN,
-                OrderStatus.DANG_GIAO,
-                OrderStatus.LOI_VAN_CHUYEN
+                OrderStatus.DA_XAC_NHAN
         ));
         if (order.isDaDieuChinhTonKho()) {
             increaseStock(order.getItems());
             order.setDaDieuChinhTonKho(false);
         }
         order.setLyDoHuy(reason);
-        order.setTrangThai(OrderStatus.DA_HUY);
-        return orderRepository.save(order);
-    }
-
-    @Transactional
-    public Order markShippingError(Long id, String reason) {
-        Order order = getById(id);
-        ensureStatus(order, OrderStatus.DANG_GIAO);
-        order.setLyDoLoiVanChuyen(reason);
-        order.setTrangThai(OrderStatus.LOI_VAN_CHUYEN);
-        return orderRepository.save(order);
-    }
-
-    @Transactional
-    public Order adminReship(Long id) {
-        Order order = getById(id);
-        ensureStatus(order, OrderStatus.LOI_VAN_CHUYEN);
-        order.setLyDoLoiVanChuyen(null);
-        order.setTrangThai(OrderStatus.DANG_GIAO);
-        return orderRepository.save(order);
-    }
-
-    @Transactional
-    public Order adminRefund(Long id, String reason) {
-        Order order = getById(id);
-        ensureStatus(order, OrderStatus.LOI_VAN_CHUYEN);
-        if (order.isDaDieuChinhTonKho()) {
-            increaseStock(order.getItems());
-            order.setDaDieuChinhTonKho(false);
-        }
-        order.setLyDoHuy(reason != null && !reason.isBlank() ? reason : "Hoàn tiền do lỗi vận chuyển");
         order.setTrangThai(OrderStatus.DA_HUY);
         return orderRepository.save(order);
     }

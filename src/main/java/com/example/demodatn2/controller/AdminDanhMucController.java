@@ -82,7 +82,9 @@ public class AdminDanhMucController {
             redirectAttributes.addFlashAttribute("successMessage", "Lưu danh mục thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
-            return "redirect:/admin/categories/add";
+            return categoryDTO.getId() == null
+                    ? "redirect:/admin/categories/add"
+                    : "redirect:/admin/categories/edit/" + categoryDTO.getId();
         }
         return "redirect:/admin/categories";
     }

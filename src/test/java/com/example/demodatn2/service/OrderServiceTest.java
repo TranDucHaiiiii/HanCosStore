@@ -3,8 +3,10 @@ package com.example.demodatn2.service;
 import com.example.demodatn2.entity.BienTheSanPham;
 import com.example.demodatn2.entity.ChiTietGioHang;
 import com.example.demodatn2.entity.DonHang;
+import com.example.demodatn2.entity.GiaoDichThanhToan;
 import com.example.demodatn2.entity.GioHang;
 import com.example.demodatn2.entity.KichCo;
+import com.example.demodatn2.entity.MaGiamGia;
 import com.example.demodatn2.entity.MauSac;
 import com.example.demodatn2.entity.SanPham;
 import com.example.demodatn2.repository.*;
@@ -40,6 +42,7 @@ class OrderServiceTest {
     @Mock private LichSuSuDungMaGiamGiaRepository lichSuSuDungMaGiamGiaRepository;
     @Mock private YeuCauDoiTraRepository yeuCauDoiTraRepository;
     @Mock private GiaoDichTonKhoRepository giaoDichTonKhoRepository;
+    @Mock private GiaoDichThanhToanRepository giaoDichThanhToanRepository;
     @Mock private JavaMailSender mailSender;
 
     private OrderService newOrderService() {
@@ -56,6 +59,7 @@ class OrderServiceTest {
                 lichSuSuDungMaGiamGiaRepository,
                 yeuCauDoiTraRepository,
                 giaoDichTonKhoRepository,
+                giaoDichThanhToanRepository,
                 orderConfirmationEmailService,
                 voucherService
         );
@@ -139,6 +143,9 @@ class OrderServiceTest {
         order.setMaDonHang("DH-SEPAY01");
         order.setTrangThai("DA_XAC_NHAN");
         order.setPhuongThucThanhToan("SEPAY");
+        MaGiamGia voucher = new MaGiamGia();
+        voucher.setId(9);
+        order.setMaGiamGia(voucher);
 
         when(donHangRepository.findById(1)).thenReturn(Optional.of(order));
         when(chiTietDonHangRepository.findByDonHang(order)).thenReturn(List.of());
@@ -147,6 +154,91 @@ class OrderServiceTest {
 
         assertThat(order.getTrangThai()).isEqualTo("DA_HUY");
         assertThat(order.getLyDoHuy()).isEqualTo("Khach huy");
+        verify(maGiamGiaRepository).decrementUsageAfterOrderCancel(9);
+        verify(donHangRepository).save(order);
+    }
+
+    @Test
+    void cancelOrder_rejectsShippingOrderEvenForAdmin() {
+        OrderService orderService = newOrderService();
+
+        DonHang order = new DonHang();
+        order.setId(1);
+        order.setMaDonHang("DH-SHIP01");
+        order.setTrangThai("DANG_GIAO");
+
+        when(donHangRepository.findById(1)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(1, "Admin huy", true))
+                .hasMessageContaining("Không thể hủy đơn hàng ở trạng thái: DANG_GIAO");
+
+        verify(donHangRepository, never()).save(any());
+        verify(chiTietDonHangRepository, never()).findByDonHang(any());
+        verify(maGiamGiaRepository, never()).decrementUsageAfterOrderCancel(any());
+    }
+
+    @Test
+    void updateOrderStatus_toCanceledRestoresVoucherUsage() {
+        OrderService orderService = newOrderService();
+
+        DonHang order = new DonHang();
+        order.setId(1);
+        order.setMaDonHang("DH-VOUCHER01");
+        order.setTrangThai("CHO_XAC_NHAN");
+        MaGiamGia voucher = new MaGiamGia();
+        voucher.setId(15);
+        order.setMaGiamGia(voucher);
+
+        when(donHangRepository.findById(1)).thenReturn(Optional.of(order));
+        when(chiTietDonHangRepository.findByDonHang(order)).thenReturn(List.of());
+
+        orderService.updateOrderStatus(1, "DA_HUY");
+
+        assertThat(order.getTrangThai()).isEqualTo("DA_HUY");
+        verify(maGiamGiaRepository).decrementUsageAfterOrderCancel(15);
+        verify(donHangRepository).save(order);
+    }
+
+    @Test
+    void updateOrderStatus_rejectsUnpaidSepayConfirmation() {
+        OrderService orderService = newOrderService();
+
+        DonHang order = new DonHang();
+        order.setId(1);
+        order.setMaDonHang("DH-SEPAY02");
+        order.setTrangThai("PENDING");
+        order.setPhuongThucThanhToan("SEPAY");
+
+        when(donHangRepository.findById(1)).thenReturn(Optional.of(order));
+        when(giaoDichThanhToanRepository.findFirstByDonHangAndNhaCungCapOrderByNgayTaoDesc(order, "SEPAY"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.updateOrderStatus(1, "DA_XAC_NHAN"))
+                .hasMessageContaining("chưa được SePay xác nhận");
+
+        verify(donHangRepository, never()).save(any());
+    }
+
+    @Test
+    void updateOrderStatus_allowsPaidSepayConfirmation() {
+        OrderService orderService = newOrderService();
+
+        DonHang order = new DonHang();
+        order.setId(1);
+        order.setMaDonHang("DH-SEPAY03");
+        order.setTrangThai("PENDING");
+        order.setPhuongThucThanhToan("SEPAY");
+
+        GiaoDichThanhToan tx = new GiaoDichThanhToan();
+        tx.setTrangThai("PAID");
+
+        when(donHangRepository.findById(1)).thenReturn(Optional.of(order));
+        when(giaoDichThanhToanRepository.findFirstByDonHangAndNhaCungCapOrderByNgayTaoDesc(order, "SEPAY"))
+                .thenReturn(Optional.of(tx));
+
+        orderService.updateOrderStatus(1, "DA_XAC_NHAN");
+
+        assertThat(order.getTrangThai()).isEqualTo("DA_XAC_NHAN");
         verify(donHangRepository).save(order);
     }
 

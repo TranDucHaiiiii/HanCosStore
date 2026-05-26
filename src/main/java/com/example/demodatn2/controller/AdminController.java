@@ -14,6 +14,7 @@ import com.example.demodatn2.entity.MaGiamGia;
 import com.example.demodatn2.entity.TaiKhoan;
 import com.example.demodatn2.repository.TaiKhoanRepository;
 import com.example.demodatn2.repository.DonHangRepository;
+import com.example.demodatn2.repository.BienTheSanPhamRepository;
 import com.example.demodatn2.service.DanhMucService;
 import com.example.demodatn2.service.KhoHangHoanService;
 import com.example.demodatn2.service.OrderService;
@@ -70,6 +71,7 @@ public class AdminController {
     private final KhoHangHoanService khoHangHoanService;
     private final TaiKhoanRepository taiKhoanRepository;
     private final DonHangRepository donHangRepository;
+    private final BienTheSanPhamRepository bienTheSanPhamRepository;
 
     @GetMapping("/dashboard")
     // Trang tong quan thong ke
@@ -181,7 +183,7 @@ public class AdminController {
     @GetMapping("/ban-hang-tai-quay")
     // Trang ban hang tai quay (POS UI)
     public String banHangTaiQuay(Model model, HttpSession session) {
-        model.addAttribute("customers", taiKhoanService.searchTaiKhoans(null, ACTIVE_STATUS));
+        model.addAttribute("customers", taiKhoanService.searchTaiKhoans(null, ACTIVE_STATUS, "CUSTOMER"));
         model.addAttribute("products", sanPhamService.searchSanPham(null, null, ACTIVE_STATUS));
         model.addAttribute("categories", danhMucService.getAllDTOs());
         model.addAttribute("posInvoices", posCartService.listInvoices(session));
@@ -273,7 +275,7 @@ public class AdminController {
     @ResponseBody
     // Tim khach hang cho POS
     public List<TaiKhoanDTO> searchCustomers(@RequestParam(required = false) String q) {
-        return taiKhoanService.searchTaiKhoans(q, ACTIVE_STATUS);
+        return taiKhoanService.searchTaiKhoans(q, ACTIVE_STATUS, "CUSTOMER");
     }
 
     @PostMapping("/pos/api/voucher/validate")
@@ -334,7 +336,7 @@ public class AdminController {
 
             req.setItems(toPosOrderItems(cart));
             validateAndNormalizePosCustomer(req);
-            validatePosVoucher(req, cart);
+            validatePosVoucher(req);
             if (req.getOrderCode() == null || req.getOrderCode().trim().isEmpty()) {
                 req.setOrderCode(posCartService.ensureTransferReference(session));
             }
@@ -342,8 +344,12 @@ public class AdminController {
             Optional<DonHang> existingOrder = donHangRepository.findByMaDonHangIgnoreCase(req.getOrderCode().trim());
             if (existingOrder.isPresent()) {
                 DonHang donHang = existingOrder.get();
-                return Map.of("success", true, "orderId", donHang.getId(),
-                        "orderCode", donHang.getMaDonHang(), "total", donHang.getTongTien());
+                if (isReusablePendingTransferOrder(donHang)) {
+                    return Map.of("success", true, "orderId", donHang.getId(),
+                            "orderCode", donHang.getMaDonHang(), "total", donHang.getTongTien());
+                }
+                posCartService.resetTransferReference(session);
+                req.setOrderCode(posCartService.ensureTransferReference(session));
             }
             TaiKhoanDTO staff = getLoginUser(session);
             DonHang donHang = orderService.createPendingPosTransferOrder(req, staff);
@@ -368,6 +374,24 @@ public class AdminController {
             posCartService.clear(session);
             return Map.of("success", true, "orderId", donHang.getId(), "orderCode", donHang.getMaDonHang(),
                     "total", donHang.getTongTien(), "invoices", posCartService.listInvoices(session));
+        } catch (Exception e) {
+            return Map.of("success", false, "message", e.getMessage());
+        }
+    }
+
+    @PostMapping("/pos/api/transfer/{orderCode}/cancel")
+    @ResponseBody
+    // Huy don chuyen khoan POS dang cho khi nhan vien doi sang tien mat
+    public Map<String, Object> cancelPosTransfer(@PathVariable String orderCode, HttpSession session) {
+        try {
+            boolean cancelled = orderService.cancelPendingPosTransferOrder(
+                    orderCode,
+                    "Nhân viên hủy giao dịch chuyển khoản tại POS"
+            );
+            if (cancelled) {
+                posCartService.removeTransferReference(session, orderCode);
+            }
+            return Map.of("success", true, "cancelled", cancelled);
         } catch (Exception e) {
             return Map.of("success", false, "message", e.getMessage());
         }
@@ -428,7 +452,8 @@ public class AdminController {
     @ResponseBody
     // Thanh toan don POS
     public Map<String, Object> posCheckout(@RequestBody PosOrderRequestDTO req, HttpSession session) {
-        try {
+        synchronized (session) {
+            try {
             List<PosCartItemDTO> cart = posCartService.getCart(session);
             if (cart.isEmpty()) {
                 return Map.of("success", false, "message", "Giỏ hàng POS trống");
@@ -437,15 +462,16 @@ public class AdminController {
             req.setItems(toPosOrderItems(cart));
 
             validateAndNormalizePosCustomer(req);
-            validatePosPayment(req, cart);
+            validatePosPayment(req);
 
             TaiKhoanDTO staff = getLoginUser(session);
             DonHang donHang = orderService.createPosOrder(req, staff);
             posCartService.clear(session);
             return Map.of("success", true, "orderId", donHang.getId(), "orderCode", donHang.getMaDonHang(),
                     "total", donHang.getTongTien(), "invoices", posCartService.listInvoices(session));
-        } catch (Exception e) {
-            return Map.of("success", false, "message", e.getMessage());
+            } catch (Exception e) {
+                return Map.of("success", false, "message", e.getMessage());
+            }
         }
     }
 
@@ -475,8 +501,18 @@ public class AdminController {
         PosOrderRequestDTO.PosItemDTO item = new PosOrderRequestDTO.PosItemDTO();
         item.setVariantId(cartItem.getVariantId());
         item.setQty(cartItem.getQty());
-        item.setPrice(cartItem.getPrice());
+        item.setPrice(bienTheSanPhamRepository.findById(cartItem.getVariantId())
+                .map(variant -> variant.getGia())
+                .orElse(cartItem.getPrice()));
         return item;
+    }
+
+    private boolean isReusablePendingTransferOrder(DonHang donHang) {
+        if (donHang == null || !PAYMENT_TRANSFER.equalsIgnoreCase(donHang.getPhuongThucThanhToan())) {
+            return false;
+        }
+        String status = donHang.getTrangThai() != null ? donHang.getTrangThai().trim().toUpperCase() : "";
+        return "PENDING".equals(status) || "CHO_XAC_NHAN".equals(status);
     }
 
     // Chuan hoa va kiem tra thong tin khach hang POS
@@ -499,6 +535,9 @@ public class AdminController {
                     .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại"));
             if (!"ACTIVE".equalsIgnoreCase(customer.getTrangThai())) {
                 throw new RuntimeException("Khách hàng không hoạt động");
+            }
+            if (!hasRole(customer, "CUSTOMER")) {
+                throw new RuntimeException("Tài khoản được chọn không phải khách hàng");
             }
             String customerName = firstNonBlank(customer.getHoTen(), customer.getTenDangNhap());
             req.setCustomerName(customerName);
@@ -523,14 +562,18 @@ public class AdminController {
     }
 
     // Kiem tra phuong thuc thanh toan POS
-    private void validatePosPayment(PosOrderRequestDTO req, List<PosCartItemDTO> cart) {
+    private void validatePosPayment(PosOrderRequestDTO req) {
         String paymentMethod = req.getPaymentMethod() != null ? req.getPaymentMethod().trim().toLowerCase() : "cash";
         if (!paymentMethod.equals("cash") && !paymentMethod.equals("transfer")) {
             throw new RuntimeException("Phương thức thanh toán không hợp lệ");
         }
         req.setPaymentMethod(paymentMethod);
 
-        Map<String, Object> summary = buildPosSummary(cart, req.getVoucherCode(), req.getCashGiven());
+        if ("cash".equals(paymentMethod) && !isBlank(req.getPendingTransferOrderCode())) {
+            return;
+        }
+
+        Map<String, Object> summary = buildPosOrderSummary(req.getItems(), req.getVoucherCode(), req.getCashGiven());
         if (!isBlank(req.getVoucherCode()) && summary.get("voucherCode") == null) {
             throw new RuntimeException("Mã giảm giá không hợp lệ hoặc không đủ điều kiện");
         }
@@ -546,8 +589,8 @@ public class AdminController {
     }
 
     // Kiem tra ma giam gia POS
-    private void validatePosVoucher(PosOrderRequestDTO req, List<PosCartItemDTO> cart) {
-        Map<String, Object> summary = buildPosSummary(cart, req.getVoucherCode(), null);
+    private void validatePosVoucher(PosOrderRequestDTO req) {
+        Map<String, Object> summary = buildPosOrderSummary(req.getItems(), req.getVoucherCode(), null);
         if (!isBlank(req.getVoucherCode()) && summary.get("voucherCode") == null) {
             throw new RuntimeException("Mã giảm giá không hợp lệ hoặc không đủ điều kiện");
         }
@@ -567,9 +610,35 @@ public class AdminController {
         return subtotal;
     }
 
+    private BigDecimal calculatePosOrderSubtotal(List<PosOrderRequestDTO.PosItemDTO> items) {
+        BigDecimal subtotal = BigDecimal.ZERO;
+        if (items == null) {
+            return subtotal;
+        }
+        for (PosOrderRequestDTO.PosItemDTO item : items) {
+            BigDecimal price = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
+            BigDecimal qty = BigDecimal.valueOf(item.getQty() != null ? item.getQty() : 0);
+            subtotal = subtotal.add(price.multiply(qty));
+        }
+        return subtotal;
+    }
+
     // Tinh tong quan gio POS (subtotal/discount/total/change)
     private Map<String, Object> buildPosSummary(List<PosCartItemDTO> cart, String voucherCode, BigDecimal cashGiven) {
         BigDecimal subtotal = calculatePosSubtotal(cart);
+        return buildPosSummaryFromSubtotal(subtotal, voucherCode, cashGiven);
+    }
+
+    private Map<String, Object> buildPosOrderSummary(List<PosOrderRequestDTO.PosItemDTO> items,
+                                                     String voucherCode,
+                                                     BigDecimal cashGiven) {
+        BigDecimal subtotal = calculatePosOrderSubtotal(items);
+        return buildPosSummaryFromSubtotal(subtotal, voucherCode, cashGiven);
+    }
+
+    private Map<String, Object> buildPosSummaryFromSubtotal(BigDecimal subtotal,
+                                                            String voucherCode,
+                                                            BigDecimal cashGiven) {
         BigDecimal discount = BigDecimal.ZERO;
         String appliedCode = null;
 
@@ -603,5 +672,14 @@ public class AdminController {
     // Lay gia tri khong rong dau tien
     private String firstNonBlank(String first, String fallback) {
         return !isBlank(first) ? first.trim() : fallback;
+    }
+
+    private boolean hasRole(TaiKhoan taiKhoan, String roleCode) {
+        return taiKhoan != null
+                && taiKhoan.getVaiTros() != null
+                && taiKhoan.getVaiTros().stream()
+                .anyMatch(role -> role != null
+                        && role.getMa() != null
+                        && role.getMa().equalsIgnoreCase(roleCode));
     }
 }

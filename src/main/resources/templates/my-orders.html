@@ -36,9 +36,12 @@
                 <a th:if="${session.LOGIN_USER != null}" th:href="@{/account/profile}" title="Tài khoản">
                     <i class="fa-regular fa-user"></i>
                 </a>
-                <a th:if="${session.LOGIN_USER != null}" th:href="@{/logout}" title="Đăng xuất">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </a>
+                <form th:if="${session.LOGIN_USER != null}" th:action="@{/logout}" method="post" class="m-0">
+                    <input type="hidden" name="_csrf" th:value="${csrfToken}">
+                    <button type="submit" class="border-0 bg-transparent p-0" title="Đăng xuất">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -49,7 +52,7 @@
            confirmedCount=${#lists.size(orders.?[trangThai == 'DA_XAC_NHAN' or trangThai == 'CONFIRMED'])},
            shippingCount=${#lists.size(orders.?[trangThai == 'DANG_GIAO' or trangThai == 'SHIPPING'])},
            completedCount=${#lists.size(orders.?[trangThai == 'HOAN_THANH' or trangThai == 'DELIVERED' or trangThai == 'COMPLETED'])},
-           cancelledCount=${#lists.size(orders.?[trangThai == 'DA_HUY' or trangThai == 'CANCELLED'])},
+           cancelledCount=${#lists.size(orders.?[trangThai == 'DA_HUY' or trangThai == 'CANCELLED' or trangThai == 'LOI_VAN_CHUYEN' or trangThai == 'LOST'])},
                totalSpent=${#aggregates.sum(orders.![tongTien])}">
 
     <h1 class="hero-title">ĐƠN HÀNG<br>CỦA TÔI</h1>

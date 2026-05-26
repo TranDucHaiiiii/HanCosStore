@@ -31,13 +31,11 @@ public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Integer> {
     @Modifying
     @Query("""
         update MaGiamGia m
-        set m.soLuongDaDung = coalesce(m.soLuongDaDung, 0) + 1,
-            m.trangThai = case
-                when m.soLuongToiDa is not null and coalesce(m.soLuongDaDung, 0) + 1 >= m.soLuongToiDa
-                    then 'INACTIVE'
-                else m.trangThai
-            end
+        set m.soLuongDaDung = coalesce(m.soLuongDaDung, 0) + 1
         where m.id = :voucherId
+          and m.trangThai = 'ACTIVE'
+          and m.batDauLuc <= CURRENT_TIMESTAMP
+          and m.ketThucLuc >= CURRENT_TIMESTAMP
           and (m.soLuongToiDa is null or coalesce(m.soLuongDaDung, 0) < m.soLuongToiDa)
     """)
     int incrementUsageIfAvailable(@Param("voucherId") Integer voucherId);
@@ -48,11 +46,6 @@ public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Integer> {
         set m.soLuongDaDung = case
                 when coalesce(m.soLuongDaDung, 0) > 0 then coalesce(m.soLuongDaDung, 0) - 1
                 else 0
-            end,
-            m.trangThai = case
-                when m.batDauLuc <= CURRENT_TIMESTAMP and m.ketThucLuc >= CURRENT_TIMESTAMP
-                    then 'ACTIVE'
-                else m.trangThai
             end
         where m.id = :voucherId
     """)

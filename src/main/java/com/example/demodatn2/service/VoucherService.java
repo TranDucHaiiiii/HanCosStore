@@ -3,6 +3,10 @@ package com.example.demodatn2.service;
 import com.example.demodatn2.entity.MaGiamGia;
 import com.example.demodatn2.repository.MaGiamGiaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +25,14 @@ public class VoucherService {
 
     private final MaGiamGiaRepository voucherRepository;
 
+    // Lấy toàn bộ voucher và cập nhật trạng thái hết hạn.
     @Transactional
     public List<MaGiamGia> getAll() {
         deactivateExpiredVouchers();
         return voucherRepository.findAll();
     }
 
+    // Tìm kiếm voucher theo bộ lọc, trả về danh sách.
     @Transactional
     public List<MaGiamGia> search(String keyword, String status, String type, String validity) {
         deactivateExpiredVouchers();
@@ -45,28 +51,68 @@ public class VoucherService {
                         || (v.getLoai() != null && v.getLoai().equalsIgnoreCase(normalizedType)))
                 .filter(v -> matchesValidity(v, normalizedValidity, now))
                 .sorted(Comparator
-                        .comparing(MaGiamGia::getKetThucLuc, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .comparing((MaGiamGia v) -> v.getId() == null ? 0 : v.getId()).reversed()
                         .thenComparing(v -> v.getMa() == null ? "" : v.getMa()))
                 .toList();
     }
 
+    // Tìm kiếm voucher theo bộ lọc, trả về phân trang.
+    @Transactional
+    public Page<MaGiamGia> search(String keyword, String status, String type, String validity, int page, int size) {
+        deactivateExpiredVouchers();
+        Instant now = Instant.now();
+        String normalizedKeyword = keyword == null ? "" : keyword.trim().toUpperCase();
+        String normalizedStatus = status == null ? "" : status.trim().toUpperCase();
+        String normalizedType = type == null ? "" : type.trim().toUpperCase();
+        String normalizedValidity = validity == null ? "" : validity.trim().toUpperCase();
+
+        List<MaGiamGia> filtered = voucherRepository.findAll().stream()
+                .filter(v -> normalizedKeyword.isEmpty()
+                        || (v.getMa() != null && v.getMa().toUpperCase().contains(normalizedKeyword)))
+                .filter(v -> normalizedStatus.isEmpty()
+                        || (v.getTrangThai() != null && v.getTrangThai().equalsIgnoreCase(normalizedStatus)))
+                .filter(v -> normalizedType.isEmpty()
+                        || (v.getLoai() != null && v.getLoai().equalsIgnoreCase(normalizedType)))
+                .filter(v -> matchesValidity(v, normalizedValidity, now))
+                .sorted(Comparator
+                        .comparing((MaGiamGia v) -> v.getId() == null ? 0 : v.getId()).reversed()
+                        .thenComparing(v -> v.getMa() == null ? "" : v.getMa()))
+                .toList();
+
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : size;
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        // Cắt danh sách theo trang hiện tại.
+        int start = Math.min((int) pageable.getOffset(), filtered.size());
+        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+        return new PageImpl<>(filtered.subList(start, end), pageable, filtered.size());
+    }
+
+    // Lấy voucher theo id.
     @Transactional
     public Optional<MaGiamGia> getById(Integer id) {
         deactivateExpiredVouchers();
         return voucherRepository.findById(id);
     }
 
+    // Tạo/cập nhật voucher sau khi chuẩn hóa và kiểm tra dữ liệu.
     @Transactional
     public MaGiamGia save(MaGiamGia voucher) {
         normalizeVoucher(voucher);
-        validateVoucherData(voucher);
 
-        if (voucher.getSoLuongDaDung() == null) {
+        if (voucher.getId() != null) {
+            MaGiamGia existing = voucherRepository.findById(voucher.getId())
+                    .orElseThrow(() -> new RuntimeException("Voucher không tồn tại: " + voucher.getId()));
+            voucher.setSoLuongDaDung(existing.getSoLuongDaDung() == null ? 0 : existing.getSoLuongDaDung());
+        } else if (voucher.getSoLuongDaDung() == null) {
             voucher.setSoLuongDaDung(0);
         }
+
+        validateVoucherData(voucher);
         return voucherRepository.save(voucher);
     }
 
+    // Vô hiệu hóa voucher bằng cách chuyển trạng thái.
     @Transactional
     public void delete(Integer id) {
         MaGiamGia voucher = voucherRepository.findById(id)
@@ -75,12 +121,14 @@ public class VoucherService {
         voucherRepository.save(voucher);
     }
 
+    // Lấy voucher còn hiệu lực cho người dùng.
     @Transactional
     public List<MaGiamGia> getAvailableVouchers() {
         deactivateExpiredVouchers();
         return voucherRepository.findAvailableVouchers();
     }
 
+    // Lấy danh sách voucher đủ điều kiện theo giá trị đơn hàng.
     @Transactional
     public List<MaGiamGia> getEligibleVouchers(BigDecimal orderAmount) {
         if (orderAmount == null || orderAmount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -100,6 +148,7 @@ public class VoucherService {
                 .toList();
     }
 
+    // Kiểm tra voucher hợp lệ với đơn hàng.
     @Transactional
     public Optional<MaGiamGia> validateVoucher(String code, BigDecimal orderAmount) {
         if (code == null || orderAmount == null || orderAmount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -142,6 +191,7 @@ public class VoucherService {
         return Optional.of(voucher);
     }
 
+    // Tính giá trị giảm áp dụng cho đơn hàng.
     public BigDecimal calculateDiscount(MaGiamGia voucher, BigDecimal orderAmount) {
         if (voucher == null || orderAmount == null || orderAmount.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
@@ -149,6 +199,7 @@ public class VoucherService {
 
         BigDecimal discount = BigDecimal.ZERO;
 
+        // Tính giảm theo % và chặn trần tối đa nếu có.
         if ("PERCENT".equals(voucher.getLoai())) {
             BigDecimal percent = voucher.getGiaTri();
             if (percent == null || percent.compareTo(BigDecimal.ZERO) <= 0) {
@@ -161,6 +212,7 @@ public class VoucherService {
             if (voucher.getGiaTriToiDa() != null && discount.compareTo(voucher.getGiaTriToiDa()) > 0) {
                 discount = voucher.getGiaTriToiDa();
             }
+        // FIXED: lấy trực tiếp giá trị giảm.
         } else if ("FIXED".equals(voucher.getLoai())) {
             discount = voucher.getGiaTri() != null ? voucher.getGiaTri() : BigDecimal.ZERO;
         }
@@ -176,6 +228,7 @@ public class VoucherService {
         return discount;
     }
 
+    // Chuẩn hóa dữ liệu đầu vào của voucher.
     private void normalizeVoucher(MaGiamGia voucher) {
         if (voucher.getMa() != null) {
             voucher.setMa(voucher.getMa().trim().toUpperCase());
@@ -190,6 +243,7 @@ public class VoucherService {
         }
     }
 
+    // Kiểm tra dữ liệu voucher hợp lệ trước khi lưu.
     private void validateVoucherData(MaGiamGia voucher) {
         // 1. Mã voucher
         if (voucher.getMa() == null || voucher.getMa().isEmpty()) {
@@ -275,10 +329,12 @@ public class VoucherService {
         }
     }
 
+    // Đưa voucher hết hạn về trạng thái INACTIVE.
     private int deactivateExpiredVouchers() {
         return voucherRepository.deactivateExpiredActiveVouchers();
     }
 
+    // Kiểm tra điều kiện hiệu lực (UPCOMING/VALID/EXPIRED).
     private boolean matchesValidity(MaGiamGia voucher, String validity, Instant now) {
         if (validity == null || validity.isBlank()) {
             return true;
