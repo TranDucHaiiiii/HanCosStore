@@ -48,22 +48,24 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
           and (v.trangThai is null or lower(v.trangThai) = 'active')
     """)
     PriceRange findPriceRange(Integer sanPhamId);
-    @Query("""
-        select distinct v.mauSac.tenMau
-        from BienTheSanPham v
-        where v.sanPham.id = ?1
-          and (v.trangThai is null or lower(v.trangThai) = 'active')
-        order by v.mauSac.tenMau
-    """)
+    @Query(value = """
+        select distinct ms.TenMau
+        from BIEN_THE_SAN_PHAM bt
+        join MAU_SAC ms on ms.Id = bt.MauSacId
+        where bt.SanPhamId = :sanPhamId
+          and (bt.TrangThai is null or lower(bt.TrangThai) = 'active')
+        order by ms.TenMau
+    """, nativeQuery = true)
     List<String> findDistinctMauSac(Integer sanPhamId);
 
-        @Query("""
-                select distinct v.kichCo.tenKichCo
-                from BienTheSanPham v
-                where v.sanPham.id = ?1
-                    and (v.trangThai is null or lower(v.trangThai) = 'active')
-                order by v.kichCo.tenKichCo
-        """)
+        @Query(value = """
+                select distinct kc.TenKichCo
+                from BIEN_THE_SAN_PHAM bt
+                join KICH_CO kc on kc.Id = bt.KichCoId
+                where bt.SanPhamId = :sanPhamId
+                    and (bt.TrangThai is null or lower(bt.TrangThai) = 'active')
+                order by kc.TenKichCo
+        """, nativeQuery = true)
         List<String> findDistinctKichCo(Integer sanPhamId);
 
     @Query("""
