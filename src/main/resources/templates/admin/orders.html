@@ -144,9 +144,9 @@
             </div>
         </div>
 
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-3"
+        <div class="orders-pagination d-flex align-items-center justify-content-between flex-wrap gap-3 mt-3"
              th:if="${totalElements > 0}">
-            <div class="small text-muted">
+            <div class="orders-pagination-summary">
                 Hiển thị
                 <span th:text="${fromItem}">1</span>
                 -
@@ -155,7 +155,7 @@
                 <span th:text="${totalElements}">0</span>
                 đơn hàng
             </div>
-            <nav th:if="${totalPages > 1}">
+            <nav th:if="${totalPages > 1}" aria-label="Order pagination">
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item" th:classappend="${currentPage <= 1 ? 'disabled' : ''}">
                         <a class="page-link"

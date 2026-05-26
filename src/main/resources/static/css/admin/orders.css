@@ -81,6 +81,74 @@ body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; color: #333;
 }
 .form-control:focus { box-shadow: 0 0 0 3px rgba(139, 77, 77, 0.1); border-color: var(--primary-color); }
 
+.orders-pagination {
+    background: #fff;
+    border: 1px solid #eef2f4;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+    padding: 0.85rem 1rem;
+}
+
+.orders-pagination-summary {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.orders-pagination-summary span {
+    color: #111827;
+    font-weight: 800;
+}
+
+.orders-pagination .pagination {
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.orders-pagination .page-link {
+    min-width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px !important;
+    background: #fff;
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1;
+    padding: 0 0.75rem;
+    box-shadow: none;
+}
+
+.orders-pagination .page-item:first-child .page-link,
+.orders-pagination .page-item:last-child .page-link {
+    min-width: 72px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.orders-pagination .page-link:hover,
+.orders-pagination .page-link:focus {
+    background: rgba(139, 77, 77, 0.08);
+    border-color: rgba(139, 77, 77, 0.28);
+    color: var(--primary-color);
+}
+
+.orders-pagination .page-item.active .page-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+.orders-pagination .page-item.disabled .page-link {
+    background: #f8fafc;
+    border-color: #edf2f7;
+    color: #cbd5e1;
+    cursor: not-allowed;
+}
+
 .fw-800 { font-weight: 800; }
 .fw-700 { font-weight: 700; }
 .letter-spacing-1 { letter-spacing: 1px; }
@@ -88,4 +156,21 @@ body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; color: #333;
 
 @media (max-width: 992px) {
     .main-content { margin-left: 64px; }
+}
+
+@media (max-width: 576px) {
+    .orders-pagination {
+        justify-content: center !important;
+        padding: 0.8rem;
+    }
+
+    .orders-pagination-summary {
+        width: 100%;
+        text-align: center;
+    }
+
+    .orders-pagination .pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
 }
