@@ -43,6 +43,7 @@ public class VoucherService {
         String normalizedValidity = validity == null ? "" : validity.trim().toUpperCase();
 
         return voucherRepository.findAll().stream()
+        // Lọc theo mã, trạng thái, loại và điều kiện hiệu lực.
                 .filter(v -> normalizedKeyword.isEmpty()
                         || (v.getMa() != null && v.getMa().toUpperCase().contains(normalizedKeyword)))
                 .filter(v -> normalizedStatus.isEmpty()
@@ -50,6 +51,7 @@ public class VoucherService {
                 .filter(v -> normalizedType.isEmpty()
                         || (v.getLoai() != null && v.getLoai().equalsIgnoreCase(normalizedType)))
                 .filter(v -> matchesValidity(v, normalizedValidity, now))
+                // Sắp xếp theo id giảm dần, sau đó theo mã tăng dần.
                 .sorted(Comparator
                         .comparing((MaGiamGia v) -> v.getId() == null ? 0 : v.getId()).reversed()
                         .thenComparing(v -> v.getMa() == null ? "" : v.getMa()))
@@ -67,6 +69,7 @@ public class VoucherService {
         String normalizedValidity = validity == null ? "" : validity.trim().toUpperCase();
 
         List<MaGiamGia> filtered = voucherRepository.findAll().stream()
+        // Lọc theo mã, trạng thái, loại và điều kiện hiệu lực.
                 .filter(v -> normalizedKeyword.isEmpty()
                         || (v.getMa() != null && v.getMa().toUpperCase().contains(normalizedKeyword)))
                 .filter(v -> normalizedStatus.isEmpty()
@@ -74,6 +77,7 @@ public class VoucherService {
                 .filter(v -> normalizedType.isEmpty()
                         || (v.getLoai() != null && v.getLoai().equalsIgnoreCase(normalizedType)))
                 .filter(v -> matchesValidity(v, normalizedValidity, now))
+                // Sắp xếp theo id giảm dần, sau đó theo mã tăng dần.
                 .sorted(Comparator
                         .comparing((MaGiamGia v) -> v.getId() == null ? 0 : v.getId()).reversed()
                         .thenComparing(v -> v.getMa() == null ? "" : v.getMa()))

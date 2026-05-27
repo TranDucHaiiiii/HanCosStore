@@ -144,8 +144,12 @@ function clearVoucherFieldErrors() {
     setVoucherFormError('');
 }
 
+function getVoucherForm() {
+    return document.querySelector('.voucher-editor-layout');
+}
+
 function updateVoucherPreview() {
-    const form = document.querySelector('form');
+    const form = getVoucherForm();
     if (!form) {
         return;
     }
@@ -195,7 +199,7 @@ function updateVoucherPreview() {
 
 // Thiết lập trạng thái ban đầu và lắng nghe thay đổi để cập nhật panel xem trước.
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
+    const form = getVoucherForm();
     toggleGiaTriToiDa();
 
     if (form) {
@@ -211,7 +215,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Chặn submit nếu đơn tối thiểu không đủ lớn so với tiền giảm.
-document.querySelector('form').addEventListener('submit', function(e) {
+const voucherForm = getVoucherForm();
+if (voucherForm) {
+    voucherForm.addEventListener('submit', function(e) {
     clearVoucherFieldErrors();
     const loai = document.getElementById('loaiGiam').value;
     const giaTriInput = document.querySelector('[name="giaTri"]');
@@ -231,12 +237,13 @@ document.querySelector('form').addEventListener('submit', function(e) {
         return;
     }
 
-    if (loai === 'PERCENT' && giaTriToiDa && donToiThieu && giaTriToiDa > donToiThieu * 0.3) {
-        e.preventDefault();
-        const limit = formatCurrency(Math.floor(donToiThieu * 0.3));
-        giaTriToiDaInput.classList.add('is-invalid');
-        donToiThieuInput.classList.add('is-invalid');
-        setVoucherFormError('Giá trị giảm tối đa không được vượt quá 30% đơn tối thiểu (' + limit + ').');
-        giaTriToiDaInput.focus();
-    }
-});
+        if (loai === 'PERCENT' && giaTriToiDa && donToiThieu && giaTriToiDa > donToiThieu * 0.3) {
+            e.preventDefault();
+            const limit = formatCurrency(Math.floor(donToiThieu * 0.3));
+            giaTriToiDaInput.classList.add('is-invalid');
+            donToiThieuInput.classList.add('is-invalid');
+            setVoucherFormError('Giá trị giảm tối đa không được vượt quá 30% đơn tối thiểu (' + limit + ').');
+            giaTriToiDaInput.focus();
+        }
+    });
+}

@@ -66,7 +66,15 @@ public class AuthController {
         // Gọi service kiểm tra thông tin đăng nhập
         try {
             if (authService.login(tenDangNhap, matKhau, session)) {
+                Object loginUser = session.getAttribute("LOGIN_USER");
+                Object roles = session.getAttribute("ROLES");
                 request.changeSessionId();
+                if (loginUser != null) {
+                    session.setAttribute("LOGIN_USER", loginUser);
+                }
+                if (roles != null) {
+                    session.setAttribute("ROLES", roles);
+                }
                 redirectAttributes.addFlashAttribute("successMessage", "Đăng nhập thành công!");
                 // Nếu có trang đích (next) thì chuyển hướng đến đó, ngược lại về trang chủ
                 if (isSafeLocalRedirect(next)) {
