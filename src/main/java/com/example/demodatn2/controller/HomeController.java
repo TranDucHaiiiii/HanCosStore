@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class HomeController {
 
-    private static final int HOME_PAGE_SIZE = 12;
+    private static final int HOME_PAGE_SIZE = 8;
     private static final int CATEGORY_PREVIEW_LIMIT = 3;
     private static final String CART_COUNT = "CART_COUNT";
 
@@ -39,16 +39,34 @@ public class HomeController {
     public String home(Model model,
                        @RequestParam(required = false) Integer danhMucId,
                        @RequestParam(required = false) String q,
-                       @RequestParam(defaultValue = "0") int page,
+                       @RequestParam(defaultValue = "1") int page,
                        HttpSession session) {
         ensureCartCount(session);
 
-        PageRequest pageable = PageRequest.of(page, HOME_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        if (page < 1) {
+            page = 1;
+        }
+
+        PageRequest pageable = PageRequest.of(page - 1, HOME_PAGE_SIZE,
+                Sort.by(Sort.Direction.DESC, "ngayTao"));
         Page<HomeProductVM> productPage = homeService.getHomeProductsPage(danhMucId, q, pageable);
+
+        int totalPages = productPage.getTotalPages();
+        int currentPage = productPage.getNumber() + 1;
+        int startPage = Math.max(1, currentPage - 2);
+        int endPage = Math.min(totalPages, startPage + 4);
+
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
 
         model.addAttribute("products", productPage.getContent());
         model.addAttribute("productPage", productPage);
-        model.addAttribute("currentPage", page);
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("totalElements", productPage.getTotalElements());
+        model.addAttribute("startPage", startPage);
+        model.addAttribute("endPage", endPage);
         model.addAttribute("selectedDanhMucId", danhMucId);
         model.addAttribute("query", q);
         addCategoryMenu(model, true);
@@ -103,12 +121,15 @@ public class HomeController {
                 .filter(category -> category.getDanhMucCha() == null)
                 .toList();
     }
+    
 
     private Map<Integer, List<DanhMuc>> getChildrenMap(List<DanhMuc> categories) {
         return categories.stream()
                 .filter(category -> category.getDanhMucCha() != null)
                 .collect(Collectors.groupingBy(category -> category.getDanhMucCha().getId()));
     }
+
+
 
     private Map<Integer, List<HomeProductVM>> getCategoryPreviews(List<DanhMuc> parentCategories) {
         return parentCategories.stream()

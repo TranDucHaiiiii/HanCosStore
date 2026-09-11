@@ -80,10 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const resetBtn = document.getElementById("resetFilters");
     const filterEmptyState = document.getElementById("filterEmptyState");
     const paginationWrapEl = document.querySelector(".home-pagination-wrap");
-    const paginationEl = paginationWrapEl?.querySelector(".pagination") || null;
-    const pageInfoEl = document.getElementById("homePageInfo");
-    const pageSize = Math.max(parseInt(paginationEl?.dataset.pageSize || "8", 10), 1);
-    let currentPage = 1;
 
     const splitValues = (value) =>
         (value || "")
@@ -128,84 +124,21 @@ document.addEventListener("DOMContentLoaded", () => {
         return { min, max };
     };
 
-    const renderPagination = (visibleCards) => {
-        if (!paginationEl || !paginationWrapEl) {
-            productCards.forEach((card) => {
-                card.style.display = "none";
-            });
-            visibleCards.forEach((card) => {
-                card.style.display = "";
-            });
-            return;
-        }
-
-        const totalItems = visibleCards.length;
-        const totalPages = Math.max(Math.ceil(totalItems / pageSize), 1);
-        if (currentPage > totalPages) currentPage = totalPages;
-
-        paginationEl.innerHTML = "";
-
-        if (totalItems === 0) {
-            paginationWrapEl.classList.add("d-none");
-            if (pageInfoEl) pageInfoEl.textContent = "";
-            return;
-        }
-
-        paginationWrapEl.classList.toggle("d-none", totalPages <= 1);
-        const pageCardsStart = (currentPage - 1) * pageSize;
-        const pageCardsEnd = pageCardsStart + pageSize;
-
-        productCards.forEach((card) => {
-            card.style.display = "none";
-        });
-        visibleCards.slice(pageCardsStart, pageCardsEnd).forEach((card) => {
-            card.style.display = "";
-        });
-
-        if (pageInfoEl) {
-            pageInfoEl.textContent = `Trang ${currentPage}/${totalPages} - ${totalItems} san pham`;
-        }
-
-        if (totalPages <= 1) return;
-
-        const createPageItem = (label, page, disabled = false, active = false) => {
-            const li = document.createElement("li");
-            li.className = `page-item${disabled ? " disabled" : ""}${active ? " active" : ""}`;
-
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "page-link";
-            btn.textContent = label;
-            btn.disabled = disabled;
-            btn.addEventListener("click", () => {
-                currentPage = page;
-                applyFilters(false);
-                window.scrollTo({ top: document.getElementById("product-section")?.offsetTop - 90 || 0, behavior: "smooth" });
-            });
-            li.appendChild(btn);
-            return li;
-        };
-
-        paginationEl.appendChild(createPageItem("«", Math.max(currentPage - 1, 1), currentPage === 1));
-        for (let i = 1; i <= totalPages; i += 1) {
-            paginationEl.appendChild(createPageItem(String(i), i, false, i === currentPage));
-        }
-        paginationEl.appendChild(createPageItem("»", Math.min(currentPage + 1, totalPages), currentPage === totalPages));
-    };
-
-    const applyFilters = (resetPage = true) => {
+    const applyFilters = () => {
         if (productCards.length === 0) {
             if (filterEmptyState) filterEmptyState.classList.add("d-none");
-            if (paginationWrapEl) paginationWrapEl.classList.add("d-none");
             return;
         }
-        if (resetPage) currentPage = 1;
 
         const selectedColor = normalize(colorSelectEl?.value || "");
         const selectedBrand = normalize(brandSelectEl?.value || "");
         const selectedSize = normalize(sizeSelectEl?.value || "");
         const { min: minPrice, max: maxPrice } = parsePriceRange(priceSelectEl?.value || "");
-        const visibleCards = productCards.filter((card) => {
+
+        const hasFilter = Boolean(selectedColor || selectedBrand || selectedSize || minPrice !== null || maxPrice !== null);
+
+        let visibleCount = 0;
+        productCards.forEach((card) => {
             const colors = splitValues(card.getAttribute("data-colors")).map(normalize);
             const brands = splitValues(card.getAttribute("data-brands")).map(normalize);
             const sizes = splitValues(card.getAttribute("data-sizes")).map(normalize);
@@ -222,13 +155,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 const max = maxPrice ?? Number.MAX_SAFE_INTEGER;
                 matchPrice = cardMax >= min && cardMin <= max;
             }
-            return matchColor && matchBrand && matchSize && matchPrice;
+
+            const isMatch = matchColor && matchBrand && matchSize && matchPrice;
+            card.style.display = isMatch ? "" : "none";
+            if (isMatch) visibleCount++;
         });
 
         if (filterEmptyState) {
-            filterEmptyState.classList.toggle("d-none", visibleCards.length > 0);
+            filterEmptyState.classList.toggle("d-none", visibleCount > 0);
         }
-        renderPagination(visibleCards);
+        if (paginationWrapEl) {
+            paginationWrapEl.classList.toggle("d-none", hasFilter && visibleCount === 0);
+        }
     };
 
     const resetFilters = () => {

@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
@@ -299,38 +299,62 @@
         </div>
 
         <!-- PAGINATION -->
-        <nav th:if="${productPage != null and productPage.totalPages > 1}"
-            class="home-pagination-wrap d-flex justify-content-center mt-5">
-
-            <ul class="pagination" style="gap:6px;">
-
-                <!-- Previous -->
-                <li class="page-item" th:classappend="${productPage.first ? 'disabled' : ''}">
-                    <a class="page-link" th:href="${productPage.first} ? '#' :
-               @{/(page=${currentPage - 1}, danhMucId=${selectedDanhMucId}, q=${query})}">
-                        &laquo;
+        <nav th:if="${totalPages > 1}" class="home-pagination-wrap d-flex flex-column align-items-center mt-5" aria-label="Phân trang sản phẩm">
+            <ul class="pagination mb-2" style="gap:6px;">
+                <!-- Nút Trước (Previous) -->
+                <li class="page-item" th:classappend="${currentPage == 1 ? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="${currentPage == 1} ? '#' : @{/(page=${currentPage - 1}, danhMucId=${selectedDanhMucId}, q=${query})} + '#product-section'"
+                       aria-label="Trang trước">
+                        &laquo; Trước
                     </a>
                 </li>
 
-                <!-- Page numbers -->
-                <th:block th:each="i : ${#numbers.sequence(0, productPage.totalPages - 1)}">
+                <!-- Nút trang 1 nếu startPage > 1 -->
+                <li class="page-item" th:if="${startPage > 1}">
+                    <a class="page-link" th:href="@{/(page=1, danhMucId=${selectedDanhMucId}, q=${query})} + '#product-section'">1</a>
+                </li>
+                <li class="page-item disabled" th:if="${startPage > 2}">
+                    <span class="page-link">...</span>
+                </li>
+
+                <!-- Dãy số trang từ startPage đến endPage -->
+                <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
                     <li class="page-item" th:classappend="${i == currentPage ? 'active' : ''}">
-                        <a class="page-link" th:href="@{/(page=${i}, danhMucId=${selectedDanhMucId}, q=${query})}"
-                            th:text="${i + 1}">
-                        </a>
+                        <a class="page-link"
+                           th:href="@{/(page=${i}, danhMucId=${selectedDanhMucId}, q=${query})} + '#product-section'"
+                           th:text="${i}">1</a>
                     </li>
                 </th:block>
 
-                <!-- Next -->
-                <li class="page-item" th:classappend="${productPage.last ? 'disabled' : ''}">
-                    <a class="page-link" th:href="${productPage.last} ? '#' :
-               @{/(page=${currentPage + 1}, danhMucId=${selectedDanhMucId}, q=${query})}">
-                        &raquo;
-                    </a>
+                <!-- Nút trang cuối nếu endPage < totalPages -->
+                <li class="page-item disabled" th:if="${endPage < totalPages - 1}">
+                    <span class="page-link">...</span>
+                </li>
+                <li class="page-item" th:if="${endPage < totalPages}">
+                    <a class="page-link" th:href="@{/(page=${totalPages}, danhMucId=${selectedDanhMucId}, q=${query})} + '#product-section'" th:text="${totalPages}">10</a>
                 </li>
 
+                <!-- Nút Sau (Next) -->
+                <li class="page-item" th:classappend="${currentPage == totalPages ? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="${currentPage == totalPages} ? '#' : @{/(page=${currentPage + 1}, danhMucId=${selectedDanhMucId}, q=${query})} + '#product-section'"
+                       aria-label="Trang sau">
+                        Sau &raquo;
+                    </a>
+                </li>
             </ul>
+
+            <!-- Thông tin trang -->
+            <div class="home-page-info">
+                Hiển thị <span th:text="${products.size()}">0</span> / <span th:text="${totalElements}">0</span> sản phẩm (Trang <span th:text="${currentPage}">1</span>/<span th:text="${totalPages}">1</span>)
+            </div>
         </nav>
+
+        <!-- Thông tin khi chỉ có 1 trang -->
+        <div th:if="${totalPages <= 1 and totalElements > 0}" class="home-page-info text-muted small text-center mt-4">
+            Hiển thị tất cả <span th:text="${totalElements}">0</span> sản phẩm
+        </div>
     </section>
 
     <div class="modal fade" id="quickBuyModal" tabindex="-1" aria-labelledby="quickBuyModalLabel" aria-hidden="true">
